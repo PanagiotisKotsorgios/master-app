@@ -568,6 +568,7 @@ body::after{content:'';position:fixed;inset:0;background-image:url("data:image/s
       <li><a href="#features">Λειτουργίες</a></li>
       <li><a href="#how-it-works">Πώς Λειτουργεί</a></li>
       <li><a href="#pricing">Τιμές</a></li>
+      <li><a href="<?= APP_URL ?>/events/" style="color:#e63946;font-weight:700"><i class="fa-solid fa-trophy" style="margin-right:.35rem"></i>Events</a></li>
       <li><a href="<?= APP_URL ?>/contact.php">Επικοινωνία</a></li>
     </ul>
     <div class="nav-ctas">
@@ -593,6 +594,8 @@ body::after{content:'';position:fixed;inset:0;background-image:url("data:image/s
   <a href="#for-whom"><i class="fas fa-bullseye"></i> Για Ποιους</a>
   <a href="#how-it-works"><i class="fas fa-rocket"></i> Πώς Λειτουργεί</a>
   <a href="#pricing"><i class="fas fa-credit-card"></i> Τιμές</a>
+  <a href="<?= APP_URL ?>/events/" style="color:#ff6b74"><i class="fas fa-trophy"></i> Events · Πρωταθλήματα</a>
+  <a href="<?= APP_URL ?>/events/athletes.php" style="color:#8892b0"><i class="fas fa-magnifying-glass"></i> Αναζήτηση Αθλητή</a>
   <div class="mob-divider"></div>
   <a href="<?= APP_URL ?>/contact.php"><i class="fas fa-envelope"></i> Επικοινωνία</a>
   <a href="<?= APP_URL ?>/parent/login.php" class="mob-portal"><i class="fa-solid fa-house-chimney-user"></i> Πύλη Γονέα</a>

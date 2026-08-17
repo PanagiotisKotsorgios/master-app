@@ -52,7 +52,16 @@ RUN mv "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini"; \
         echo "expose_php=Off"; \
         echo "date.timezone=Europe/Athens"; \
         echo "session.gc_maxlifetime=28800"; \
+        echo "log_errors=On"; \
+        echo "error_log=/proc/self/fd/2"; \
+        echo "error_reporting=E_ALL"; \
+        echo "display_errors=Off"; \
+        echo "display_startup_errors=Off"; \
     } > "$PHP_INI_DIR/conf.d/zz-master.ini"
+
+# Route Apache error log to stderr so `docker logs` shows PHP fatals immediately
+RUN ln -sf /proc/self/fd/2 /var/log/apache2/error.log; \
+    ln -sf /proc/self/fd/1 /var/log/apache2/access.log
 
 # ── OPcache prod ──
 RUN { \
