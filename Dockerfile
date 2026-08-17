@@ -42,12 +42,13 @@ RUN mkdir -p /var/www/html/logs \
              /var/www/html/uploads/events/private; \
     chown -R www-data:www-data /var/www/html/logs /var/www/html/backups /var/www/html/uploads
 
-# ── PHP prod config ──
+# ── PHP prod config (static bits) ──
+# Runtime-tunable bits (memory_limit, upload sizes) are written by
+# docker-entrypoint.sh from env vars at container start — writing them
+# at build time with ${VAR} placeholders produces "memory to 0 bytes"
+# warnings because PHP treats the literal ${VAR} as an invalid value.
 RUN mv "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini"; \
     { \
-        echo "memory_limit=\${PHP_MEMORY_LIMIT:-256M}"; \
-        echo "upload_max_filesize=\${PHP_UPLOAD_MAX_FILESIZE:-10M}"; \
-        echo "post_max_size=\${PHP_POST_MAX_SIZE:-12M}"; \
         echo "expose_php=Off"; \
         echo "date.timezone=Europe/Athens"; \
         echo "session.gc_maxlifetime=28800"; \

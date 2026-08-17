@@ -23,28 +23,63 @@ The entrypoint auto-runs `tools/run_events_migration.php` at boot.
 
 ---
 
-## Deploying on Coolify
+## Deploying on Coolify (fully self-contained)
 
-1. **Create a new resource** → *Application* → *Public Repository*.
+The `docker-compose.yml` in this repo ships **both** the app and the MySQL 8 database as a single stack, with named volumes for persistence. You don't need to create a separate DB resource.
+
+1. **New resource** → *Application* → *Public Repository*.
 2. **Repository URL**: `https://github.com/PanagiotisKotsorgios/master-app`
 3. **Branch**: `main`
-4. **Build pack**: **Dockerfile** (Coolify detects the repo `Dockerfile` automatically).
-5. **Port**: `80`.
-6. **Environment variables** — copy from `.env.example` and fill in values:
-   - `APP_URL` — must match your Coolify domain (e.g. `https://master.your-domain.com`)
-   - `DB_HOST`, `DB_NAME`, `DB_USER`, `DB_PASS` — point at your MySQL 8 database resource (Coolify → *Databases* → *New MySQL*; the internal hostname is that resource's name)
-   - `CRON_SECRET` — generate with `openssl rand -hex 32`
-   - `BREVO_API_KEY`, `MAIL_FROM_EMAIL`, `MAIL_FROM_NAME` — if you want transactional email
-7. **Persistent volumes** — create three:
-   - `/var/www/html/uploads` — user uploads (payment proofs, docs)
-   - `/var/www/html/backups` — DB backups written by the admin panel
-   - `/var/www/html/logs` — PHP error log
-8. **Domain & HTTPS** — assign a domain in Coolify, enable Let's Encrypt. HSTS turns on automatically.
-9. **Deploy**. First boot runs migrations; watch the container logs.
-10. **Cron** — in Coolify → your app → *Scheduled Tasks*:
-    - `*/15 * * * *` → `php /var/www/html/cron/reminders.php`
-    - `*/15 * * * *` → `php /var/www/html/cron/event_reminders.php`
-    - `0 9 1 1,4,7,10 *` → `php /var/www/html/cron/quarterly-stats.php`
+4. **Build pack**: **Docker Compose** (auto-detected from `docker-compose.yml`).
+5. **Environment variables** — the only ones you *must* set:
+   ```
+   APP_URL=https://<your-domain>
+   DB_PASS=<pick a strong password>
+   DB_ROOT_PASSWORD=<pick another strong one>
+   CRON_SECRET=<openssl rand -hex 32>
+   ```
+   Optional:
+   ```
+   BREVO_API_KEY=…            # if you want email
+   MAIL_FROM_EMAIL=noreply@…
+   MAIL_FROM_NAME=MAster
+   DB_NAME=master_db          # defaults are fine
+   DB_USER=master
+   ```
+6. **Domain & HTTPS** — assign a domain, enable Let's Encrypt. HSTS is automatic.
+7. **Deploy**. First boot: MySQL starts → app waits for it → migrations apply the full baseline schema + events subsystem → Apache serves on port 80.
+8. **Cron** — Coolify → app → *Scheduled Tasks*:
+   ```
+   */15 * * * *   docker exec <app-container> php /var/www/html/cron/reminders.php
+   */15 * * * *   docker exec <app-container> php /var/www/html/cron/event_reminders.php
+   0 9 1 1,4,7,10 *   docker exec <app-container> php /var/www/html/cron/quarterly-stats.php
+   ```
+   (Coolify usually offers a "run inside container" scheduled-task shortcut — use that instead of `docker exec`.)
+
+### What ships in the compose stack
+
+| Service | Purpose | Volume | Port |
+|---|---|---|---|
+| `db`  | MySQL 8, `utf8mb4`, private (not exposed to host) | `master-db` | internal `3306` |
+| `app` | PHP 8.2 + Apache, healthcheck at `/healthz.php` | `master-uploads` · `master-backups` · `master-logs` | published `80` |
+
+### Post-deploy sanity checks
+
+- [ ] `https://your-domain/` — landing page loads.
+- [ ] `https://your-domain/healthz.php` → `OK`
+- [ ] `https://your-domain/healthz.php?db=1` → `OK db`
+- [ ] `https://your-domain/events/` — public events directory.
+- [ ] `https://your-domain/cron/reminders.php` without `?token=` → **403 Unauthorized**.
+- [ ] After first deploy, create your superadmin via the container:
+  ```bash
+  docker exec -it <app-container> php -r '
+    require "/var/www/html/includes/config.php";
+    $h = password_hash("change-me-now", PASSWORD_DEFAULT);
+    getDB()->prepare("INSERT INTO users (name,email,password,role,active) VALUES (?,?,?,?,1)")
+      ->execute(["Admin","admin@your-domain.com",$h,"superadmin"]);
+    echo "superadmin created\n";
+  '
+  ```
 
 ---
 

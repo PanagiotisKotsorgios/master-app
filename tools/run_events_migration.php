@@ -47,9 +47,15 @@ foreach ($files as $sqlFile) {
             echo "OK   " . substr($stmt, 0, 60) . "...\n";
             $totalOk++;
         } catch (PDOException $e) {
-            // Ignore idempotent-safe errors like "duplicate column"
+            // Ignore idempotent-safe errors on re-run
             $msg = $e->getMessage();
-            $ignore = str_contains($msg, 'Duplicate') || str_contains($msg, 'already exists');
+            $ignore = str_contains($msg, 'Duplicate')
+                   || str_contains($msg, 'already exists')
+                   || str_contains($msg, 'Multiple primary key')
+                   || str_contains($msg, "Can't DROP")
+                   || str_contains($msg, "check that column/key exists")
+                   || str_contains($msg, 'Duplicate key name')
+                   || str_contains($msg, 'Duplicate column name');
             echo ($ignore ? 'SKIP ' : 'FAIL ') . substr($stmt, 0, 60) . "...\n   -> " . $msg . "\n";
             if (!$ignore) $totalFail++;
         }

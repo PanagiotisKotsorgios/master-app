@@ -1,15 +1,39 @@
 # ============================================================
-# docker-compose.yml — Coolify deployment (app only)
+# docker-compose.yml — MAster full stack (Coolify)
 # ============================================================
-# The MySQL DB is provisioned as a separate Coolify resource,
-# NOT declared here — pass DB_HOST, DB_USER, DB_PASS, DB_NAME
-# via the Coolify env-var UI.
+# Services:
+#   • db   — MySQL 8, private, persistent volume
+#   • app  — PHP 8.2 + Apache (built from Dockerfile)
 #
-# Volumes are declared as named volumes; Coolify maps them
-# to its persistent storage on the host.
+# The app waits for the DB, runs migrations on first boot,
+# then serves on port 80. Everything is self-contained;
+# `just redeploy` from git is enough.
 # ============================================================
 
 services:
+
+  db:
+    image: mysql:8.0
+    restart: unless-stopped
+    command:
+      - --default-authentication-plugin=mysql_native_password
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --max-connections=200
+    environment:
+      MYSQL_ROOT_PASSWORD: "${DB_ROOT_PASSWORD:-${DB_PASS:-change-me}}"
+      MYSQL_DATABASE:      "${DB_NAME:-master_db}"
+      MYSQL_USER:          "${DB_USER:-master}"
+      MYSQL_PASSWORD:      "${DB_PASS:-change-me}"
+    volumes:
+      - master-db:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-u", "root", "-p${DB_ROOT_PASSWORD:-${DB_PASS:-change-me}}"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+
   app:
     build:
       context: .
@@ -17,22 +41,25 @@ services:
     restart: unless-stopped
     ports:
       - "80"
+    depends_on:
+      db:
+        condition: service_healthy
     environment:
-      # ── Application ──
+      # ── App ──
       APP_URL:          "${APP_URL:-http://localhost}"
       APP_NAME:         "${APP_NAME:-MAster}"
       SESSION_LIFETIME: "${SESSION_LIFETIME:-28800}"
 
-      # ── Database (from Coolify MySQL resource) ──
-      DB_HOST:    "${DB_HOST}"
-      DB_PORT:    "${DB_PORT:-3306}"
+      # ── DB (points at the db service above) ──
+      DB_HOST:    "db"
+      DB_PORT:    "3306"
       DB_NAME:    "${DB_NAME:-master_db}"
-      DB_USER:    "${DB_USER}"
-      DB_PASS:    "${DB_PASS}"
-      DB_CHARSET: "${DB_CHARSET:-utf8mb4}"
+      DB_USER:    "${DB_USER:-master}"
+      DB_PASS:    "${DB_PASS:-change-me}"
+      DB_CHARSET: "utf8mb4"
 
       # ── Cron endpoints ──
-      CRON_SECRET: "${CRON_SECRET}"
+      CRON_SECRET: "${CRON_SECRET:-please-set-in-coolify}"
 
       # ── Email (Brevo) ──
       BREVO_API_KEY:   "${BREVO_API_KEY:-}"
@@ -56,16 +83,16 @@ services:
       test: ["CMD", "curl", "-fsS", "http://127.0.0.1/healthz.php"]
       interval: 15s
       timeout: 5s
-      start_period: 30s
-      retries: 5
+      start_period: 40s
+      retries: 8
 
     labels:
       - "coolify.managed=true"
-      # Coolify Traefik hints — override in Coolify UI as needed
       - "traefik.enable=true"
       - "traefik.http.services.app.loadbalancer.server.port=80"
 
 volumes:
+  master-db:
   master-uploads:
   master-backups:
   master-logs:
