@@ -1,0 +1,17 @@
+# ============================================================
+# cron/.htaccess
+# ============================================================
+# Μπλοκάρει direct browser access στο /cron/*
+# Το reminders.php πρέπει να τρέχει:
+#   1) Από Plesk Scheduled Task (CLI / PHP script)
+#   2) Από εσωτερικό admin endpoint: pages/run_reminders_now.php
+# ============================================================
+
+<IfModule mod_authz_core.c>
+    Require all denied
+</IfModule>
+
+<IfModule !mod_authz_core.c>
+    Order Allow,Deny
+    Deny from all
+</IfModule>

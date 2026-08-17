@@ -1,0 +1,970 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Οδηγός Χρήσης MAster — Βήμα-Βήμα</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Inter', Arial, sans-serif;
+    background: #f5f6fa;
+    color: #1a1a2e;
+    line-height: 1.7;
+    font-size: 16px;
+  }
+
+  /* ── Print styles ── */
+  @media print {
+    body { background: #fff; font-size: 13px; }
+    .page-break { page-break-before: always; }
+    .cover { min-height: auto; padding: 2cm 2cm 1cm; }
+    .toc { page-break-after: always; }
+  }
+
+  /* ── Cover ── */
+  .cover {
+    background: linear-gradient(135deg, #0d1117 0%, #161b27 60%, #1a2035 100%);
+    color: #fff;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 3rem 2rem;
+    page-break-after: always;
+  }
+
+  .cover-logo {
+    font-size: 4rem;
+    font-weight: 900;
+    color: #e63946;
+    letter-spacing: .06em;
+    margin-bottom: .5rem;
+  }
+
+  .cover-subtitle {
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: #e2e8f0;
+    margin-bottom: 2rem;
+  }
+
+  .cover-desc {
+    font-size: 1.1rem;
+    color: #8892b0;
+    max-width: 520px;
+    line-height: 1.8;
+    margin-bottom: 3rem;
+  }
+
+  .cover-badge {
+    display: inline-block;
+    background: rgba(230,57,70,.15);
+    border: 1.5px solid rgba(230,57,70,.4);
+    color: #e63946;
+    padding: .5rem 1.4rem;
+    border-radius: 50px;
+    font-size: .95rem;
+    font-weight: 700;
+  }
+
+  .cover-date {
+    margin-top: 3rem;
+    font-size: .9rem;
+    color: #4a5568;
+  }
+
+  /* ── Table of Contents ── */
+  .toc {
+    max-width: 800px;
+    margin: 3rem auto;
+    padding: 2.5rem 3rem;
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 2px 20px rgba(0,0,0,.08);
+  }
+
+  .toc h2 {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: #1a1a2e;
+    margin-bottom: 1.5rem;
+    padding-bottom: .75rem;
+    border-bottom: 2px solid #e63946;
+  }
+
+  .toc ol {
+    list-style: none;
+    counter-reset: toc-counter;
+  }
+
+  .toc ol li {
+    counter-increment: toc-counter;
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+    padding: .6rem 0;
+    border-bottom: 1px solid #f0f0f5;
+    font-size: 1rem;
+    color: #2d3748;
+  }
+
+  .toc ol li::before {
+    content: counter(toc-counter, decimal-leading-zero);
+    font-weight: 800;
+    color: #e63946;
+    font-size: 1.05rem;
+    min-width: 2rem;
+  }
+
+  .toc ol li a {
+    color: #2d3748;
+    text-decoration: none;
+    font-weight: 600;
+  }
+
+  /* ── Main content wrapper ── */
+  .content {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 2rem 1.5rem 4rem;
+  }
+
+  /* ── Section header ── */
+  .section {
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 2px 20px rgba(0,0,0,.06);
+    margin-bottom: 2.5rem;
+    overflow: hidden;
+  }
+
+  .section-header {
+    background: linear-gradient(135deg, #e63946 0%, #c1121f 100%);
+    color: #fff;
+    padding: 1.2rem 2rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .section-number {
+    background: rgba(255,255,255,.2);
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 900;
+    font-size: 1.2rem;
+    flex-shrink: 0;
+  }
+
+  .section-title {
+    font-size: 1.3rem;
+    font-weight: 800;
+  }
+
+  .section-body {
+    padding: 1.8rem 2rem;
+  }
+
+  /* ── Step ── */
+  .step {
+    display: flex;
+    gap: 1.2rem;
+    margin-bottom: 1.4rem;
+    align-items: flex-start;
+  }
+
+  .step-num {
+    background: #e63946;
+    color: #fff;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: .95rem;
+    flex-shrink: 0;
+    margin-top: .1rem;
+  }
+
+  .step-text {
+    flex: 1;
+    font-size: 1rem;
+    color: #2d3748;
+    padding-top: .35rem;
+  }
+
+  .step-text strong {
+    color: #1a1a2e;
+  }
+
+  /* ── Info box ── */
+  .info-box {
+    background: #f0f7ff;
+    border-left: 4px solid #3b82f6;
+    border-radius: 8px;
+    padding: 1rem 1.2rem;
+    margin: 1.2rem 0;
+    font-size: .95rem;
+    color: #1e3a5f;
+    line-height: 1.7;
+  }
+
+  .info-box.gold {
+    background: #fffbf0;
+    border-left-color: #f0a500;
+    color: #5a3e00;
+  }
+
+  .info-box.green {
+    background: #f0fff4;
+    border-left-color: #2dc653;
+    color: #1a4a2e;
+  }
+
+  .info-box.red {
+    background: #fff5f5;
+    border-left-color: #e63946;
+    color: #5a1a1f;
+  }
+
+  /* ── Highlight box (what you click) ── */
+  .click-box {
+    display: inline-block;
+    background: #1a1a2e;
+    color: #e63946;
+    border: 1.5px solid #e63946;
+    border-radius: 8px;
+    padding: .25rem .7rem;
+    font-weight: 700;
+    font-size: .95rem;
+    font-family: monospace;
+    white-space: nowrap;
+  }
+
+  /* ── Screen label ── */
+  .screen-label {
+    display: inline-block;
+    background: #e8edff;
+    color: #3b4fd8;
+    border-radius: 6px;
+    padding: .2rem .6rem;
+    font-weight: 700;
+    font-size: .88rem;
+  }
+
+  /* ── Result box ── */
+  .result-box {
+    background: #f0fff4;
+    border: 1.5px solid #2dc653;
+    border-radius: 10px;
+    padding: .85rem 1.1rem;
+    margin: 1rem 0;
+    font-size: .95rem;
+    color: #1a4a2e;
+    display: flex;
+    align-items: flex-start;
+    gap: .6rem;
+  }
+
+  .result-icon {
+    color: #2dc653;
+    font-size: 1.2rem;
+    flex-shrink: 0;
+    margin-top: .05rem;
+  }
+
+  /* ── Warning ── */
+  .warning {
+    background: #fffbf0;
+    border: 1.5px solid #f0a500;
+    border-radius: 10px;
+    padding: .85rem 1.1rem;
+    margin: 1rem 0;
+    font-size: .95rem;
+    color: #5a3e00;
+    display: flex;
+    align-items: flex-start;
+    gap: .6rem;
+  }
+
+  /* ── Payment table ── */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1.2rem 0;
+    font-size: .95rem;
+  }
+
+  th {
+    background: #1a1a2e;
+    color: #fff;
+    padding: .75rem 1rem;
+    text-align: left;
+    font-weight: 700;
+  }
+
+  td {
+    padding: .75rem 1rem;
+    border-bottom: 1px solid #eee;
+    color: #2d3748;
+  }
+
+  tr:nth-child(even) td { background: #f8f9fc; }
+
+  /* ── Iban box ── */
+  .iban-box {
+    background: #0d1117;
+    color: #64d4c8;
+    font-family: monospace;
+    font-size: 1.05rem;
+    font-weight: 700;
+    padding: .75rem 1.2rem;
+    border-radius: 10px;
+    letter-spacing: .08em;
+    margin: .6rem 0;
+    word-break: break-all;
+  }
+
+  /* ── Footer ── */
+  .doc-footer {
+    text-align: center;
+    padding: 2rem;
+    color: #8892b0;
+    font-size: .88rem;
+    border-top: 1px solid #e2e8f0;
+    margin-top: 3rem;
+  }
+
+  h3 {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #1a1a2e;
+    margin: 1.5rem 0 .75rem;
+  }
+
+  p {
+    color: #4a5568;
+    margin-bottom: .75rem;
+  }
+
+  ul {
+    padding-left: 1.4rem;
+    color: #4a5568;
+    margin-bottom: .75rem;
+  }
+
+  ul li {
+    margin-bottom: .4rem;
+  }
+</style>
+</head>
+<body>
+
+<!-- ════════════════════════════════ COVER ════════════════════════════════ -->
+<div class="cover">
+  <div class="cover-logo">MAster</div>
+  <div class="cover-subtitle">Οδηγός Χρήσης Πλατφόρμας</div>
+  <div class="cover-desc">
+    Αναλυτικές οδηγίες για την καθημερινή χρήση της πλατφόρμας MAster.
+    Από την πρώτη σύνδεση μέχρι την ανανέωση της συνδρομής σας.
+    Γραμμένος απλά, για όλους.
+  </div>
+  <div class="cover-badge">📋 Πλήρης Οδηγός — Έκδοση Απριλίου 2026</div>
+  <div class="cover-date">Ημερομηνία: Απρίλιος 2026</div>
+</div>
+
+<!-- ════════════════════════════════ TOC ════════════════════════════════ -->
+<div class="content">
+<div class="toc">
+  <h2>📑 Περιεχόμενα</h2>
+  <ol>
+    <li><a href="#s1">Πώς να συνδεθείτε στην πλατφόρμα (Login)</a></li>
+    <li><a href="#s2">Τι βλέπετε μόλις μπείτε — το Κεντρικό Ταμπλό</a></li>
+    <li><a href="#s3">Πώς να προσθέσετε αθλητή</a></li>
+    <li><a href="#s4">Πώς να καταγράψετε πληρωμή αθλητή</a></li>
+    <li><a href="#s5">Πώς να στείλετε ειδοποίηση (SMS ή Email)</a></li>
+    <li><a href="#s6">Πώς να δείτε αθλητές που χρωστούν</a></li>
+    <li><a href="#s7">Οι αυτόματες ειδοποιήσεις — τι γίνεται κάθε μέρα στις 9 π.μ.</a></li>
+    <li><a href="#s8">Τι είναι η συνδρομή σας και πότε λήγει</a></li>
+    <li><a href="#s9">Πώς να ανανεώσετε τη συνδρομή σας — Βήμα Βήμα</a></li>
+    <li><a href="#s10">Στοιχεία Πληρωμής — Λογαριασμός & IRIS</a></li>
+    <li><a href="#s11">Συχνές Ερωτήσεις & Επικοινωνία</a></li>
+  </ol>
+</div>
+
+<!-- ════ SECTION 1 ════ -->
+<div class="section" id="s1">
+  <div class="section-header">
+    <div class="section-number">1</div>
+    <div class="section-title">Πώς να συνδεθείτε στην πλατφόρμα (Login)</div>
+  </div>
+  <div class="section-body">
+
+    <p>Για να μπείτε στην πλατφόρμα MAster χρειάζεστε έναν <strong>υπολογιστή, tablet ή κινητό</strong> με σύνδεση στο διαδίκτυο και έναν browser (π.χ. Chrome, Firefox, Safari).</p>
+
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-text">Ανοίξτε τον browser σας και πληκτρολογήστε τη διεύθυνση της πλατφόρμας στη γραμμή αναζήτησης στην κορυφή. Πατήστε <strong>Enter</strong>.</div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-text">Θα εμφανιστεί η σελίδα σύνδεσης. Βλέπετε δύο κουτάκια:
+        <br>— <strong>Email ή Username</strong>: γράψτε το email ή το όνομα χρήστη σας
+        <br>— <strong>Κωδικός</strong>: γράψτε τον κωδικό σας (οι τελείες κρύβουν αυτό που γράφετε)
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-text">Αφού συμπληρώσετε και τα δύο, πατήστε το κουμπί <span class="click-box">Σύνδεση</span>.</div>
+    </div>
+
+    <div class="result-box">
+      <span class="result-icon">✅</span>
+      <div>Αν τα στοιχεία είναι σωστά, η πλατφόρμα θα σας οδηγήσει αυτόματα στην αρχική σελίδα (ταμπλό).</div>
+    </div>
+
+    <div class="info-box gold">
+      <strong>⚠ Ξεχάσατε τον κωδικό σας;</strong><br>
+      Πατήστε τον σύνδεσμο «Ξέχασα τον κωδικό μου» κάτω από το κουμπί σύνδεσης. Θα λάβετε email με οδηγίες για να ορίσετε νέο κωδικό.
+    </div>
+
+    <div class="info-box">
+      <strong>💡 Συμβουλή:</strong> Αν χρησιμοποιείτε πάντα τον ίδιο υπολογιστή ή κινητό, ο browser συνήθως προσφέρει να <strong>αποθηκεύσει</strong> τον κωδικό σας. Αυτό είναι βολικό αλλά μην το κάνετε σε κοινόχρηστα υπολογιστή.
+    </div>
+
+  </div>
+</div>
+
+<!-- ════ SECTION 2 ════ -->
+<div class="section" id="s2">
+  <div class="section-header">
+    <div class="section-number">2</div>
+    <div class="section-title">Τι βλέπετε μόλις μπείτε — το Κεντρικό Ταμπλό</div>
+  </div>
+  <div class="section-body">
+
+    <p>Μόλις συνδεθείτε, εμφανίζεται η <strong>κεντρική σελίδα</strong> (ταμπλό). Αυτή η σελίδα σας δείχνει μία σύνοψη της σχολής σας.</p>
+
+    <h3>Τι υπάρχει στην κεντρική σελίδα:</h3>
+
+    <div class="step">
+      <div class="step-num">→</div>
+      <div class="step-text"><strong>Αριθμός ενεργών αθλητών</strong> — πόσοι αθλητές είναι γραμμένοι αυτή τη στιγμή</div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">→</div>
+      <div class="step-text"><strong>Έσοδα</strong> — πόσα χρήματα έχουν πληρωθεί αυτό τον μήνα</div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">→</div>
+      <div class="step-text"><strong>Αθλητές που χρωστούν</strong> — λίστα με όσους δεν έχουν πληρώσει</div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">→</div>
+      <div class="step-text"><strong>Λήξεις συνδρομών</strong> — ποιοι αθλητές λήγουν σύντομα</div>
+    </div>
+
+    <h3>Πώς να μετακινηθείτε στις άλλες σελίδες:</h3>
+    <p>Στα αριστερά της οθόνης (ή αν χρησιμοποιείτε κινητό, πατήστε το εικονίδιο ☰ πάνω αριστερά) υπάρχει το <strong>κεντρικό μενού</strong>. Από εκεί πηγαίνετε σε όλες τις ενότητες:</p>
+
+    <ul>
+      <li><strong>Αθλητές</strong> — η λίστα όλων των εγγεγραμμένων αθλητών</li>
+      <li><strong>Πληρωμές</strong> — καταγραφή και ιστορικό πληρωμών</li>
+      <li><strong>Ειδοποιήσεις</strong> — αυτόματα SMS και email</li>
+      <li><strong>Τμήματα</strong> — οργάνωση αθλητών ανά τμήμα ή άθλημα</li>
+      <li><strong>Αναφορές</strong> — στατιστικά και αναλύσεις</li>
+      <li><strong>Ρυθμίσεις</strong> — στοιχεία σχολής, συνδρομή, κωδικός</li>
+    </ul>
+
+  </div>
+</div>
+
+<!-- ════ SECTION 3 ════ -->
+<div class="section" id="s3">
+  <div class="section-header">
+    <div class="section-number">3</div>
+    <div class="section-title">Πώς να προσθέσετε αθλητή</div>
+  </div>
+  <div class="section-body">
+
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-text">Από το μενού αριστερά, πατήστε <span class="click-box">Αθλητές</span>.</div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-text">Πατήστε το κουμπί <span class="click-box">+ Νέος Αθλητής</span> που βρίσκεται πάνω δεξιά.</div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-text">Συμπληρώστε τα στοιχεία:
+        <ul style="margin-top:.5rem">
+          <li><strong>Ονοματεπώνυμο</strong> (υποχρεωτικό)</li>
+          <li><strong>Ημερομηνία γέννησης</strong></li>
+          <li><strong>Τηλέφωνο επικοινωνίας</strong> — αν είναι ανήλικος, βάλτε του γονέα</li>
+          <li><strong>Email</strong> — για να λαμβάνει ειδοποιήσεις</li>
+          <li><strong>Τμήμα / Άθλημα</strong></li>
+          <li><strong>Ποσό συνδρομής</strong> — πόσο πληρώνει τον μήνα</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-text">Όταν τελειώσετε, πατήστε <span class="click-box">Αποθήκευση</span>.</div>
+    </div>
+
+    <div class="result-box">
+      <span class="result-icon">✅</span>
+      <div>Ο αθλητής εμφανίζεται τώρα στη λίστα. Από εκεί μπορείτε να τον επεξεργαστείτε ή να δείτε το ιστορικό πληρωμών του.</div>
+    </div>
+
+    <div class="info-box">
+      <strong>💡 Ανήλικοι αθλητές:</strong> Αν ο αθλητής είναι κάτω των 18 ετών, η πλατφόρμα στέλνει αυτόματα τις ειδοποιήσεις στο τηλέφωνο/email του <strong>γονέα</strong>. Βεβαιωθείτε ότι έχετε συμπληρώσει τα στοιχεία γονέα.
+    </div>
+
+  </div>
+</div>
+
+<!-- ════ SECTION 4 ════ -->
+<div class="section" id="s4">
+  <div class="section-header">
+    <div class="section-number">4</div>
+    <div class="section-title">Πώς να καταγράψετε πληρωμή αθλητή</div>
+  </div>
+  <div class="section-body">
+
+    <p>Κάθε φορά που ένας αθλητής πληρώνει τη μηνιαία συνδρομή του, πρέπει να το καταγράψετε στην πλατφόρμα.</p>
+
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-text">Από το μενού, πατήστε <span class="click-box">Αθλητές</span> και βρείτε τον αθλητή.</div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-text">Πατήστε το όνομα του αθλητή για να ανοίξει η σελίδα του.</div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-text">Πατήστε <span class="click-box">+ Νέα Πληρωμή</span>.</div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-text">Συμπληρώστε:
+        <ul style="margin-top:.5rem">
+          <li><strong>Ποσό</strong> — π.χ. 30€</li>
+          <li><strong>Μήνας/μήνες που αφορά</strong></li>
+          <li><strong>Τρόπος πληρωμής</strong> — μετρητά, κατάθεση κτλ.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">5</div>
+      <div class="step-text">Πατήστε <span class="click-box">Αποθήκευση</span>.</div>
+    </div>
+
+    <div class="result-box">
+      <span class="result-icon">✅</span>
+      <div>Η πληρωμή καταγράφηκε. Ο αθλητής δεν θα εμφανίζεται πλέον ως «οφειλέτης» για τον μήνα που πληρώθηκε. Αν έχετε ενεργοποιήσει ειδοποίηση «μετά από κάθε πληρωμή», θα σταλεί αυτόματα επιβεβαίωση.</div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ════ SECTION 5 ════ -->
+<div class="section" id="s5">
+  <div class="section-header">
+    <div class="section-number">5</div>
+    <div class="section-title">Πώς να στείλετε ειδοποίηση (SMS ή Email)</div>
+  </div>
+  <div class="section-body">
+
+    <p>Μπορείτε να στείλετε SMS ή email σε έναν ή πολλούς αθλητές χειροκίνητα, όποτε εσείς θέλετε.</p>
+
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-text">Από το μενού, πατήστε <span class="click-box">Ειδοποιήσεις</span>.</div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-text">Επιλέξτε το εικονίδιο <strong>«Αποστολή»</strong> ή <strong>«Μαζική Αποστολή»</strong>.</div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-text">Επιλέξτε αθλητές (μπορείτε να επιλέξετε όλους ή συγκεκριμένους).</div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-text">Γράψτε το μήνυμά σας ή επιλέξτε ένα έτοιμο πρότυπο (template).</div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">5</div>
+      <div class="step-text">Επιλέξτε <strong>SMS</strong>, <strong>Email</strong> ή <strong>και τα δύο</strong>, και πατήστε <span class="click-box">Αποστολή</span>.</div>
+    </div>
+
+    <div class="info-box gold">
+      <strong>⚠ Σημείωση για SMS:</strong> Το SMS απαιτεί το <strong>Pro πλάνο</strong>. Στο Basic πλάνο μπορείτε να στέλνετε μόνο Email.
+    </div>
+
+  </div>
+</div>
+
+<!-- ════ SECTION 6 ════ -->
+<div class="section" id="s6">
+  <div class="section-header">
+    <div class="section-number">6</div>
+    <div class="section-title">Πώς να δείτε αθλητές που χρωστούν</div>
+  </div>
+  <div class="section-body">
+
+    <p>Η πλατφόρμα σας δείχνει αμέσως ποιοι αθλητές έχουν εκκρεμή πληρωμή.</p>
+
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-text">Στο <strong>κεντρικό ταμπλό</strong> (αρχική σελίδα), υπάρχει απευθείας η λίστα «Οφειλέτες». Τη βλέπετε αμέσως μόλις μπείτε.</div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-text">Εναλλακτικά, πηγαίνετε στο <span class="click-box">Αθλητές</span> → επιλέξτε φίλτρο <strong>«Οφειλέτες»</strong> ή <strong>«Ληξιπρόθεσμοι»</strong>.</div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-text">Για κάθε αθλητή που χρωστάει, μπορείτε να πατήσετε το όνομά του και να δείτε ακριβώς <strong>ποιους μήνες χρωστάει</strong> και το συνολικό ποσό.</div>
+    </div>
+
+    <div class="info-box green">
+      <strong>✅ Αφού πληρώσει:</strong> Μπείτε στο προφίλ του αθλητή, καταγράψτε την πληρωμή (δείτε Ενότητα 4) και αυτόματα αφαιρείται από τη λίστα οφειλετών.
+    </div>
+
+  </div>
+</div>
+
+<!-- ════ SECTION 7 ════ -->
+<div class="section" id="s7">
+  <div class="section-header">
+    <div class="section-number">7</div>
+    <div class="section-title">Οι αυτόματες ειδοποιήσεις — τι γίνεται κάθε μέρα στις 9 π.μ.</div>
+  </div>
+  <div class="section-body">
+
+    <p>Η πλατφόρμα MAster έχει ένα <strong>αυτόματο σύστημα ειδοποιήσεων</strong> που λειτουργεί <strong>κάθε μέρα στις 9 το πρωί</strong>, χωρίς να χρειάζεται να κάνετε τίποτα εσείς.</p>
+
+    <h3>Τι κάνει κάθε μέρα στις 9 π.μ.:</h3>
+
+    <div class="step">
+      <div class="step-num">→</div>
+      <div class="step-text">Ψάχνει όλους τους αθλητές που <strong>έχουν χρέος</strong> από προηγούμενους μήνες (δηλαδή δεν έχουν πληρώσει ακόμα).</div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">→</div>
+      <div class="step-text">Ψάχνει τους αθλητές που η συνδρομή τους <strong>λήγει σύντομα</strong> (π.χ. σε 5 μέρες) ή <strong>έληξε πρόσφατα</strong>.</div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">→</div>
+      <div class="step-text">Στέλνει αυτόματα SMS ή email στους αθλητές ή στους γονείς τους για να τους υπενθυμίσει την πληρωμή.</div>
+    </div>
+
+    <div class="info-box">
+      <strong>📋 Πώς ρυθμίζετε τι θα στέλνει:</strong><br>
+      Πηγαίνετε <span class="click-box">Ειδοποιήσεις</span> → <strong>Κανόνες Ειδοποίησης</strong>. Εκεί μπορείτε να ορίσετε:
+      <ul style="margin-top:.5rem">
+        <li>Πόσες μέρες πριν τη λήξη να στέλνει υπενθύμιση</li>
+        <li>Αν θα στέλνει SMS, email ή και τα δύο</li>
+        <li>Το κείμενο του μηνύματος</li>
+      </ul>
+    </div>
+
+    <div class="warning">
+      <strong>⚠</strong>
+      <div>Αν ένας αθλητής δεν έχει τηλέφωνο ή email καταχωρημένο, το σύστημα <strong>δεν μπορεί να τον βρει</strong>. Βεβαιωθείτε ότι έχετε συμπληρώσει τα στοιχεία επικοινωνίας.</div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ════ SECTION 8 ════ -->
+<div class="section" id="s8">
+  <div class="section-header">
+    <div class="section-number">8</div>
+    <div class="section-title">Τι είναι η συνδρομή σας και πότε λήγει</div>
+  </div>
+  <div class="section-body">
+
+    <p>Η χρήση της πλατφόρμας MAster απαιτεί μια <strong>ενεργή συνδρομή</strong>. Υπάρχουν δύο πλάνα:</p>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Πλάνο</th>
+          <th>Μηνιαία τιμή</th>
+          <th>Ετήσια τιμή</th>
+          <th>Τι περιλαμβάνει</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Basic</strong></td>
+          <td>15,00 €/μήνα</td>
+          <td>150,00 €/έτος<br><small>(12,50 €/μήνα)</small></td>
+          <td>Έως 50 αθλητές, Email ειδοποιήσεις</td>
+        </tr>
+        <tr>
+          <td><strong>Pro</strong></td>
+          <td>30,00 €/μήνα</td>
+          <td>288,00 €/έτος<br><small>(24,00 €/μήνα)</small></td>
+          <td>Απεριόριστοι αθλητές, SMS + Email, Οικονομικές αναφορές</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>Πώς να δείτε πότε λήγει η συνδρομή σας:</h3>
+
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-text">Πατήστε <span class="click-box">Ρυθμίσεις</span> από το μενού αριστερά.</div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-text">Επιλέξτε την καρτέλα <span class="screen-label">Συνδρομή</span>.</div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-text">Εκεί βλέπετε:
+        <ul style="margin-top:.5rem">
+          <li>Το τρέχον πλάνο σας (Basic ή Pro)</li>
+          <li>Την ημερομηνία λήξης</li>
+          <li>Πόσες μέρες απομένουν</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="info-box gold">
+      <strong>⚠ Σημαντικό:</strong> Η πλατφόρμα <strong>δεν ανανεώνεται αυτόματα</strong>. Πρέπει εσείς να κάνετε νέα πληρωμή πριν λήξει η συνδρομή σας για να συνεχίσετε να έχετε πρόσβαση.
+    </div>
+
+    <div class="info-box">
+      <strong>📧 Υπενθύμιση:</strong> Θα λάβετε email <strong>14 ημέρες πριν</strong> τη λήξη για να σας υπενθυμίσουμε να ανανεώσετε.
+    </div>
+
+  </div>
+</div>
+
+<!-- ════ SECTION 9 ════ -->
+<div class="section" id="s9">
+  <div class="section-header">
+    <div class="section-number">9</div>
+    <div class="section-title">Πώς να ανανεώσετε τη συνδρομή σας — Βήμα Βήμα</div>
+  </div>
+  <div class="section-body">
+
+    <p>Η ανανέωση γίνεται με <strong>τραπεζική κατάθεση ή IRIS</strong>. Δεν χρησιμοποιούμε κάρτες. Ακολουθήστε τα παρακάτω βήματα:</p>
+
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-text">Πηγαίνετε στις <span class="click-box">Ρυθμίσεις</span> → καρτέλα <span class="screen-label">Συνδρομή</span> → πατήστε <span class="click-box">Ανανέωση</span>.</div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-text">Επιλέξτε αν θέλετε <strong>μηνιαία</strong> ή <strong>ετήσια</strong> χρέωση (η ετήσια είναι πιο οικονομική).</div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-text">Δείτε τα <strong>στοιχεία πληρωμής</strong> που εμφανίζονται: IBAN, δικαιούχος, αιτιολογία. Κάντε την κατάθεση ή IRIS μεταφορά στον τραπεζικό λογαριασμό που αναγράφεται.</div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-text">Μόλις κάνετε την κατάθεση, <strong>στείλτε το αποδεικτικό</strong> (screenshot ή PDF) με email στη διεύθυνση: <strong>pkotsorgios654@gmail.com</strong><br>
+        Θέμα email: <em>«Πληρωμή — [το email σας]»</em>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">5</div>
+      <div class="step-text">Ο διαχειριστής ελέγχει την κατάθεση και <strong>ενεργοποιεί τη συνδρομή σας εντός 1 εργάσιμης ημέρας</strong>. Θα λάβετε email επιβεβαίωσης.</div>
+    </div>
+
+    <div class="result-box">
+      <span class="result-icon">✅</span>
+      <div>Μόλις ενεργοποιηθεί, η συνδρομή σας παρατείνεται αυτόματα και μπορείτε να συνεχίσετε κανονικά.</div>
+    </div>
+
+    <div class="info-box red">
+      <strong>🚨 Αν η συνδρομή σας λήξει:</strong> Δεν χάνετε τα δεδομένα σας. Απλά δεν έχετε πρόσβαση μέχρι να ανανεώσετε. Μόλις γίνει η ενεργοποίηση, όλα επανέρχονται κανονικά.
+    </div>
+
+  </div>
+</div>
+
+<!-- ════ SECTION 10 ════ -->
+<div class="section" id="s10">
+  <div class="section-header">
+    <div class="section-number">10</div>
+    <div class="section-title">Στοιχεία Πληρωμής — Τραπεζικός Λογαριασμός & IRIS</div>
+  </div>
+  <div class="section-body">
+
+    <p>Χρησιμοποιείτε <strong>πάντα</strong> τα παρακάτω στοιχεία για οποιαδήποτε πληρωμή προς το MAster:</p>
+
+    <table>
+      <tbody>
+        <tr>
+          <td style="font-weight:700;width:35%;color:#1a1a2e">Δικαιούχος</td>
+          <td style="font-weight:800;color:#1a1a2e;font-size:1.05rem">ΚΟΤΣΟΡΓΙΟΣ ΠΑΝΑΓΙΩΤΗΣ</td>
+        </tr>
+        <tr>
+          <td style="font-weight:700;color:#1a1a2e">Τράπεζα</td>
+          <td style="color:#1a1a2e">Piraeus Bank (Τράπεζα Πειραιώς)</td>
+        </tr>
+        <tr>
+          <td style="font-weight:700;color:#1a1a2e">IBAN</td>
+          <td>
+            <div class="iban-box">GR18 0172 1610 0051 6111 8162 881</div>
+          </td>
+        </tr>
+        <tr>
+          <td style="font-weight:700;color:#1a1a2e">ΑΦΜ</td>
+          <td style="font-family:monospace;font-weight:700;color:#1a1a2e">176091030</td>
+        </tr>
+        <tr>
+          <td style="font-weight:700;color:#1a1a2e">IRIS</td>
+          <td style="font-family:monospace;font-weight:700;color:#1a1a2e;font-size:1.05rem">6986788178<br><span style="font-size:.88rem;font-weight:400;color:#4a5568">ή IRIS με ΑΦΜ: 176091030</span></td>
+        </tr>
+        <tr>
+          <td style="font-weight:700;color:#1a1a2e">Email αποδεικτικού</td>
+          <td><a href="mailto:pkotsorgios654@gmail.com" style="color:#e63946;font-weight:700">pkotsorgios654@gmail.com</a></td>
+        </tr>
+        <tr>
+          <td style="font-weight:700;color:#1a1a2e">Αιτιολογία κατάθεσης</td>
+          <td style="color:#1a1a2e">Ανανέωση MAster — <em>[Όνομα σχολής σας]</em></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>Πώς γίνεται η πληρωμή με IRIS (κινητό):</h3>
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-text">Ανοίξτε την εφαρμογή της τράπεζάς σας στο κινητό.</div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-text">Επιλέξτε «Άμεση μεταφορά IRIS» ή «Αποστολή χρημάτων».</div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-text">Πληκτρολογήστε τον αριθμό κινητού: <strong style="font-size:1.1rem">6986788178</strong><br>
+      ή αναζητήστε με ΑΦΜ: <strong>176091030</strong></div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-text">Εισάγετε το ποσό και επιβεβαιώστε τη μεταφορά.</div>
+    </div>
+    <div class="step">
+      <div class="step-num">5</div>
+      <div class="step-text">Πάρτε screenshot της επιβεβαίωσης και στείλτε το στο email: <strong>pkotsorgios654@gmail.com</strong></div>
+    </div>
+
+    <div class="info-box green">
+      <strong>✅ Τιμές:</strong><br>
+      Basic: <strong>15,00 €/μήνα</strong> — ή 150,00 €/έτος (γλιτώνετε 30 €)<br>
+      Pro: <strong>30,00 €/μήνα</strong> — ή 288,00 €/έτος (γλιτώνετε 72 €)
+    </div>
+
+  </div>
+</div>
+
+<!-- ════ SECTION 11 ════ -->
+<div class="section" id="s11">
+  <div class="section-header">
+    <div class="section-number">11</div>
+    <div class="section-title">Συχνές Ερωτήσεις & Επικοινωνία</div>
+  </div>
+  <div class="section-body">
+
+    <h3>❓ Δεν μπορώ να συνδεθώ — τι κάνω;</h3>
+    <p>Ελέγξτε αν το email και ο κωδικός είναι σωστά. Αν έχετε ξεχάσει τον κωδικό, πατήστε «Ξέχασα τον κωδικό» στη σελίδα σύνδεσης. Αν το πρόβλημα συνεχίζεται, επικοινωνήστε μαζί μας.</p>
+
+    <h3>❓ Δεν φαίνεται ο αθλητής που μόλις πρόσθεσα</h3>
+    <p>Ανανεώστε τη σελίδα (πατήστε F5 ή το βελάκι ανανέωσης του browser). Αν δεν εμφανίζεται, βεβαιωθείτε ότι πατήσατε «Αποθήκευση».</p>
+
+    <h3>❓ Πότε θα ανανεωθεί η συνδρομή μου αφού στείλω αποδεικτικό;</h3>
+    <p>Εντός <strong>1 εργάσιμης ημέρας</strong>. Αν δεν λάβετε επιβεβαίωση σε 24 ώρες, επικοινωνήστε μαζί μας.</p>
+
+    <h3>❓ Χάνω τα δεδομένα μου αν λήξει η συνδρομή;</h3>
+    <p><strong>Όχι.</strong> Τα δεδομένα είναι ασφαλή. Απλά δεν έχετε πρόσβαση μέχρι να ανανεώσετε. Μόλις γίνει η ανανέωση, όλα επανέρχονται.</p>
+
+    <h3>❓ Μπορώ να αλλάξω από Basic σε Pro;</h3>
+    <p>Ναι. Επικοινωνήστε μαζί μας ή πηγαίνετε <span class="click-box">Ρυθμίσεις</span> → <span class="screen-label">Συνδρομή</span> → <span class="click-box">Αναβάθμιση σε Pro</span>. Η αναβάθμιση γίνεται αμέσως μετά την πληρωμή.</p>
+
+    <h3>❓ Οι αυτόματες ειδοποιήσεις δεν στέλνονται — τι φταίει;</h3>
+    <p>Βεβαιωθείτε ότι:</p>
+    <ul>
+      <li>Ο αθλητής έχει καταχωρημένο email ή τηλέφωνο</li>
+      <li>Οι κανόνες ειδοποίησης είναι ενεργοί (πράσινο εικονίδιο)</li>
+      <li>Για SMS: έχετε το Pro πλάνο</li>
+    </ul>
+
+    <div style="background:linear-gradient(135deg,#1a1a2e,#1e2536);border-radius:14px;padding:1.8rem 2rem;margin-top:1.5rem;color:#e2e8f0">
+      <div style="font-size:1.15rem;font-weight:800;color:#fff;margin-bottom:1rem">📞 Επικοινωνία</div>
+      <div style="display:flex;flex-direction:column;gap:.6rem;font-size:.97rem">
+        <div>
+          <span style="color:#8892b0">Email:</span>
+          <a href="mailto:pkotsorgios654@gmail.com" style="color:#e63946;font-weight:700;margin-left:.5rem">pkotsorgios654@gmail.com</a>
+        </div>
+        <div>
+          <span style="color:#8892b0">Τηλέφωνο / IRIS:</span>
+          <strong style="color:#fff;margin-left:.5rem">6986788178</strong>
+        </div>
+        <div style="margin-top:.5rem;font-size:.88rem;color:#8892b0">
+          Απαντάμε εντός 1–2 εργάσιμων ημερών.
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ════ FOOTER ════ -->
+<div class="doc-footer">
+  <strong>MAster Platform</strong> — Οδηγός Χρήσης v1.0 — Απρίλιος 2026<br>
+  Για τεχνικά θέματα: <a href="mailto:pkotsorgios654@gmail.com" style="color:#e63946">pkotsorgios654@gmail.com</a>
+</div>
+
+</div><!-- /content -->
+</body>
+</html>

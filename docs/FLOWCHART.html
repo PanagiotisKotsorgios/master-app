@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MAster — Application Flow Diagram</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    background: #07090f; color: #e2e8f0; min-height: 100vh;
+    padding: 2rem 1.5rem;
+  }
+  h1 {
+    font-size: 2rem; font-weight: 900; letter-spacing: .05em;
+    color: #e63946; margin-bottom: .35rem; text-transform: uppercase;
+  }
+  .subtitle { color: #6b7494; font-size: .95rem; margin-bottom: 2.5rem; }
+  .section {
+    background: #111520; border: 1px solid #1e2536; border-radius: 16px;
+    padding: 1.75rem 2rem; margin-bottom: 2rem;
+  }
+  .section-title {
+    font-size: 1.05rem; font-weight: 800; text-transform: uppercase;
+    letter-spacing: .1em; color: #e63946; margin-bottom: 1.25rem;
+    display: flex; align-items: center; gap: .6rem; border-bottom: 1px solid #1e2536;
+    padding-bottom: .75rem;
+  }
+  .section-title .badge {
+    font-size: .65rem; padding: .2rem .55rem; border-radius: 20px;
+    background: rgba(230,57,70,.15); color: #e63946; border: 1px solid rgba(230,57,70,.3);
+    text-transform: uppercase; letter-spacing: .08em; font-weight: 700;
+  }
+  .mermaid { background: transparent !important; }
+  .mermaid svg { max-width: 100% !important; height: auto !important; }
+  .legend {
+    display: flex; flex-wrap: wrap; gap: .75rem; margin-top: 1.25rem;
+    padding-top: 1rem; border-top: 1px solid #1e2536;
+  }
+  .legend-item {
+    display: flex; align-items: center; gap: .4rem;
+    font-size: .78rem; color: #8892b0;
+  }
+  .legend-dot {
+    width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
+  }
+  .toc {
+    background: #0d1017; border: 1px solid #1e2536; border-radius: 12px;
+    padding: 1.25rem 1.5rem; margin-bottom: 2rem;
+    display: flex; flex-wrap: wrap; gap: .5rem 1.5rem;
+  }
+  .toc a {
+    color: #3b82f6; font-size: .88rem; font-weight: 600; text-decoration: none;
+  }
+  .toc a:hover { color: #60a5fa; text-decoration: underline; }
+</style>
+</head>
+<body>
+
+<h1>🎯 MAster Platform</h1>
+<div class="subtitle">Πλήρης διάγραμμα ροής εφαρμογής — Application Flow Diagram v2.0</div>
+
+<div class="toc">
+  <a href="#flow1">① Γενική Αρχιτεκτονική</a>
+  <a href="#flow2">② Εγγραφή & Συνδρομή</a>
+  <a href="#flow3">③ Dashboard Σχολής</a>
+  <a href="#flow4">④ Portal Γονέων</a>
+  <a href="#flow5">⑤ Admin Panel</a>
+  <a href="#flow6">⑥ Employee Panel</a>
+  <a href="#flow7">⑦ Αυτόματα Συστήματα</a>
+  <a href="#flow8">⑧ GDPR & Ασφάλεια</a>
+</div>
+
+<!-- ═══ DIAGRAM 1 ═══ -->
+<div class="section" id="flow1">
+  <div class="section-title">① Γενική Αρχιτεκτονική Εφαρμογής <span class="badge">Overview</span></div>
+  <div class="mermaid">
+graph TD
+    INTERNET([🌐 Επισκέπτης<br/>Internet]) --> IDX[index.php<br/>Landing Page]
+
+    IDX --> REG[register.php<br/>Εγγραφή Σχολής]
+    IDX --> LGN[login.php<br/>Σύνδεση]
+    IDX --> PRT[parent/login.php<br/>Πύλη Γονέων]
+    IDX --> CON[contact.php<br/>Επικοινωνία]
+
+    REG --> EMAIL_VER{Email<br/>Επαλήθευση}
+    EMAIL_VER -->|✓ Confirmed| LGN
+
+    LGN --> ROLE{Ρόλος<br/>Χρήστη}
+
+    ROLE -->|super_admin| ADM[🔴 Admin Panel<br/>admin/]
+    ROLE -->|owner / user| CLB[🔵 Dashboard Σχολής<br/>dashboard/ + pages/]
+    ROLE -->|employee| EMP[🟡 Employee Panel<br/>employee/]
+
+    PRT --> PAR[🟢 Portal Γονέων<br/>parent/]
+
+    ADM --> ADM_SCHOOLS[Σχολές]
+    ADM --> ADM_PAYMENTS[Πληρωμές]
+    ADM --> ADM_BROADCAST[Newsletter]
+    ADM --> ADM_STATS[Στατιστικά]
+    ADM --> ADM_SETTINGS[System Settings]
+    ADM --> ADM_IMPERSONATE[Impersonate Σχολή]
+    ADM_IMPERSONATE --> CLB
+
+    CLB --> CL_ATH[Αθλητές]
+    CLB --> CL_SUBS[Συνδρομές]
+    CLB --> CL_DEPT[Τμήματα]
+    CLB --> CL_REP[Αναφορές]
+    CLB --> CL_NOT[Ειδοποιήσεις]
+    CLB --> CL_SET[Ρυθμίσεις]
+    CLB --> CL_COMP[Αγωνιστικά]
+    CLB --> CL_ECO[Οικονομικά]
+
+    EMP --> EMP_ATH[Αθλητές]
+    EMP --> EMP_ANA[Analytics]
+    EMP --> EMP_EXP[Export]
+    EMP --> EMP_SCH[Σχολές]
+    EMP --> EMP_PAY[Πληρωμές]
+
+    PAR --> PAR_DASH[Αρχική]
+    PAR --> PAR_CHI[Παιδιά]
+    PAR --> PAR_PAY[Ιστορικό Πληρωμών]
+    PAR --> PAR_SET[Ρυθμίσεις / GDPR]
+
+    CRON([⚙️ Cron Jobs]) --> CRON_REM[reminders.php<br/>Αυτόματες Υπενθυμίσεις]
+    CRON --> CRON_QST[quarterly-stats.php<br/>Τριμηνιαία Στατιστικά]
+
+    style ADM fill:#2a0a0a,stroke:#e63946,color:#e63946
+    style CLB fill:#0a1628,stroke:#3b82f6,color:#3b82f6
+    style EMP fill:#1a1400,stroke:#f0a500,color:#f0a500
+    style PAR fill:#0a1a0a,stroke:#2dc653,color:#2dc653
+    style CRON fill:#1a0a2a,stroke:#a855f7,color:#a855f7
+  </div>
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:#e63946"></div> Super Admin</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#3b82f6"></div> Club Admin / Owner</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#f0a500"></div> Employee</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#2dc653"></div> Parent Portal</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#a855f7"></div> Automated Systems</div>
+  </div>
+</div>
+
+<!-- ═══ DIAGRAM 2 ═══ -->
+<div class="section" id="flow2">
+  <div class="section-title">② Εγγραφή & Κύκλος Συνδρομής <span class="badge">Registration</span></div>
+  <div class="mermaid">
+flowchart LR
+    A([Νέος Χρήστης]) --> B[register.php<br/>Συμπλήρωση Φόρμας]
+    B --> C{Validation}
+    C -->|❌ Λάθη| B
+    C -->|✓ ΟΚ| D[Δημιουργία School + User<br/>DB INSERT]
+    D --> E[Trial 14 ημερών<br/>plan_status = trial]
+    E --> F[Email Καλωσορίσματος<br/>sendWelcomeEmail]
+    F --> G[Dashboard Σχολής]
+
+    G --> H{Trial Λήγει;<br/>Subscription;}
+    H -->|Ενεργή| G
+    H -->|Λήγει σε 14 μέρες| I[⚠️ Banner Ειδοποίηση<br/>στο Dashboard]
+    I --> J[Αίτημα Ανανέωσης<br/>settings.php → renew]
+    H -->|Έχει Ληξει| K[🔒 Payment Wall<br/>renderPaymentWall]
+
+    J --> L[Admin Λαμβάνει email<br/>+ Χειροκίνητη Ενεργοποίηση]
+    L --> M[admin/schools.php<br/>manual_plan action]
+    M --> N[Email Ενεργοποίησης<br/>sendSchoolPlanActivationEmail]
+    N --> G
+
+    K --> J
+
+    style E fill:#0a1a0a,stroke:#2dc653
+    style K fill:#2a0a0a,stroke:#e63946
+    style I fill:#1a1000,stroke:#f0a500
+  </div>
+</div>
+
+<!-- ═══ DIAGRAM 3 ═══ -->
+<div class="section" id="flow3">
+  <div class="section-title">③ Dashboard Σχολής — Κύρια Λειτουργικότητα <span class="badge">Club Admin</span></div>
+  <div class="mermaid">
+flowchart TD
+    DASH[🏠 Dashboard<br/>dashboard/index.php] --> AT[👥 Αθλητές<br/>pages/athletes.php]
+    DASH --> SB[💳 Συνδρομές<br/>pages/subscriptions.php]
+    DASH --> DP[🏫 Τμήματα<br/>pages/departments.php]
+    DASH --> NT[📱 Ειδοποιήσεις<br/>pages/notifications.php]
+    DASH --> RP[📊 Αναφορές<br/>pages/reports.php]
+    DASH --> EC[💰 Οικονομικά<br/>pages/economics_reports.php]
+    DASH --> CP[🏆 Αγωνιστικά<br/>pages/competitions.php]
+    DASH --> ST[⚙️ Ρυθμίσεις<br/>pages/settings.php]
+
+    AT --> AT_ADD[+ Νέος Αθλητής<br/>CREATE]
+    AT --> AT_EDIT[✏️ Επεξεργασία<br/>UPDATE]
+    AT --> AT_DEL[🗑️ Αρχειοθέτηση<br/>SOFT DELETE]
+    AT --> AT_PAR[👤 Σύνδεση Γονέα<br/>parent_portal_access]
+    AT_PAR --> PARENT_INV[Email Πρόσκλησης<br/>Γονέα]
+
+    SB --> SB_MARK[✓ Καταχώρηση Πληρωμής<br/>Μήνες]
+    SB_MARK --> SB_EMAIL[Email Επιβεβαίωσης<br/>sendNewSubscriptionEmail]
+    SB --> SB_VIEW[📅 Ιστορικό Μηνών<br/>debt tracking]
+
+    DP --> DP_NEW[+ Νέο Τμήμα]
+    DP --> DP_ASSIGN[Ανάθεση Αθλητή]
+
+    NT --> NT_SMS[📱 SMS Αποστολή]
+    NT --> NT_EMAIL[✉️ Email Αποστολή]
+    NT --> NT_DEBT[⚠️ Υπενθύμιση Χρέους]
+    NT --> NT_TEMP[📝 Templates SMS/Email]
+
+    ST --> ST_SCHOOL[Στοιχεία Σχολής]
+    ST --> ST_PAYMENT[🏦 IBAN / IRIS / ΑΦΜ<br/>Στοιχεία Πληρωμής]
+    ST --> ST_PWD[🔒 Αλλαγή Κωδικού]
+    ST --> ST_2FA[🛡️ 2FA Ενεργοποίηση]
+    ST --> ST_GDPR[⬇️ Εξαγωγή Δεδομένων]
+    ST --> ST_DEL[❌ Αίτημα Διαγραφής]
+
+    style DASH fill:#0a1628,stroke:#3b82f6
+    style SB_EMAIL fill:#0a2a0a,stroke:#2dc653
+    style PARENT_INV fill:#0a2a0a,stroke:#2dc653
+  </div>
+</div>
+
+<!-- ═══ DIAGRAM 4 ═══ -->
+<div class="section" id="flow4">
+  <div class="section-title">④ Portal Γονέων <span class="badge">Parent Portal</span></div>
+  <div class="mermaid">
+flowchart TD
+    CLUB_ADMIN[Club Admin<br/>pages/athletes.php] --> INVITE[Ενεργοποίηση<br/>parent_portal_access = 1]
+    INVITE --> EMAIL_INV[📧 Email Πρόσκλησης<br/>με Magic Link]
+    EMAIL_INV --> PL[parent/login.php]
+
+    PL --> AUTH{Αυθεντικοποίηση}
+    AUTH -->|Email + OTP| PDASH[parent/index.php<br/>🏠 Αρχική]
+    AUTH -->|❌ Λάθος| PL
+
+    PDASH --> PSTATS[📊 Stats<br/>Εξοφλημένες / Εκκρεμείς / Ληξιπρόθεσμες]
+    PDASH --> PCHILDREN[👦 Κάρτες Παιδιών<br/>Κατάσταση & Μήνες]
+    PDASH --> PPAYINFO[🏦 Στοιχεία Πληρωμής<br/>IBAN / IRIS / ΑΦΜ Σχολής]
+    PDASH --> PNAV[Navigation]
+
+    PNAV --> PCHPAGE[parent/children.php<br/>Λεπτομέρειες Παιδιών]
+    PNAV --> PPHIST[parent/payment-history.php<br/>Ιστορικό Πληρωμών ανά Μήνα]
+    PNAV --> PSET[parent/settings.php<br/>Ρυθμίσεις & GDPR]
+
+    PSET --> PEXPORT[⬇️ Εξαγωγή Δεδομένων GDPR<br/>JSON Download<br/>Art.15 + Art.20]
+    PSET --> PDELETE[❌ Αίτημα Διαγραφής<br/>Λογαριασμού]
+    PSET --> PPWD[🔒 Αλλαγή Κωδικού]
+
+    PCHILDREN --> PMONTHS[📅 Λεπτομερής Ιστορικό Μηνών<br/>getAthleteMonthlyPayments]
+    PMONTHS --> STATUS_OK[✅ Εξοφλημένος]
+    PMONTHS --> STATUS_PEND[🟡 Εκκρεμεί]
+    PMONTHS --> STATUS_OVR[🔴 Ληξιπρόθεσμος]
+
+    PPAYINFO -->|Αν δεν έχει οριστεί| MSG[💬 Δεν έχουν οριστεί<br/>στοιχεία πληρωμής<br/>από τη σχολή]
+
+    style PDASH fill:#0a1a0a,stroke:#2dc653
+    style PEXPORT fill:#0a1628,stroke:#3b82f6
+    style STATUS_OVR fill:#2a0a0a,stroke:#e63946
+    style STATUS_OK fill:#0a1a0a,stroke:#2dc653
+  </div>
+</div>
+
+<!-- ═══ DIAGRAM 5 ═══ -->
+<div class="section" id="flow5">
+  <div class="section-title">⑤ Admin Panel (Super Admin) <span class="badge">Admin</span></div>
+  <div class="mermaid">
+flowchart TD
+    ADM[🔴 Admin Dashboard<br/>admin/index.php] --> ADM_SCH[🏫 Σχολές<br/>admin/schools.php]
+    ADM --> ADM_PAY[💳 Πληρωμές<br/>admin/payments.php]
+    ADM --> ADM_USR[👥 Χρήστες<br/>admin/users.php]
+    ADM --> ADM_STA[📊 Στατιστικά<br/>admin/stats.php]
+    ADM --> ADM_BRD[📢 Newsletter/Broadcast<br/>admin/broadcast.php]
+    ADM --> ADM_SYS[⚙️ Ρυθμίσεις Συστήματος<br/>admin/system-settings.php]
+    ADM --> ADM_BCK[💾 Backups<br/>admin/backups.php]
+    ADM --> ADM_ACT[📋 Activity Log<br/>admin/activity.php]
+    ADM --> ADM_PAR[👤 Λογαριασμοί Γονέων<br/>admin/parent-accounts.php]
+    ADM --> ADM_PLN[📦 Πλάνα<br/>admin/plans.php]
+    ADM --> ADM_HLT[💊 System Health<br/>admin/health.php]
+
+    ADM_SCH --> SCH_EDIT[✏️ Επεξεργασία Σχολής]
+    ADM_SCH --> SCH_PLAN[🔑 Ενεργοποίηση Πλάνου<br/>manual_plan]
+    SCH_PLAN --> SCH_EMAIL[📧 Email Ενεργοποίησης<br/>sendSchoolPlanActivationEmail]
+    ADM_SCH --> SCH_TRIAL[⏱️ Επέκταση Trial<br/>extend_trial]
+    SCH_TRIAL --> TRIAL_EMAIL[📧 Email Επέκτασης Trial]
+    ADM_SCH --> SCH_IMP[🎭 Impersonate Σχολή<br/>Λειτουργία ως Admin Σχολής]
+    SCH_IMP --> CLUB_VIEW[Dashboard Σχολής<br/>Με Banner Impersonation]
+
+    ADM_BRD --> BRD_ALL[📤 Αποστολή σε Όλες Σχολές]
+    ADM_BRD --> BRD_TMPL[📝 Templates Newsletter]
+    ADM_BRD --> BRD_QSTAT[📈 Quarterly Stats Info]
+
+    ADM_PAY --> PAY_CONF[✓ Επιβεβαίωση Πληρωμής<br/>+ Email στη Σχολή]
+    ADM_PAY --> PAY_LOG[📋 Ιστορικό Πληρωμών]
+
+    style ADM fill:#2a0a0a,stroke:#e63946,color:#e63946
+    style SCH_EMAIL fill:#0a2a0a,stroke:#2dc653
+    style TRIAL_EMAIL fill:#0a2a0a,stroke:#2dc653
+  </div>
+</div>
+
+<!-- ═══ DIAGRAM 6 ═══ -->
+<div class="section" id="flow6">
+  <div class="section-title">⑥ Employee Panel <span class="badge">Employee</span></div>
+  <div class="mermaid">
+flowchart TD
+    EMP_LGN[employee/login.php] --> EMP_AUTH{Αυθεντικοποίηση<br/>+ Δικαιώματα}
+    EMP_AUTH -->|❌ Απαγορεύεται| E403[403 Forbidden]
+    EMP_AUTH -->|✓ ΟΚ| EMP_DASH[employee/index.php<br/>🟡 Dashboard]
+
+    EMP_DASH --> EMP_ATH_V[👥 Αθλητές<br/>employee/athletes.php]
+    EMP_DASH --> EMP_ANA[📈 Analytics<br/>employee/analytics.php]
+    EMP_DASH --> EMP_EXP[⬇️ Export CSV<br/>employee/export.php]
+    EMP_DASH --> EMP_SCH[🏫 Σχολές<br/>employee/schools.php]
+    EMP_DASH --> EMP_PAY[💳 Πληρωμές<br/>employee/payments.php]
+    EMP_DASH --> EMP_USR[👤 Χρήστες<br/>employee/users.php]
+    EMP_DASH --> EMP_SRCH[🔍 Αναζήτηση<br/>employee/search.php]
+    EMP_DASH --> EMP_LOGS[📋 Logs<br/>employee/logs.php]
+
+    EMP_ATH_V --> PRIV_EDIT{privileges<br/>athletes_edit}
+    PRIV_EDIT -->|✓ Επιτρέπεται| ATH_EDIT[✏️ Επεξεργασία Αθλητή]
+    PRIV_EDIT -->|❌| READONLY[Read-only]
+
+    EMP_ATH_V --> PRIV_CREATE{privileges<br/>athletes_create}
+    PRIV_CREATE -->|✓| ATH_CREATE[+ Νέος Αθλητής]
+
+    EMP_ATH_V --> PRIV_DEL{privileges<br/>athletes_delete}
+    PRIV_DEL -->|✓| ATH_DEL[🗑️ Απενεργοποίηση]
+
+    EMP_EXP --> EXP_SCHOOLS[CSV Σχολές]
+    EMP_EXP --> EXP_USERS[CSV Χρήστες]
+    EMP_EXP --> EXP_ATH[CSV Αθλητές]
+    EMP_EXP --> EXP_PAY[CSV Πληρωμές]
+
+    style EMP_DASH fill:#1a1400,stroke:#f0a500
+    style E403 fill:#2a0a0a,stroke:#e63946
+    style READONLY fill:#1a1400,stroke:#f0a500
+  </div>
+</div>
+
+<!-- ═══ DIAGRAM 7 ═══ -->
+<div class="section" id="flow7">
+  <div class="section-title">⑦ Αυτόματα Συστήματα & Cron Jobs <span class="badge">Automated</span></div>
+  <div class="mermaid">
+flowchart TD
+    CRON([⚙️ Cron Scheduler<br/>Linux Crontab]) --> REM[cron/reminders.php<br/>Ημερήσια Εκτέλεση]
+    CRON --> QST[cron/quarterly-stats.php<br/>0 9 1 1,4,7,10 - Ιαν/Απρ/Ιουλ/Οκτ]
+
+    REM --> REM_DEBT[has_debt trigger<br/>Αθλητές με Χρέος]
+    REM --> REM_DAYS[days_after trigger<br/>Χ ημέρες μετά αίτιο]
+    REM --> REM_MED[medical_cert trigger<br/>Λήξη Ιατρικής Βεβαίωσης]
+
+    REM_DEBT --> REM_SEND{Μέσο Αποστολής}
+    REM_DAYS --> REM_SEND
+    REM_MED --> REM_SEND
+    REM_SEND --> SEND_SMS[📱 SMS via Provider]
+    REM_SEND --> SEND_EMAIL[✉️ Email via SMTP]
+    SEND_SMS --> LOG_REM[reminder_logs Table<br/>Καταγραφή]
+    SEND_EMAIL --> LOG_REM
+
+    QST --> QST_SCHOOLS[Λήψη Ενεργών Σχολών]
+    QST_SCHOOLS --> QST_STATS[Υπολογισμός Στατιστικών<br/>ανά Σχολή]
+    QST_STATS --> QST_ATH[👥 Ενεργοί Αθλητές]
+    QST_STATS --> QST_REV[💰 Έσοδα Τριμήνου]
+    QST_STATS --> QST_PAID[✅ % Πληρωμένων]
+    QST_STATS --> QST_EMAIL_CNT[✉️ Emails Απεστάλησαν]
+    QST_STATS --> QST_SMS_CNT[📱 SMS Απεστάλησαν]
+    QST_STATS --> QST_SEND[📧 Email Αναφοράς<br/>σε κάθε Σχολή]
+    QST_SEND --> QST_LOG[quarterly_stats_log Table<br/>Καταγραφή]
+
+    WEB_TRIG([🌐 Web Trigger<br/>?token=CRON_SECRET]) --> QST
+
+    style CRON fill:#1a0a2a,stroke:#a855f7
+    style WEB_TRIG fill:#0a1628,stroke:#3b82f6
+    style LOG_REM fill:#0d1017,stroke:#1e2536
+    style QST_LOG fill:#0d1017,stroke:#1e2536
+  </div>
+</div>
+
+<!-- ═══ DIAGRAM 8 (FIXED) ═══ -->
+<div class="section" id="flow8">
+  <div class="section-title">⑧ Ασφάλεια & GDPR Flows <span class="badge">Security</span></div>
+  <div class="mermaid">
+flowchart TD
+    REQ([HTTP Request]) --> HDR["includes/security_headers.php<br/>CSP / X-Frame / HSTS Headers"]
+    HDR --> CSRF{"CSRF Token<br/>Επαλήθευση σε κάθε POST"}
+    CSRF -->|❌ Invalid| E403[403 Forbidden]
+    CSRF -->|✓ Valid| HANDLER[PHP Handler]
+
+    HANDLER --> PREP["PDO Prepared Statements<br/>Παντού στη Βάση"]
+    HANDLER --> XSS["htmlspecialchars h()<br/>σε κάθε Output"]
+    HANDLER --> RATE["Rate Limiting<br/>Login Attempts"]
+
+    AUTH2FA["2FA Flow"] --> OTP_SEND["Email OTP Αποστολή"]
+    OTP_SEND --> OTP_VER{"OTP Επαλήθευση<br/>10 λεπτά ισχύς"}
+    OTP_VER -->|✓| SESSION["Session Εγκατάσταση"]
+    OTP_VER -->|❌| OTP_SEND
+
+    GDPR["GDPR Flows"] --> ART15["Art. 15 — Δικαίωμα Πρόσβασης<br/>parent/settings.php → export_data"]
+    GDPR --> ART17["Art. 17 — Δικαίωμα Διαγραφής<br/>request_delete_account"]
+    GDPR --> ART20["Art. 20 — Φορητότητα Δεδομένων<br/>JSON Download"]
+    GDPR --> COOKIE["Cookie Policy<br/>legal/cookies.php"]
+    GDPR --> TERMS["Όροι Χρήσης<br/>legal/terms.php"]
+    GDPR --> PRIVACY["Πολιτική Απορρήτου<br/>legal/privacy.php"]
+
+    ART15 --> JSON_DL["📥 JSON με Δεδομένα<br/>Γονέα &amp; Παιδιών"]
+    ART17 --> ADMIN_EMAIL["📧 Email στον Admin<br/>για Χειροκίνητη Διαγραφή"]
+
+    AUDIT["Audit Log"] --> LOG_ALL["Κάθε Ενέργεια<br/>Καταγράφεται<br/>audit_log Table"]
+    LOG_ALL --> LOG_USER["user_id + action<br/>+ IP + timestamp"]
+  </div>
+</div>
+
+<script>
+mermaid.initialize({
+  startOnLoad: true,
+  theme: 'dark',
+  themeVariables: {
+    primaryColor: '#111520',
+    primaryTextColor: '#e2e8f0',
+    primaryBorderColor: '#1e2536',
+    lineColor: '#3b82f6',
+    secondaryColor: '#0d1017',
+    tertiaryColor: '#161c2d',
+    background: '#07090f',
+    mainBkg: '#111520',
+    nodeBorder: '#1e2536',
+    clusterBkg: '#161c2d',
+    titleColor: '#e2e8f0',
+    edgeLabelBackground: '#111520',
+    fontFamily: 'Segoe UI, system-ui, sans-serif',
+  },
+  flowchart: {
+    htmlLabels: true,
+    curve: 'basis',
+    padding: 20,
+  }
+});
+</script>
+</body>
+</html>

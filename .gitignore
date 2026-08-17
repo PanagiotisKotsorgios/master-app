@@ -1,0 +1,56 @@
+# ============================================================
+# .gitignore — MAster
+# ============================================================
+
+# ── Secrets ────────────────────────────────────
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+.htpasswd
+
+# ── Local / OS ─────────────────────────────────
+desktop.ini
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# ── Composer / vendored deps ───────────────────
+/vendor/
+
+# ── Runtime data (must never be committed) ─────
+/logs/*
+!/logs/.gitkeep
+/backups/*
+!/backups/.htaccess
+!/backups/.gitkeep
+
+# ── User uploads (per event) ───────────────────
+/uploads/events/*/private/
+/uploads/events/*/public/*
+!/uploads/events/.htaccess
+!/uploads/events/private/.htaccess
+!/uploads/events/.gitkeep
+
+# ── Source & DB dumps ──────────────────────────
+MAster.zip
+*.zip
+*.tar
+*.tar.gz
+*.rar
+*.7z
+*.sql
+!/migrations/*.sql
+
+# ── IDE ────────────────────────────────────────
+.idea/
+.vscode/
+*.iml
+.project
+.buildpath
+
+# ── Claude Code local ──────────────────────────
+.claude/

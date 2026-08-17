@@ -1,0 +1,21 @@
+# ============================================================
+# employee/.htaccess
+# ============================================================
+# Προστασία: μόνο .php αρχεία προσβάσιμα, όχι helper files
+# ============================================================
+
+# Απόκρυψη directory listing
+Options -Indexes
+
+# Μπλοκάρει πρόσβαση σε helper files (όχι pages)
+<FilesMatch "^(auth|layout)\.php$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# Security headers
+<IfModule mod_headers.c>
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-Frame-Options "DENY"
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+</IfModule>

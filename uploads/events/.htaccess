@@ -1,0 +1,21 @@
+# ============================================================
+# uploads/events/.htaccess — block PHP execution in uploads
+# ============================================================
+# Extends the root .htaccess rule 7 to this subtree specifically.
+# Files here are user-uploaded proofs/certs — never executable.
+# ============================================================
+
+<FilesMatch "\.(php|phtml|php3|php4|php5|pl|py|cgi|sh|asp|aspx|jsp)$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order Allow,Deny
+        Deny from all
+    </IfModule>
+</FilesMatch>
+
+# Force download for anything else served here (safety net)
+<IfModule mod_headers.c>
+    Header set X-Content-Type-Options "nosniff"
+</IfModule>

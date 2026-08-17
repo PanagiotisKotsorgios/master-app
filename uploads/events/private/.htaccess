@@ -1,0 +1,14 @@
+# ============================================================
+# uploads/events/private/.htaccess — deny ALL direct access
+# ============================================================
+# Payment proofs, medical certificates, ID scans live here.
+# Only served through events/download.php after auth check.
+# ============================================================
+
+<IfModule mod_authz_core.c>
+    Require all denied
+</IfModule>
+<IfModule !mod_authz_core.c>
+    Order Allow,Deny
+    Deny from all
+</IfModule>

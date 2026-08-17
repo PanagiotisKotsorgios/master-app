@@ -1,0 +1,19 @@
+# ============================================================
+# includes/.htaccess
+# ============================================================
+# Αποτρέπει ΟΠΟΙΑΔΗΠΟΤΕ direct HTTP access στα includes αρχεία.
+# Τα αρχεία εδώ περιέχουν:
+#   - config.php: DB credentials, API keys
+#   - mailer.php: Email sending logic
+#   - security_headers.php: Security configuration
+#
+# Κανένα από αυτά δεν πρέπει να είναι accessible μέσω URL.
+# Φορτώνονται μόνο μέσω require_once από άλλα PHP αρχεία.
+# ============================================================
+<IfModule mod_authz_core.c>
+    Require all denied
+</IfModule>
+<IfModule !mod_authz_core.c>
+    Order Allow,Deny
+    Deny from all
+</IfModule>

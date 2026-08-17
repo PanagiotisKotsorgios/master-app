@@ -1,0 +1,80 @@
+# ============================================================
+# .htaccess — Root Directory Security
+# ============================================================
+# Κεντρικό .htaccess που ελέγχει πρόσβαση, routing,
+# και security settings για ολόκληρη την εφαρμογή.
+#
+# SECURITY MEASURES:
+#   1. Απενεργοποιεί directory listing (information disclosure)
+#   2. Αποτρέπει πρόσβαση σε sensitive files
+#   3. Forces HTTPS σε production
+#   4. Clickjacking protection (backup για PHP headers)
+#   5. Αποκρύπτει PHP version από headers
+# ============================================================
+
+
+
+# ── 1. Disable Directory Listing ────────────────────────────
+# Χωρίς αυτό: http://site.com/uploads/ εμφανίζει όλα τα αρχεία
+Options -Indexes
+
+# ── 2. Disable Server Signature ─────────────────────────────
+# Αποκρύπτει Apache/Nginx version από error pages
+ServerSignature Off
+
+# ── 3. PHP Version Header Removal ───────────────────────────
+# Αφαιρεί "X-Powered-By: PHP/8.x" header
+<IfModule mod_headers.c>
+    Header unset X-Powered-By
+    Header always unset X-Powered-By
+    # Clickjacking protection (backup για PHP headers)
+    Header always set X-Frame-Options "DENY"
+    # MIME sniffing protection
+    Header always set X-Content-Type-Options "nosniff"
+</IfModule>
+
+# ── 4. Block Access to Sensitive Files ──────────────────────
+# Αποτρέπει direct HTTP access σε configuration files
+# που μπορεί να περιέχουν credentials ή sensitive data
+<FilesMatch "(^\.env|composer\.(json|lock)|\.git|config\.php|\.htpasswd)$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order Allow,Deny
+        Deny from all
+    </IfModule>
+</FilesMatch>
+
+# ── 5. Block Access to Backup Files ─────────────────────────
+# Editors (vim, nano) δημιουργούν backup αρχεία που
+# μπορεί να εκθέτουν source code
+<FilesMatch "\.(bak|backup|old|orig|sql|log|swp|swo|~)$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+</FilesMatch>
+
+# ── 6. Force HTTPS (Production Only) ────────────────────────
+# Uncomment σε production με valid SSL certificate:
+# <IfModule mod_rewrite.c>
+#     RewriteEngine On
+#     RewriteCond %{HTTPS} off
+#     RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+# </IfModule>
+
+# ── 7. Prevent Script Execution in Uploads ──────────────────
+# Αν υπάρχει /uploads/ directory, αποτρέπει εκτέλεση scripts
+# Attacker uploads PHP file → δεν μπορεί να το εκτελέσει
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    # Block .php execution in uploads directory
+    RewriteRule ^uploads/.*\.(php|phtml|php3|php4|php5|pl|py|cgi)$ - [F,L]
+</IfModule>
+
+
+
+ErrorDocument 403 /pages/errors/403.php
+ErrorDocument 404 /pages/errors/404.php
+ErrorDocument 500 /pages/errors/500.php
+ErrorDocument 503 /pages/errors/503.php

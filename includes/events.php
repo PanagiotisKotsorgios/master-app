@@ -1,0 +1,838 @@
+<?php
+/**
+ * ============================================================
+ * includes/events.php — Events Subsystem Helpers
+ * ============================================================
+ * PURPOSE:
+ *   Shared logic for the events subsystem (πρωταθλήματα,
+ *   φιλικά, camps, seminars). Every /pages/event_*.php and
+ *   /events/*.php file loads this.
+ *
+ * SECTIONS:
+ *   1. Slug generation & canonical URLs
+ *   2. Event CRUD & fetch helpers (organiser scope + public)
+ *   3. Category helpers
+ *   4. Eligibility & registration
+ *   5. Payment helpers
+ *   6. Public discovery (search, filters)
+ *   7. Parent linkage (which events a child is in)
+ *   8. Uploads (safe path + private-file serving)
+ *   9. Notifications wiring
+ * ============================================================
+ */
+
+require_once __DIR__ . '/config.php';
+
+// ══════════════════════════════════════════════════════════════
+// 1. SLUG & URLS
+// ══════════════════════════════════════════════════════════════
+
+/** Greek-safe slugify. Falls back to id if slug is empty. */
+function eventsSlugify(string $s): string {
+    $map = [
+        'α'=>'a','β'=>'v','γ'=>'g','δ'=>'d','ε'=>'e','ζ'=>'z','η'=>'i','θ'=>'th','ι'=>'i',
+        'κ'=>'k','λ'=>'l','μ'=>'m','ν'=>'n','ξ'=>'x','ο'=>'o','π'=>'p','ρ'=>'r','σ'=>'s','ς'=>'s',
+        'τ'=>'t','υ'=>'y','φ'=>'f','χ'=>'ch','ψ'=>'ps','ω'=>'o','ά'=>'a','έ'=>'e','ή'=>'i','ί'=>'i',
+        'ό'=>'o','ύ'=>'y','ώ'=>'o','ϊ'=>'i','ϋ'=>'y','ΐ'=>'i','ΰ'=>'y',
+    ];
+    $s = mb_strtolower($s, 'UTF-8');
+    $s = strtr($s, $map);
+    $s = preg_replace('~[^a-z0-9]+~', '-', $s);
+    $s = trim($s, '-');
+    return $s !== '' ? substr($s, 0, 100) : 'event';
+}
+
+function eventPublicUrl(array $ev): string {
+    return rtrim(APP_URL, '/') . '/events/view.php?slug=' . urlencode($ev['slug']);
+}
+
+function eventManageUrl(int $eventId): string {
+    return rtrim(APP_URL, '/') . '/pages/event_manage.php?id=' . (int)$eventId;
+}
+
+
+// ══════════════════════════════════════════════════════════════
+// 2. EVENT FETCH
+// ══════════════════════════════════════════════════════════════
+
+function eventGet(int $id): ?array {
+    $st = getDB()->prepare("SELECT * FROM events WHERE id = ? LIMIT 1");
+    $st->execute([$id]);
+    return $st->fetch() ?: null;
+}
+
+function eventGetBySlug(string $slug): ?array {
+    $st = getDB()->prepare("SELECT * FROM events WHERE slug = ? LIMIT 1");
+    $st->execute([$slug]);
+    return $st->fetch() ?: null;
+}
+
+/** All events organised by the current school. */
+function eventsMineForSchool(int $schoolId, ?string $status = null): array {
+    $sql = "SELECT * FROM events WHERE organiser_school_id = ?";
+    $args = [$schoolId];
+    if ($status) { $sql .= " AND status = ?"; $args[] = $status; }
+    $sql .= " ORDER BY starts_at DESC, id DESC";
+    $st = getDB()->prepare($sql);
+    $st->execute($args);
+    return $st->fetchAll();
+}
+
+/** Insert a new draft event. Returns new event id. */
+function eventCreate(array $data, int $schoolId, int $userId): int {
+    $db = getDB();
+
+    $slugBase = eventsSlugify($data['title'] ?? 'event');
+    // ensure unique
+    $slug = $slugBase;
+    $n = 2;
+    while (true) {
+        $exists = $db->prepare("SELECT 1 FROM events WHERE slug = ? LIMIT 1");
+        $exists->execute([$slug]);
+        if (!$exists->fetchColumn()) break;
+        $slug = $slugBase . '-' . $n++;
+        if ($n > 200) { $slug = $slugBase . '-' . bin2hex(random_bytes(3)); break; }
+    }
+
+    $cols = [
+        'slug' => $slug,
+        'organiser_school_id' => $schoolId,
+        'federation_id' => $data['federation_id'] ?? null,
+        'type' => in_array($data['type'] ?? '', ['championship','friendly','camp','seminar','meeting','exam'], true) ? $data['type'] : 'friendly',
+        'title' => mb_substr(trim($data['title'] ?? ''), 0, 200),
+        'subtitle' => mb_substr(trim($data['subtitle'] ?? ''), 0, 255) ?: null,
+        'description' => trim($data['description'] ?? '') ?: null,
+        'sport' => trim($data['sport'] ?? '') ?: null,
+        'sport_style' => trim($data['sport_style'] ?? '') ?: null,
+        'visibility' => in_array($data['visibility'] ?? '', ['public','unlisted','invite_only'], true) ? $data['visibility'] : 'public',
+        'status' => 'draft',
+        'venue_name' => trim($data['venue_name'] ?? '') ?: null,
+        'venue_address' => trim($data['venue_address'] ?? '') ?: null,
+        'venue_url' => trim($data['venue_url'] ?? '') ?: null,
+        'starts_at' => $data['starts_at'] ?? null,
+        'ends_at' => $data['ends_at'] ?? null,
+        'registration_opens_at' => $data['registration_opens_at'] ?? null,
+        'registration_closes_at' => $data['registration_closes_at'] ?? null,
+        'payment_due_at' => $data['payment_due_at'] ?? null,
+        'max_participants' => isset($data['max_participants']) && $data['max_participants'] !== '' ? (int)$data['max_participants'] : null,
+        'ring_count' => max(1, (int)($data['ring_count'] ?? 1)),
+        'fee_model' => in_array($data['fee_model'] ?? '', ['per_athlete','per_team','flat','free'], true) ? $data['fee_model'] : 'per_athlete',
+        'fee_amount' => (float)($data['fee_amount'] ?? 0),
+        'late_fee_amount' => (float)($data['late_fee_amount'] ?? 0),
+        'late_fee_starts_at' => $data['late_fee_starts_at'] ?? null,
+        'refund_policy' => trim($data['refund_policy'] ?? '') ?: null,
+        'payment_methods' => eventsNormalizePaymentMethods($data['payment_methods'] ?? ['bank','iris','cash']),
+        'bank_iban' => trim($data['bank_iban'] ?? '') ?: null,
+        'bank_beneficiary' => trim($data['bank_beneficiary'] ?? '') ?: null,
+        'bank_name' => trim($data['bank_name'] ?? '') ?: null,
+        'bank_reference_template' => trim($data['bank_reference_template'] ?? '') ?: 'MASTER-EV{event_id}-CL{school_id}',
+        'contact_email' => trim($data['contact_email'] ?? '') ?: null,
+        'contact_phone' => trim($data['contact_phone'] ?? '') ?: null,
+        'created_by' => $userId,
+    ];
+
+    $fields = array_keys($cols);
+    $placeholders = implode(',', array_fill(0, count($fields), '?'));
+    $sql = "INSERT INTO events (" . implode(',', $fields) . ") VALUES ($placeholders)";
+    $st = $db->prepare($sql);
+    $st->execute(array_values($cols));
+
+    $newId = (int)$db->lastInsertId();
+    auditLog('event_created', 'event', $newId, $cols['title']);
+    return $newId;
+}
+
+/** Update editable fields of an event (organiser scope). */
+function eventUpdate(int $id, array $data, int $schoolId): void {
+    $ev = eventGet($id);
+    if (!$ev || (int)$ev['organiser_school_id'] !== $schoolId) {
+        throw new RuntimeException('Δεν έχετε δικαίωμα επεξεργασίας.');
+    }
+    $editable = [
+        'title','subtitle','description','type','sport','sport_style','visibility','status',
+        'venue_name','venue_address','venue_url','starts_at','ends_at',
+        'registration_opens_at','registration_closes_at','payment_due_at',
+        'max_participants','ring_count','fee_model','fee_amount',
+        'late_fee_amount','late_fee_starts_at','refund_policy',
+        'bank_iban','bank_beneficiary','bank_name','bank_reference_template',
+        'contact_email','contact_phone',
+    ];
+    $set = []; $args = [];
+    foreach ($editable as $k) {
+        if (!array_key_exists($k, $data)) continue;
+        $v = $data[$k];
+        if (in_array($k, ['title','subtitle','venue_name','venue_address','venue_url','bank_iban','bank_beneficiary','bank_name','contact_email','contact_phone','refund_policy','bank_reference_template','description','sport','sport_style'], true)) {
+            $v = trim((string)$v);
+            $v = $v === '' ? null : $v;
+        }
+        if (in_array($k, ['fee_amount','late_fee_amount'], true))   $v = (float)$v;
+        if (in_array($k, ['max_participants','ring_count'], true))  $v = ($v === '' || $v === null) ? null : (int)$v;
+        if ($k === 'type' && !in_array($v, ['championship','friendly','camp','seminar','meeting','exam'], true)) continue;
+        if ($k === 'visibility' && !in_array($v, ['public','unlisted','invite_only'], true)) continue;
+        if ($k === 'status' && !in_array($v, ['draft','open','closed','in_progress','completed','cancelled'], true)) continue;
+        if ($k === 'fee_model' && !in_array($v, ['per_athlete','per_team','flat','free'], true)) continue;
+        $set[] = "$k = ?";
+        $args[] = $v;
+    }
+    if (array_key_exists('payment_methods', $data)) {
+        $set[] = 'payment_methods = ?';
+        $args[] = eventsNormalizePaymentMethods($data['payment_methods']);
+    }
+    if (!$set) return;
+    $args[] = $id;
+    $st = getDB()->prepare("UPDATE events SET " . implode(',', $set) . " WHERE id = ?");
+    $st->execute($args);
+    auditLog('event_updated', 'event', $id);
+}
+
+function eventsNormalizePaymentMethods($input): string {
+    $valid = ['bank','iris','viva','stripe','cash'];
+    if (is_string($input)) $input = array_map('trim', explode(',', $input));
+    if (!is_array($input)) return 'bank,iris,cash';
+    $out = array_values(array_intersect($valid, array_map('strtolower', $input)));
+    return $out ? implode(',', $out) : 'bank,iris,cash';
+}
+
+
+// ══════════════════════════════════════════════════════════════
+// 3. CATEGORIES
+// ══════════════════════════════════════════════════════════════
+
+function eventCategories(int $eventId): array {
+    $st = getDB()->prepare("SELECT * FROM event_categories WHERE event_id = ? ORDER BY display_order, id");
+    $st->execute([$eventId]);
+    return $st->fetchAll();
+}
+
+function eventCategoryGet(int $categoryId): ?array {
+    $st = getDB()->prepare("SELECT * FROM event_categories WHERE id = ? LIMIT 1");
+    $st->execute([$categoryId]);
+    return $st->fetch() ?: null;
+}
+
+function eventCategoryCreate(int $eventId, array $data): int {
+    $db = getDB();
+    $sql = "INSERT INTO event_categories
+              (event_id, name, gender, min_age, max_age, min_weight, max_weight,
+               belt_from, belt_to, style, max_slots, fee_override, format, pool_size, display_order)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+    $st = $db->prepare($sql);
+    $st->execute([
+        $eventId,
+        mb_substr(trim($data['name'] ?? 'Κατηγορία'), 0, 120),
+        in_array($data['gender'] ?? '', ['M','F','MX'], true) ? $data['gender'] : 'MX',
+        $data['min_age'] !== '' ? (int)$data['min_age'] : null,
+        $data['max_age'] !== '' ? (int)$data['max_age'] : null,
+        $data['min_weight'] !== '' ? (float)$data['min_weight'] : null,
+        $data['max_weight'] !== '' ? (float)$data['max_weight'] : null,
+        trim($data['belt_from'] ?? '') ?: null,
+        trim($data['belt_to'] ?? '') ?: null,
+        trim($data['style'] ?? '') ?: null,
+        $data['max_slots'] !== '' ? (int)$data['max_slots'] : null,
+        $data['fee_override'] !== '' ? (float)$data['fee_override'] : null,
+        in_array($data['format'] ?? '', ['single_elim','double_elim','round_robin','pool_ko','pool_only','exhibition'], true) ? $data['format'] : 'single_elim',
+        max(2, (int)($data['pool_size'] ?? 4)),
+        (int)($data['display_order'] ?? 0),
+    ]);
+    return (int)$db->lastInsertId();
+}
+
+function eventCategoryDelete(int $categoryId, int $eventId): void {
+    $st = getDB()->prepare("DELETE FROM event_categories WHERE id = ? AND event_id = ?");
+    $st->execute([$categoryId, $eventId]);
+}
+
+
+// ══════════════════════════════════════════════════════════════
+// 4. REGISTRATION & ELIGIBILITY
+// ══════════════════════════════════════════════════════════════
+
+/** Basic eligibility check: age/gender/weight/belt against category. */
+function eventAthleteEligible(array $athlete, array $cat): array {
+    $errors = [];
+    // Gender
+    if ($cat['gender'] !== 'MX' && !empty($athlete['gender'])) {
+        $g = strtoupper(substr($athlete['gender'], 0, 1));
+        if ($g !== $cat['gender']) $errors[] = 'Το φύλο δεν ταιριάζει στην κατηγορία.';
+    }
+    // Age (at event start — but Phase 1: today)
+    if (!empty($athlete['birthdate']) && ($athlete['birthdate'] !== '0000-00-00')) {
+        try {
+            $age = (new DateTime())->diff(new DateTime($athlete['birthdate']))->y;
+            if ($cat['min_age'] !== null && $age < (int)$cat['min_age']) $errors[] = 'Ηλικία μικρότερη του ελάχιστου (' . $cat['min_age'] . ').';
+            if ($cat['max_age'] !== null && $age > (int)$cat['max_age']) $errors[] = 'Ηλικία μεγαλύτερη του μέγιστου (' . $cat['max_age'] . ').';
+        } catch (Exception $e) {}
+    }
+    return $errors;
+}
+
+/** Register an athlete into an event category. Returns registration id. */
+function eventRegisterAthlete(int $eventId, int $categoryId, int $athleteId, int $registeringSchoolId, int $userId, string $notes = ''): int {
+    $db = getDB();
+    $ev = eventGet($eventId);
+    if (!$ev) throw new RuntimeException('Ο διαγωνισμός δεν βρέθηκε.');
+    if (!in_array($ev['status'], ['open','draft'], true)) throw new RuntimeException('Οι εγγραφές δεν είναι ανοιχτές.');
+    if ($ev['registration_closes_at'] && strtotime($ev['registration_closes_at']) < time()) {
+        throw new RuntimeException('Η προθεσμία εγγραφής έχει λήξει.');
+    }
+    if ($ev['max_participants']) {
+        $cur = $db->prepare("SELECT COUNT(*) FROM event_registrations WHERE event_id = ? AND status NOT IN ('rejected','withdrawn')");
+        $cur->execute([$eventId]);
+        if ((int)$cur->fetchColumn() >= (int)$ev['max_participants']) throw new RuntimeException('Έχει συμπληρωθεί ο μέγιστος αριθμός συμμετεχόντων.');
+    }
+    $cat = eventCategoryGet($categoryId);
+    if (!$cat || (int)$cat['event_id'] !== $eventId) throw new RuntimeException('Μη έγκυρη κατηγορία.');
+
+    // Athlete belongs to registering school
+    $ath = $db->prepare("SELECT * FROM athletes WHERE id = ? AND school_id = ? LIMIT 1");
+    $ath->execute([$athleteId, $registeringSchoolId]);
+    $athlete = $ath->fetch();
+    if (!$athlete) throw new RuntimeException('Ο αθλητής δεν ανήκει στη σχολή σας.');
+
+    // Slot check (category)
+    if ($cat['max_slots']) {
+        $used = $db->prepare("SELECT COUNT(*) FROM event_registrations WHERE category_id = ? AND status NOT IN ('rejected','withdrawn')");
+        $used->execute([$categoryId]);
+        if ((int)$used->fetchColumn() >= (int)$cat['max_slots']) throw new RuntimeException('Η κατηγορία είναι πλήρης.');
+    }
+
+    // Idempotency: same athlete+event+cat should not duplicate
+    $dup = $db->prepare("SELECT id FROM event_registrations WHERE event_id = ? AND category_id = ? AND athlete_id = ? LIMIT 1");
+    $dup->execute([$eventId, $categoryId, $athleteId]);
+    if ($existing = $dup->fetchColumn()) return (int)$existing;
+
+    $amount = $cat['fee_override'] !== null ? (float)$cat['fee_override'] : (float)$ev['fee_amount'];
+    $snapshot = json_encode([
+        'full_name' => $athlete['full_name'] ?? '',
+        'birthdate' => $athlete['birthdate'] ?? null,
+        'gender' => $athlete['gender'] ?? null,
+        'sport' => $athlete['sport'] ?? null,
+        'belt' => $athlete['belt'] ?? null,
+    ], JSON_UNESCAPED_UNICODE);
+
+    $sql = "INSERT INTO event_registrations
+              (event_id, category_id, registering_school_id, athlete_id, coach_user_id,
+               athlete_snapshot, status, payment_status, amount, notes_participant)
+            VALUES (?,?,?,?,?,?, 'pending','unpaid',?,?)";
+    $st = $db->prepare($sql);
+    $st->execute([$eventId, $categoryId, $registeringSchoolId, $athleteId, $userId, $snapshot, $amount, mb_substr($notes, 0, 500)]);
+    $regId = (int)$db->lastInsertId();
+
+    auditLog('event_registered', 'event_registration', $regId, "event=$eventId cat=$categoryId athlete=$athleteId");
+    return $regId;
+}
+
+function eventRegistrationsForOrganiser(int $eventId): array {
+    $sql = "SELECT r.*, c.name AS cat_name, s.name AS school_name, a.full_name AS athlete_name
+            FROM event_registrations r
+            LEFT JOIN event_categories c ON c.id = r.category_id
+            LEFT JOIN schools s ON s.id = r.registering_school_id
+            LEFT JOIN athletes a ON a.id = r.athlete_id
+            WHERE r.event_id = ?
+            ORDER BY r.created_at DESC";
+    $st = getDB()->prepare($sql);
+    $st->execute([$eventId]);
+    return $st->fetchAll();
+}
+
+function eventRegistrationsForParticipant(int $eventId, int $schoolId): array {
+    $sql = "SELECT r.*, c.name AS cat_name, a.full_name AS athlete_name
+            FROM event_registrations r
+            LEFT JOIN event_categories c ON c.id = r.category_id
+            LEFT JOIN athletes a ON a.id = r.athlete_id
+            WHERE r.event_id = ? AND r.registering_school_id = ?
+            ORDER BY a.full_name";
+    $st = getDB()->prepare($sql);
+    $st->execute([$eventId, $schoolId]);
+    return $st->fetchAll();
+}
+
+function eventRegistrationUpdateStatus(int $regId, int $eventId, string $status, ?int $verifiedBy = null): void {
+    if (!in_array($status, ['pending','approved','rejected','withdrawn','checked_in','no_show','disqualified'], true)) return;
+    $st = getDB()->prepare("UPDATE event_registrations SET status = ?, verified_by = COALESCE(?, verified_by) WHERE id = ? AND event_id = ?");
+    $st->execute([$status, $verifiedBy, $regId, $eventId]);
+    auditLog('event_reg_status', 'event_registration', $regId, "→ $status");
+}
+
+function eventRegistrationWithdraw(int $regId, int $registeringSchoolId, string $reason = ''): void {
+    $st = getDB()->prepare("UPDATE event_registrations
+        SET status = 'withdrawn', withdrew_at = NOW(), withdraw_reason = ?
+        WHERE id = ? AND registering_school_id = ?");
+    $st->execute([mb_substr($reason, 0, 255), $regId, $registeringSchoolId]);
+    auditLog('event_reg_withdrawn', 'event_registration', $regId, $reason);
+}
+
+
+// ══════════════════════════════════════════════════════════════
+// 5. PAYMENTS
+// ══════════════════════════════════════════════════════════════
+
+/** Bundle all unpaid regs from a given school into one payment. */
+function eventPaymentCreate(int $eventId, int $payingSchoolId, string $method, int $userId): int {
+    $db = getDB();
+    $ev = eventGet($eventId);
+    if (!$ev) throw new RuntimeException('Event not found.');
+    if (!in_array($method, explode(',', $ev['payment_methods']), true)) {
+        throw new RuntimeException('Ο τρόπος πληρωμής δεν υποστηρίζεται σε αυτό το event.');
+    }
+
+    // Fetch unpaid regs for this school
+    $q = $db->prepare("SELECT r.id, r.amount FROM event_registrations r
+        LEFT JOIN event_payment_registrations pr ON pr.registration_id = r.id
+        WHERE r.event_id = ? AND r.registering_school_id = ? AND r.payment_status IN ('unpaid','proof_uploaded') AND pr.registration_id IS NULL");
+    $q->execute([$eventId, $payingSchoolId]);
+    $regs = $q->fetchAll();
+    if (!$regs) throw new RuntimeException('Δεν υπάρχουν εκκρεμείς εγγραφές για πληρωμή.');
+
+    $total = 0.0;
+    foreach ($regs as $r) $total += (float)$r['amount'];
+
+    $ref = str_replace(
+        ['{event_id}','{school_id}'],
+        [(int)$eventId, (int)$payingSchoolId],
+        $ev['bank_reference_template'] ?: 'MASTER-EV{event_id}-CL{school_id}'
+    ) . '-' . strtoupper(bin2hex(random_bytes(2)));
+
+    $ins = $db->prepare("INSERT INTO event_payments
+        (event_id, paying_school_id, amount, currency, method, reference_code, status)
+        VALUES (?,?,?,?,?,?, 'pending')");
+    $ins->execute([$eventId, $payingSchoolId, $total, $ev['currency'] ?: 'EUR', $method, $ref]);
+    $payId = (int)$db->lastInsertId();
+
+    $link = $db->prepare("INSERT INTO event_payment_registrations (payment_id, registration_id) VALUES (?, ?)");
+    foreach ($regs as $r) $link->execute([$payId, (int)$r['id']]);
+
+    auditLog('event_payment_created', 'event_payment', $payId, "event=$eventId school=$payingSchoolId total=$total method=$method");
+    return $payId;
+}
+
+function eventPaymentAttachProof(int $paymentId, int $payingSchoolId, string $filePath): void {
+    $st = getDB()->prepare("UPDATE event_payments
+        SET proof_file_path = ?, proof_uploaded_at = NOW(), status = 'proof_uploaded'
+        WHERE id = ? AND paying_school_id = ?");
+    $st->execute([$filePath, $paymentId, $payingSchoolId]);
+    // Also bump per-reg status
+    $upd = getDB()->prepare("UPDATE event_registrations r
+        JOIN event_payment_registrations pr ON pr.registration_id = r.id
+        SET r.payment_status = 'proof_uploaded'
+        WHERE pr.payment_id = ?");
+    $upd->execute([$paymentId]);
+    auditLog('event_payment_proof', 'event_payment', $paymentId);
+}
+
+function eventPaymentVerify(int $paymentId, int $eventId, int $verifiedBy, string $notes = ''): void {
+    $db = getDB();
+    $st = $db->prepare("UPDATE event_payments
+        SET status = 'verified', verified_by = ?, verified_at = NOW(), verification_notes = ?
+        WHERE id = ? AND event_id = ?");
+    $st->execute([$verifiedBy, mb_substr($notes, 0, 500), $paymentId, $eventId]);
+
+    $upd = $db->prepare("UPDATE event_registrations r
+        JOIN event_payment_registrations pr ON pr.registration_id = r.id
+        SET r.payment_status = 'verified', r.paid_at = NOW(), r.verified_at = NOW(), r.verified_by = ?
+        WHERE pr.payment_id = ?");
+    $upd->execute([$verifiedBy, $paymentId]);
+
+    auditLog('event_payment_verified', 'event_payment', $paymentId);
+}
+
+function eventPaymentRefund(int $paymentId, int $eventId, int $userId, float $amount, string $notes = ''): void {
+    $db = getDB();
+    $st = $db->prepare("UPDATE event_payments
+        SET status = 'refunded', verified_by = ?, verified_at = NOW(),
+            verification_notes = CONCAT_WS(' | ', verification_notes, ?)
+        WHERE id = ? AND event_id = ?");
+    $st->execute([$userId, 'REFUND ' . number_format($amount, 2) . '€ ' . $notes, $paymentId, $eventId]);
+
+    $upd = $db->prepare("UPDATE event_registrations r
+        JOIN event_payment_registrations pr ON pr.registration_id = r.id
+        SET r.payment_status = 'refunded'
+        WHERE pr.payment_id = ?");
+    $upd->execute([$paymentId]);
+    auditLog('event_payment_refunded', 'event_payment', $paymentId, "amount=$amount");
+}
+
+/** Compute allowed refund amount for this payment at this moment. */
+function eventPaymentRefundQuote(array $ev, array $payment): array {
+    $now       = time();
+    $eventStart= $ev['starts_at'] ? strtotime($ev['starts_at']) : 0;
+    $daysToStart = $eventStart ? max(0, (int)floor(($eventStart - $now) / 86400)) : 999;
+
+    $fullDays    = (int)($ev['refund_full_until_days']    ?? 14);
+    $partialDays = (int)($ev['refund_partial_until_days'] ?? 7);
+    $fullPct     = (int)($ev['refund_pct_full']    ?? 100);
+    $partPct     = (int)($ev['refund_pct_partial'] ?? 50);
+    $amount      = (float)$payment['amount'];
+
+    if ($daysToStart >= $fullDays)    return ['pct' => $fullPct, 'amount' => round($amount * $fullPct / 100, 2), 'reason' => "Full refund ($daysToStart d before start ≥ $fullDays)"];
+    if ($daysToStart >= $partialDays) return ['pct' => $partPct, 'amount' => round($amount * $partPct / 100, 2), 'reason' => "Partial refund ($daysToStart d before start ≥ $partialDays)"];
+    return ['pct' => 0, 'amount' => 0.0, 'reason' => "Δεν επιτρέπεται επιστροφή τόσο κοντά στο event ($daysToStart d)"];
+}
+
+function eventPaymentReject(int $paymentId, int $eventId, int $userId, string $notes = ''): void {
+    $st = getDB()->prepare("UPDATE event_payments
+        SET status = 'rejected', verified_by = ?, verified_at = NOW(), verification_notes = ?
+        WHERE id = ? AND event_id = ?");
+    $st->execute([$userId, mb_substr($notes, 0, 500), $paymentId, $eventId]);
+
+    $upd = getDB()->prepare("UPDATE event_registrations r
+        JOIN event_payment_registrations pr ON pr.registration_id = r.id
+        SET r.payment_status = 'unpaid'
+        WHERE pr.payment_id = ?");
+    $upd->execute([$paymentId]);
+    auditLog('event_payment_rejected', 'event_payment', $paymentId, $notes);
+}
+
+function eventPaymentsForEvent(int $eventId): array {
+    $st = getDB()->prepare("SELECT p.*, s.name AS school_name
+        FROM event_payments p
+        LEFT JOIN schools s ON s.id = p.paying_school_id
+        WHERE p.event_id = ? ORDER BY p.created_at DESC");
+    $st->execute([$eventId]);
+    return $st->fetchAll();
+}
+
+function eventPaymentsForSchool(int $eventId, int $schoolId): array {
+    $st = getDB()->prepare("SELECT * FROM event_payments WHERE event_id = ? AND paying_school_id = ? ORDER BY created_at DESC");
+    $st->execute([$eventId, $schoolId]);
+    return $st->fetchAll();
+}
+
+
+// ══════════════════════════════════════════════════════════════
+// 6. PUBLIC DISCOVERY
+// ══════════════════════════════════════════════════════════════
+
+function eventsPublicSearch(array $filters = [], int $limit = 40, int $offset = 0): array {
+    $where = ["visibility = 'public'", "status IN ('open','in_progress','completed')"];
+    $args  = [];
+    if (!empty($filters['q'])) {
+        $where[] = "(title LIKE ? OR subtitle LIKE ? OR description LIKE ? OR venue_name LIKE ?)";
+        $q = '%' . str_replace(['%','_'], ['\\%','\\_'], $filters['q']) . '%';
+        array_push($args, $q, $q, $q, $q);
+    }
+    if (!empty($filters['sport'])) { $where[] = "sport = ?"; $args[] = $filters['sport']; }
+    if (!empty($filters['type']))  { $where[] = "type = ?";  $args[] = $filters['type']; }
+    if (!empty($filters['upcoming'])) { $where[] = "(ends_at IS NULL OR ends_at >= NOW())"; }
+
+    $sql = "SELECT e.*, s.name AS organiser_name
+            FROM events e
+            LEFT JOIN schools s ON s.id = e.organiser_school_id
+            WHERE " . implode(' AND ', $where) . "
+            ORDER BY (starts_at IS NULL), starts_at ASC, id DESC
+            LIMIT " . (int)$limit . " OFFSET " . (int)$offset;
+    $st = getDB()->prepare($sql);
+    $st->execute($args);
+    return $st->fetchAll();
+}
+
+function eventsPublicCount(array $filters = []): int {
+    $where = ["visibility = 'public'", "status IN ('open','in_progress','completed')"];
+    $args  = [];
+    if (!empty($filters['q'])) {
+        $where[] = "(title LIKE ? OR subtitle LIKE ? OR description LIKE ? OR venue_name LIKE ?)";
+        $q = '%' . str_replace(['%','_'], ['\\%','\\_'], $filters['q']) . '%';
+        array_push($args, $q, $q, $q, $q);
+    }
+    if (!empty($filters['sport'])) { $where[] = "sport = ?"; $args[] = $filters['sport']; }
+    if (!empty($filters['type']))  { $where[] = "type = ?";  $args[] = $filters['type']; }
+    if (!empty($filters['upcoming'])) { $where[] = "(ends_at IS NULL OR ends_at >= NOW())"; }
+    $sql = "SELECT COUNT(*) FROM events WHERE " . implode(' AND ', $where);
+    $st = getDB()->prepare($sql);
+    $st->execute($args);
+    return (int)$st->fetchColumn();
+}
+
+function eventPublicParticipants(int $eventId): array {
+    $sql = "SELECT r.id, r.status, r.payment_status,
+                   r.show_public,
+                   c.name AS cat_name,
+                   s.name AS school_name,
+                   a.full_name, a.birthdate
+            FROM event_registrations r
+            LEFT JOIN event_categories c ON c.id = r.category_id
+            LEFT JOIN schools s ON s.id = r.registering_school_id
+            LEFT JOIN athletes a ON a.id = r.athlete_id
+            WHERE r.event_id = ? AND r.status NOT IN ('rejected','withdrawn') AND r.show_public = 1
+            ORDER BY c.display_order, c.id, s.name, a.full_name";
+    $st = getDB()->prepare($sql);
+    $st->execute([$eventId]);
+
+    $rows = $st->fetchAll();
+    // Privacy: minors → first name + initial
+    foreach ($rows as &$r) {
+        if (!empty($r['birthdate']) && $r['birthdate'] !== '0000-00-00') {
+            try {
+                $age = (new DateTime())->diff(new DateTime($r['birthdate']))->y;
+                if ($age < 18 && $r['full_name']) {
+                    $parts = preg_split('/\s+/', trim($r['full_name']));
+                    if (count($parts) >= 2) {
+                        $r['full_name'] = $parts[0] . ' ' . mb_substr($parts[count($parts)-1], 0, 1, 'UTF-8') . '.';
+                    }
+                }
+            } catch (Exception $e) {}
+        }
+        unset($r['birthdate']);
+    }
+    return $rows;
+}
+
+
+// ══════════════════════════════════════════════════════════════
+// 7. PARENT LINKAGE
+// ══════════════════════════════════════════════════════════════
+
+/** All events any of this parent's children are registered in. */
+function eventsForParent(int $parentUserId, int $schoolId): array {
+    $sql = "SELECT DISTINCT e.*, r.status AS reg_status, r.payment_status, r.id AS reg_id,
+                   a.full_name AS athlete_name, a.id AS athlete_id,
+                   c.name AS cat_name
+            FROM parent_children pc
+            JOIN athletes a ON a.id = pc.athlete_id
+            JOIN event_registrations r ON r.athlete_id = a.id
+            JOIN events e ON e.id = r.event_id
+            LEFT JOIN event_categories c ON c.id = r.category_id
+            WHERE pc.parent_id = ? AND a.school_id = ?
+              AND r.status NOT IN ('rejected','withdrawn')
+            ORDER BY e.starts_at ASC";
+    $st = getDB()->prepare($sql);
+    $st->execute([$parentUserId, $schoolId]);
+    return $st->fetchAll();
+}
+
+
+// ══════════════════════════════════════════════════════════════
+// 8. UPLOADS
+// ══════════════════════════════════════════════════════════════
+
+/** Move an uploaded file into events storage; returns relative path or ''. */
+function eventUploadStore(array $upload, int $eventId, string $subdir = 'private', array $allowed = ['pdf','jpg','jpeg','png','webp'], int $maxKb = 5000): string {
+    if (!is_array($upload) || ($upload['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) return '';
+    if (($upload['size'] ?? 0) > $maxKb * 1024) throw new RuntimeException("Το αρχείο είναι μεγαλύτερο από {$maxKb} KB.");
+    $ext = strtolower(pathinfo($upload['name'] ?? '', PATHINFO_EXTENSION));
+    if (!in_array($ext, $allowed, true)) throw new RuntimeException('Μη επιτρεπόμενος τύπος αρχείου: .' . $ext);
+
+    $baseDir = __DIR__ . '/../uploads/events/' . $eventId . '/' . $subdir;
+    if (!is_dir($baseDir)) {
+        if (!@mkdir($baseDir, 0750, true) && !is_dir($baseDir)) throw new RuntimeException('Δεν ήταν δυνατή η δημιουργία φακέλου.');
+    }
+    $safeName = bin2hex(random_bytes(8)) . '.' . $ext;
+    $dest = $baseDir . '/' . $safeName;
+    if (!move_uploaded_file($upload['tmp_name'], $dest)) throw new RuntimeException('Αποτυχία αποθήκευσης αρχείου.');
+    return 'events/' . $eventId . '/' . $subdir . '/' . $safeName;
+}
+
+/** Full absolute path from relative stored path (with path-traversal guard). */
+function eventUploadAbsolute(string $relative): ?string {
+    $base = realpath(__DIR__ . '/../uploads');
+    if (!$base) return null;
+    $target = realpath($base . '/' . ltrim($relative, '/'));
+    if (!$target) return null;
+    if (strpos($target, $base) !== 0) return null;   // escaped the base
+    return $target;
+}
+
+
+// ══════════════════════════════════════════════════════════════
+// 9. NOTIFICATIONS (thin wrapper — uses existing mailer)
+// ══════════════════════════════════════════════════════════════
+
+function eventNotify(string $trigger, array $event, array $ctx = []): void {
+    if (!function_exists('sendEmail')) require_once __DIR__ . '/mailer.php';
+    $to = $ctx['to_email'] ?? '';
+    if (!$to || !filter_var($to, FILTER_VALIDATE_EMAIL)) return;
+
+    $schoolName = $event['title'];
+    $subject = match($trigger) {
+        'registration_created'   => "Νέα εγγραφή — {$event['title']}",
+        'registration_approved'  => "Εγγραφή εγκρίθηκε — {$event['title']}",
+        'registration_rejected'  => "Εγγραφή απορρίφθηκε — {$event['title']}",
+        'payment_verified'       => "Πληρωμή επιβεβαιώθηκε — {$event['title']}",
+        'payment_rejected'       => "Πληρωμή απορρίφθηκε — {$event['title']}",
+        'event_starts_soon'      => "Πλησιάζει η ημερομηνία — {$event['title']}",
+        'event_cancelled'        => "Ματαίωση — {$event['title']}",
+        default => "Ενημέρωση — {$event['title']}",
+    };
+    $body = ($ctx['body'] ?? '') . "\n\nΔείτε το event: " . eventPublicUrl($event);
+    $html = function_exists('buildEmailHtml')
+        ? buildEmailHtml($body, $schoolName, $subject)
+        : nl2br(htmlspecialchars($body, ENT_QUOTES, 'UTF-8'));
+    try { sendEmail($to, $subject, $html, $body, $ctx['to_name'] ?? ''); }
+    catch (Throwable $e) { error_log('[events] notify failed: ' . $e->getMessage()); }
+}
+
+
+// ══════════════════════════════════════════════════════════════
+// 11. CUSTOM FIELDS (Phase 4)
+// ══════════════════════════════════════════════════════════════
+
+function eventCustomFields(int $eventId): array {
+    $st = getDB()->prepare("SELECT * FROM event_custom_fields WHERE event_id = ? ORDER BY display_order, id");
+    $st->execute([$eventId]);
+    return $st->fetchAll();
+}
+
+function eventCustomFieldSave(int $eventId, array $data, ?int $id = null): int {
+    $db = getDB();
+    $args = [
+        $eventId,
+        preg_replace('/[^a-z0-9_]/', '_', strtolower(trim($data['code'] ?? ''))) ?: 'f' . bin2hex(random_bytes(2)),
+        mb_substr(trim($data['label'] ?? 'Πεδίο'), 0, 160),
+        mb_substr(trim($data['help_text'] ?? ''), 0, 255) ?: null,
+        in_array($data['field_type'] ?? '', ['text','textarea','select','number','date','checkbox'], true) ? $data['field_type'] : 'text',
+        trim($data['options'] ?? '') ?: null,
+        !empty($data['required']) ? 1 : 0,
+        (int)($data['display_order'] ?? 0),
+    ];
+    if ($id) {
+        $st = $db->prepare("UPDATE event_custom_fields
+            SET event_id=?, code=?, label=?, help_text=?, field_type=?, options=?, required=?, display_order=?
+            WHERE id = ?");
+        $args[] = $id;
+        $st->execute($args);
+        return $id;
+    }
+    $st = $db->prepare("INSERT INTO event_custom_fields
+        (event_id, code, label, help_text, field_type, options, required, display_order)
+        VALUES (?,?,?,?,?,?,?,?)");
+    $st->execute($args);
+    return (int)$db->lastInsertId();
+}
+
+function eventCustomFieldDelete(int $fieldId, int $eventId): void {
+    $st = getDB()->prepare("DELETE FROM event_custom_fields WHERE id = ? AND event_id = ?");
+    $st->execute([$fieldId, $eventId]);
+}
+
+/** Save the answers submitted with a registration. */
+function eventRegistrationSaveCustom(int $regId, int $eventId, array $values): void {
+    $fields = eventCustomFields($eventId);
+    if (!$fields) return;
+    $db = getDB();
+    $upd = $db->prepare("INSERT INTO event_registration_field_values (registration_id, field_id, value_text)
+                         VALUES (?,?,?) ON DUPLICATE KEY UPDATE value_text = VALUES(value_text)");
+    foreach ($fields as $f) {
+        $v = $values[$f['code']] ?? '';
+        if (is_array($v)) $v = implode(', ', $v);
+        $v = mb_substr((string)$v, 0, 2000);
+        if ($f['required'] && $v === '') throw new RuntimeException("Το πεδίο «{$f['label']}» είναι υποχρεωτικό.");
+        $upd->execute([$regId, (int)$f['id'], $v]);
+    }
+}
+
+function eventRegistrationCustomValues(int $regId): array {
+    $st = getDB()->prepare("SELECT f.code, f.label, f.field_type, v.value_text
+        FROM event_registration_field_values v
+        JOIN event_custom_fields f ON f.id = v.field_id
+        WHERE v.registration_id = ? ORDER BY f.display_order, f.id");
+    $st->execute([$regId]);
+    return $st->fetchAll();
+}
+
+
+// ══════════════════════════════════════════════════════════════
+// 12. UPDATES & FOLLOWERS (Phase 4)
+// ══════════════════════════════════════════════════════════════
+
+function eventUpdatesForEvent(int $eventId, int $limit = 40): array {
+    $st = getDB()->prepare("SELECT * FROM event_updates WHERE event_id = ? ORDER BY pinned DESC, published_at DESC LIMIT " . (int)$limit);
+    $st->execute([$eventId]);
+    return $st->fetchAll();
+}
+
+function eventUpdateSave(int $eventId, array $data, ?int $id = null): int {
+    $db = getDB();
+    $title  = mb_substr(trim($data['title'] ?? 'Ενημέρωση'), 0, 160);
+    $body   = trim($data['body_md'] ?? '');
+    $pinned = !empty($data['pinned']) ? 1 : 0;
+    if ($id) {
+        $db->prepare("UPDATE event_updates SET title=?, body_md=?, pinned=? WHERE id=? AND event_id=?")
+           ->execute([$title, $body, $pinned, $id, $eventId]);
+        return $id;
+    }
+    $db->prepare("INSERT INTO event_updates (event_id, title, body_md, pinned) VALUES (?,?,?,?)")
+       ->execute([$eventId, $title, $body, $pinned]);
+    return (int)$db->lastInsertId();
+}
+
+function eventUpdateDelete(int $updateId, int $eventId): void {
+    getDB()->prepare("DELETE FROM event_updates WHERE id = ? AND event_id = ?")->execute([$updateId, $eventId]);
+}
+
+function eventFollowers(int $eventId): array {
+    $st = getDB()->prepare("
+        SELECT f.*,
+               COALESCE(f.email, u.email, pu.parent_email) AS email_effective,
+               COALESCE(u.name, pu.parent_name) AS name_effective
+        FROM event_followers f
+        LEFT JOIN users u ON u.id = f.user_id
+        LEFT JOIN parent_users pu ON pu.id = f.parent_user_id
+        WHERE f.event_id = ?");
+    $st->execute([$eventId]);
+    return $st->fetchAll();
+}
+
+
+// ══════════════════════════════════════════════════════════════
+// 13. LABELS (Greek UI)
+// ══════════════════════════════════════════════════════════════
+
+function eventTypeLabel(string $type): string {
+    return [
+        'championship' => 'Πρωτάθλημα',
+        'friendly'     => 'Φιλικό / Διασυλλογικό',
+        'camp'         => 'Camp',
+        'seminar'      => 'Σεμινάριο',
+        'meeting'      => 'Συνάντηση',
+        'exam'         => 'Εξετάσεις Ζωνών',
+    ][$type] ?? $type;
+}
+
+function eventVisibilityLabel(string $v): string {
+    return ['public' => 'Δημόσιο', 'unlisted' => 'Μη καταχωρημένο', 'invite_only' => 'Με πρόσκληση'][$v] ?? $v;
+}
+
+function eventStatusLabel(string $s): string {
+    return [
+        'draft'       => 'Πρόχειρο',
+        'open'        => 'Ανοιχτές εγγραφές',
+        'closed'      => 'Κλειστές εγγραφές',
+        'in_progress' => 'Σε εξέλιξη',
+        'completed'   => 'Ολοκληρώθηκε',
+        'cancelled'   => 'Ματαιώθηκε',
+    ][$s] ?? $s;
+}
+
+function eventStatusBadge(string $s): string {
+    $cls = match($s) {
+        'open','in_progress' => 'badge-paid',
+        'draft','closed'     => 'badge-pending',
+        'cancelled','completed' => 'badge-overdue',
+        default => 'badge-pending',
+    };
+    return '<span class="badge ' . $cls . '">' . h(eventStatusLabel($s)) . '</span>';
+}
+
+function eventRegStatusBadge(string $s): string {
+    $cls = match($s) {
+        'approved','checked_in' => 'badge-paid',
+        'pending'               => 'badge-pending',
+        default                 => 'badge-overdue',
+    };
+    return '<span class="badge ' . $cls . '">' . h([
+        'pending' => 'Εκκρεμεί', 'approved' => 'Εγκρίθηκε', 'rejected' => 'Απορρίφθηκε',
+        'withdrawn' => 'Ακυρώθηκε', 'checked_in' => 'Παρών', 'no_show' => 'Απών', 'disqualified' => 'DQ',
+    ][$s] ?? $s) . '</span>';
+}
+
+function eventPaymentStatusBadge(string $s): string {
+    $cls = match($s) {
+        'verified' => 'badge-paid',
+        'proof_uploaded','unpaid' => 'badge-pending',
+        default    => 'badge-overdue',
+    };
+    return '<span class="badge ' . $cls . '">' . h([
+        'unpaid' => 'Ανεξόφλητο', 'proof_uploaded' => 'Απόδειξη ανεβασμένη',
+        'verified' => 'Επιβεβαιωμένο', 'refunded' => 'Επιστροφή', 'waived' => 'Χωρίς χρέωση',
+    ][$s] ?? $s) . '</span>';
+}

@@ -1,0 +1,38 @@
+# Force LF for files that MUST have Unix line endings in the container
+*.sh              text eol=lf
+Dockerfile        text eol=lf
+docker-entrypoint.sh text eol=lf
+
+# PHP + config: LF is safer everywhere
+*.php             text eol=lf
+*.sql             text eol=lf
+*.env             text eol=lf
+*.env.example     text eol=lf
+
+# Web assets: LF
+*.css             text eol=lf
+*.js              text eol=lf
+*.json            text eol=lf
+*.html            text eol=lf
+*.md              text eol=lf
+*.yml             text eol=lf
+*.yaml            text eol=lf
+
+# Apache configs: LF
+.htaccess         text eol=lf
+.htpasswd         text eol=lf
+.dockerignore     text eol=lf
+.gitignore        text eol=lf
+.gitattributes    text eol=lf
+
+# Binary files — never touch line endings
+*.png             binary
+*.jpg             binary
+*.jpeg            binary
+*.gif             binary
+*.pdf             binary
+*.zip             binary
+*.woff            binary
+*.woff2           binary
+*.ttf             binary
+*.eot             binary
