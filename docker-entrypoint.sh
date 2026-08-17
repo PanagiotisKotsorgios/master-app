@@ -55,19 +55,54 @@ if [ -z "${CRON_SECRET:-}" ]; then
     export CRON_SECRET
 fi
 
-# ── 3. Wait for DB (up to 120s) ──
+# ── 3. Wait for DB + self-heal app user credentials ──
 echo "[entrypoint] waiting for MySQL at ${DB_HOST}:${DB_PORT}…"
 DB_READY=0
+DB_ROOT_PASSWORD="${DB_ROOT_PASSWORD:-master-root-fallback-2026}"
+
+# Step A: wait until root can log in (server is up)
 for i in $(seq 1 60); do
-    if php -r "try { new PDO('mysql:host=${DB_HOST};port=${DB_PORT};dbname=${DB_NAME};charset=${DB_CHARSET}', '${DB_USER}', '${DB_PASS}', [PDO::ATTR_TIMEOUT => 2]); exit(0); } catch (Exception \$e) { exit(1); }" 2>/dev/null; then
-        echo "[entrypoint] DB ready (attempt ${i})."
+    if php -r "try { new PDO('mysql:host=${DB_HOST};port=${DB_PORT};charset=${DB_CHARSET}', 'root', '${DB_ROOT_PASSWORD}', [PDO::ATTR_TIMEOUT => 2]); exit(0); } catch (Exception \$e) { exit(1); }" 2>/dev/null; then
+        echo "[entrypoint] MySQL root reachable (attempt ${i})."
         DB_READY=1
         break
     fi
     sleep 2
 done
+
+# Step B: if root works, force-align the app user's password + grants.
+# Runs on every boot so DB_PASS rotations, volume-baked stale creds,
+# or env-var mismatches (DB_PASS vs DB_PASSWORD) all self-heal.
+if [ "$DB_READY" = "1" ]; then
+    echo "[entrypoint] aligning app user '${DB_USER}' credentials…"
+    php <<PHP || echo "[entrypoint] user-align warning (non-fatal)"
+<?php
+try {
+    \$root = new PDO('mysql:host=${DB_HOST};port=${DB_PORT}', 'root', '${DB_ROOT_PASSWORD}');
+    \$root->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    \$root->exec("CREATE DATABASE IF NOT EXISTS \`${DB_NAME}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
+    \$root->exec("CREATE USER IF NOT EXISTS '${DB_USER}'@'%' IDENTIFIED WITH mysql_native_password BY " . \$root->quote('${DB_PASS}'));
+    \$root->exec("ALTER USER '${DB_USER}'@'%' IDENTIFIED WITH mysql_native_password BY " . \$root->quote('${DB_PASS}'));
+    \$root->exec("GRANT ALL PRIVILEGES ON \`${DB_NAME}\`.* TO '${DB_USER}'@'%'");
+    \$root->exec("FLUSH PRIVILEGES");
+    echo "[entrypoint] app user aligned.\n";
+} catch (Throwable \$e) {
+    fwrite(STDERR, "[entrypoint] align error: " . \$e->getMessage() . "\n");
+    exit(1);
+}
+PHP
+
+    # Step C: verify app user actually works
+    if php -r "try { new PDO('mysql:host=${DB_HOST};port=${DB_PORT};dbname=${DB_NAME};charset=${DB_CHARSET}', '${DB_USER}', '${DB_PASS}', [PDO::ATTR_TIMEOUT => 5]); exit(0); } catch (Exception \$e) { fwrite(STDERR, \"[entrypoint] app-user check failed: \" . \$e->getMessage() . \"\\n\"); exit(1); }"; then
+        echo "[entrypoint] app user '${DB_USER}' verified against ${DB_NAME}."
+    else
+        echo "[entrypoint] WARNING: app user still can't connect — check DB_PASS."
+        DB_READY=0
+    fi
+fi
+
 if [ "$DB_READY" = "0" ]; then
-    echo "[entrypoint] DB not reachable after 120s — starting Apache anyway."
+    echo "[entrypoint] DB not usable after retries — starting Apache anyway (healthz.php will report DEGRADED)."
 fi
 
 # Runtime dir perms

@@ -21,10 +21,15 @@ services:
       - --collation-server=utf8mb4_unicode_ci
       - --max-connections=200
     environment:
-      MYSQL_ROOT_PASSWORD: "${DB_ROOT_PASSWORD:-change-me-root}"
+      # Accept either DB_ROOT_PASSWORD or a hardcoded default. This is the
+      # ONE stable value that survives credential rotation — the entrypoint
+      # uses it to re-align the app user's password on every boot.
+      MYSQL_ROOT_PASSWORD: "${DB_ROOT_PASSWORD:-master-root-fallback-2026}"
       MYSQL_DATABASE:      "${DB_NAME:-master_db}"
       MYSQL_USER:          "${DB_USER:-master}"
-      MYSQL_PASSWORD:      "${DB_PASS:-change-me}"
+      # Accept either DB_PASS (our canonical name) or DB_PASSWORD (a name
+      # Coolify's template projects sometimes preset), with a stable fallback.
+      MYSQL_PASSWORD:      "${DB_PASS:-${DB_PASSWORD:-master-app-default-pass}}"
     volumes:
       - master-db:/var/lib/mysql
       # Runs on every start. Safe: uses IF NOT EXISTS / ALTER USER so credentials
@@ -58,12 +63,15 @@ services:
       SESSION_LIFETIME: "${SESSION_LIFETIME:-28800}"
 
       # ── DB (points at the db service above) ──
-      DB_HOST:    "db"
-      DB_PORT:    "3306"
-      DB_NAME:    "${DB_NAME:-master_db}"
-      DB_USER:    "${DB_USER:-master}"
-      DB_PASS:    "${DB_PASS:-change-me}"
-      DB_CHARSET: "utf8mb4"
+      DB_HOST:         "db"
+      DB_PORT:         "3306"
+      DB_NAME:         "${DB_NAME:-master_db}"
+      DB_USER:         "${DB_USER:-master}"
+      # Same substitution as MYSQL_PASSWORD above → always aligned
+      DB_PASS:         "${DB_PASS:-${DB_PASSWORD:-master-app-default-pass}}"
+      # Root password lets docker-entrypoint re-align the app user on boot
+      DB_ROOT_PASSWORD: "${DB_ROOT_PASSWORD:-master-root-fallback-2026}"
+      DB_CHARSET:      "utf8mb4"
 
       # ── Cron endpoints ──
       CRON_SECRET: "${CRON_SECRET:-please-set-in-coolify}"
