@@ -36,13 +36,12 @@ services:
       # can be rotated across redeploys without a manual DB reset.
       - ./docker/mysql-init:/docker-entrypoint-initdb.d:ro
     healthcheck:
-      # Uses TCP ping via mysqladmin without needing to pass a password: -h with
-      # 'ping' just checks whether the server is up, not authentication.
-      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 --silent"]
+      # Cheap TCP probe — no auth needed, works on every MySQL version.
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 || exit 1"]
       interval: 10s
       timeout: 5s
-      retries: 20
-      start_period: 30s
+      retries: 30
+      start_period: 60s
 
   app:
     build:
@@ -53,9 +52,11 @@ services:
     # the internal port so its auto-router knows what to point at.
     expose:
       - "80"
+    # Soft dependency only — the app has its own DB retry loop so it can
+    # start even if the DB is still initializing. This avoids the deploy
+    # hanging forever when the DB healthcheck flaps.
     depends_on:
-      db:
-        condition: service_healthy
+      - db
     environment:
       # ── App ──
       APP_URL:          "${APP_URL:-http://localhost}"
