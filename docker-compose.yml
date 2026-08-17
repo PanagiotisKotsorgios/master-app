@@ -21,14 +21,19 @@ services:
       - --collation-server=utf8mb4_unicode_ci
       - --max-connections=200
     environment:
-      MYSQL_ROOT_PASSWORD: "${DB_ROOT_PASSWORD:-${DB_PASS:-change-me}}"
+      MYSQL_ROOT_PASSWORD: "${DB_ROOT_PASSWORD:-change-me-root}"
       MYSQL_DATABASE:      "${DB_NAME:-master_db}"
       MYSQL_USER:          "${DB_USER:-master}"
       MYSQL_PASSWORD:      "${DB_PASS:-change-me}"
     volumes:
       - master-db:/var/lib/mysql
+      # Runs on every start. Safe: uses IF NOT EXISTS / ALTER USER so credentials
+      # can be rotated across redeploys without a manual DB reset.
+      - ./docker/mysql-init:/docker-entrypoint-initdb.d:ro
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-u", "root", "-p${DB_ROOT_PASSWORD:-${DB_PASS:-change-me}}"]
+      # Uses TCP ping via mysqladmin without needing to pass a password: -h with
+      # 'ping' just checks whether the server is up, not authentication.
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 --silent"]
       interval: 10s
       timeout: 5s
       retries: 20
@@ -39,7 +44,9 @@ services:
       context: .
       dockerfile: Dockerfile
     restart: unless-stopped
-    ports:
+    # Coolify manages published ports and Traefik labels itself. Just declare
+    # the internal port so its auto-router knows what to point at.
+    expose:
       - "80"
     depends_on:
       db:
@@ -85,11 +92,6 @@ services:
       timeout: 5s
       start_period: 40s
       retries: 8
-
-    labels:
-      - "coolify.managed=true"
-      - "traefik.enable=true"
-      - "traefik.http.services.app.loadbalancer.server.port=80"
 
 volumes:
   master-db:

@@ -64,14 +64,17 @@ RUN { \
         echo "opcache.revalidate_freq=2"; \
     } > "$PHP_INI_DIR/conf.d/zz-opcache.ini"
 
-# ── Apache: allow .htaccess overrides on the docroot ──
+# ── Apache: allow .htaccess overrides on the docroot + set ServerName ──
 RUN printf '%s\n' \
+    'ServerName localhost' \
     '<Directory /var/www/html>' \
     '    AllowOverride All' \
     '    Require all granted' \
     '</Directory>' \
     > /etc/apache2/conf-available/master.conf; \
-    a2enconf master
+    a2enconf master; \
+    # Silence "Could not reliably determine the server's fully qualified domain name"
+    echo "ServerName localhost" >> /etc/apache2/apache2.conf
 
 # ── Entrypoint (waits for DB, runs migrations, then apache-fg) ──
 COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
