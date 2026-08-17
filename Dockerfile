@@ -76,9 +76,9 @@ RUN printf '%s\n' \
 COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
-# ── Healthcheck: hits /events/ (public, no DB required at first byte) ──
-HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
-    CMD curl -fsS http://127.0.0.1/ >/dev/null || exit 1
+# ── Healthcheck: lightweight /healthz.php (no DB touch, always 200 if PHP+Apache up) ──
+HEALTHCHECK --interval=15s --timeout=5s --start-period=30s --retries=5 \
+    CMD curl -fsS http://127.0.0.1/healthz.php >/dev/null || exit 1
 
 EXPOSE 80
 ENTRYPOINT ["docker-entrypoint.sh"]
