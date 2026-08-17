@@ -1,0 +1,71 @@
+# ============================================================
+# docker-compose.yml — Coolify deployment (app only)
+# ============================================================
+# The MySQL DB is provisioned as a separate Coolify resource,
+# NOT declared here — pass DB_HOST, DB_USER, DB_PASS, DB_NAME
+# via the Coolify env-var UI.
+#
+# Volumes are declared as named volumes; Coolify maps them
+# to its persistent storage on the host.
+# ============================================================
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "80"
+    environment:
+      # ── Application ──
+      APP_URL:          "${APP_URL:-http://localhost}"
+      APP_NAME:         "${APP_NAME:-MAster}"
+      SESSION_LIFETIME: "${SESSION_LIFETIME:-28800}"
+
+      # ── Database (from Coolify MySQL resource) ──
+      DB_HOST:    "${DB_HOST}"
+      DB_PORT:    "${DB_PORT:-3306}"
+      DB_NAME:    "${DB_NAME:-master_db}"
+      DB_USER:    "${DB_USER}"
+      DB_PASS:    "${DB_PASS}"
+      DB_CHARSET: "${DB_CHARSET:-utf8mb4}"
+
+      # ── Cron endpoints ──
+      CRON_SECRET: "${CRON_SECRET}"
+
+      # ── Email (Brevo) ──
+      BREVO_API_KEY:   "${BREVO_API_KEY:-}"
+      MAIL_FROM_EMAIL: "${MAIL_FROM_EMAIL:-noreply@localhost}"
+      MAIL_FROM_NAME:  "${MAIL_FROM_NAME:-MAster}"
+
+      # ── PHP runtime tuning ──
+      PHP_MEMORY_LIMIT:        "${PHP_MEMORY_LIMIT:-256M}"
+      PHP_UPLOAD_MAX_FILESIZE: "${PHP_UPLOAD_MAX_FILESIZE:-10M}"
+      PHP_POST_MAX_SIZE:       "${PHP_POST_MAX_SIZE:-12M}"
+
+      # ── Entrypoint behaviour ──
+      RUN_MIGRATIONS: "${RUN_MIGRATIONS:-1}"
+
+    volumes:
+      - master-uploads:/var/www/html/uploads
+      - master-backups:/var/www/html/backups
+      - master-logs:/var/www/html/logs
+
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1/"]
+      interval: 30s
+      timeout: 5s
+      start_period: 20s
+      retries: 3
+
+    labels:
+      - "coolify.managed=true"
+      # Coolify Traefik hints — override in Coolify UI as needed
+      - "traefik.enable=true"
+      - "traefik.http.services.app.loadbalancer.server.port=80"
+
+volumes:
+  master-uploads:
+  master-backups:
+  master-logs:
