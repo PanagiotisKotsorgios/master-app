@@ -1,11 +1,15 @@
 #!/usr/bin/env bash
 # ============================================================
-# docker-entrypoint.sh — fully self-provisioning, crash-proof
+# docker-entrypoint.sh — Apache starts FIRST, everything else after
 # ============================================================
-# NO `set -e` / `set -u` — deliberately. This script has ONE job:
-# always end with `exec apache2-foreground`, even if every DB step
-# fails. Failures are logged; Apache always starts so healthz.php
-# stays serviceable and errors are visible in `docker logs`.
+# Design:
+#   1. Launch Apache in the BACKGROUND immediately → healthcheck
+#      passes within seconds, container stays healthy no matter what.
+#   2. Do all DB / migration / superadmin work AFTER Apache is up.
+#   3. If DB is unreachable (e.g. Coolify is in Dockerfile-only mode
+#      with no db service), Apache still serves /healthz.php and
+#      surfaces PHP errors via `docker logs`.
+#   4. Finally, `wait` on Apache so the container tracks its lifecycle.
 # ============================================================
 
 # Defaults
@@ -33,7 +37,7 @@ chown -R www-data:www-data "$LOG_DIR" 2>/dev/null || true
 
 log() { echo "[entrypoint] $*"; }
 
-# ── 1. PHP tunables ──
+# ── 1. PHP tunables (before Apache starts, so php-apache picks them up) ──
 {
     echo "memory_limit=${PHP_MEMORY_LIMIT}"
     echo "upload_max_filesize=${PHP_UPLOAD_MAX_FILESIZE}"
@@ -41,7 +45,13 @@ log() { echo "[entrypoint] $*"; }
 } > /usr/local/etc/php/conf.d/zz-runtime.ini 2>/dev/null || true
 log "wrote /usr/local/etc/php/conf.d/zz-runtime.ini"
 
-# ── 2. Auto-generate CRON_SECRET if empty ──
+# ── 2. Runtime dirs (Apache needs these) ──
+mkdir -p /var/www/html/backups \
+         /var/www/html/uploads/events/public \
+         /var/www/html/uploads/events/private 2>/dev/null || true
+chown -R www-data:www-data /var/www/html/logs /var/www/html/backups /var/www/html/uploads 2>/dev/null || true
+
+# ── 3. Auto-generate CRON_SECRET if empty ──
 CRON_FILE="$LOG_DIR/.cron_secret"
 if [ -z "${CRON_SECRET:-}" ]; then
     if [ -s "$CRON_FILE" ]; then
@@ -61,20 +71,41 @@ if [ -z "${CRON_SECRET:-}" ]; then
     export CRON_SECRET
 fi
 
-# ── 3. Wait for DB (root reachable = server up) ──
-log "waiting for MySQL at ${DB_HOST}:${DB_PORT}…"
-DB_READY=0
-for i in $(seq 1 60); do
-    if php -r 'try { new PDO("mysql:host=".getenv("DB_HOST").";port=".getenv("DB_PORT").";charset=".getenv("DB_CHARSET"), "root", getenv("DB_ROOT_PASSWORD"), [PDO::ATTR_TIMEOUT => 2]); exit(0); } catch (Throwable $e) { exit(1); }' 2>/dev/null; then
-        log "MySQL root reachable (attempt ${i})."
-        DB_READY=1
-        break
-    fi
-    sleep 2
-done
+# ── 4. START APACHE IN BACKGROUND — healthcheck can now pass ──
+log "starting Apache in background so healthcheck can pass immediately…"
+"$@" &
+APACHE_PID=$!
+log "Apache PID: $APACHE_PID"
 
-# ── 4. Self-heal app user credentials via root ──
-if [ "$DB_READY" = "1" ]; then
+# ── 5. Provisioning happens in background so it never blocks Apache ──
+(
+    # Give Apache 3 seconds to bind port 80 before we start DB work.
+    sleep 3
+
+    # Wait for DB (root reachable = server up)
+    log "waiting for MySQL at ${DB_HOST}:${DB_PORT}…"
+    DB_READY=0
+    for i in $(seq 1 60); do
+        if php -r 'try { new PDO("mysql:host=".getenv("DB_HOST").";port=".getenv("DB_PORT").";charset=".getenv("DB_CHARSET"), "root", getenv("DB_ROOT_PASSWORD"), [PDO::ATTR_TIMEOUT => 2]); exit(0); } catch (Throwable $e) { exit(1); }' 2>/dev/null; then
+            log "MySQL root reachable (attempt ${i})."
+            DB_READY=1
+            break
+        fi
+        sleep 2
+    done
+
+    if [ "$DB_READY" != "1" ]; then
+        log "═══════════════════════════════════════════════════"
+        log "WARNING: No DB reachable at ${DB_HOST}:${DB_PORT} after 120s."
+        log "Apache is still serving. Most likely cause:"
+        log "  → Coolify is in 'Dockerfile' build pack mode."
+        log "  → Change it to 'Docker Compose' in the Coolify UI."
+        log "  → Then redeploy — both db + app containers will start."
+        log "═══════════════════════════════════════════════════"
+        exit 0
+    fi
+
+    # Self-heal app user credentials via root
     log "aligning app user '${DB_USER}' credentials…"
     php -r '
         try {
@@ -95,65 +126,64 @@ if [ "$DB_READY" = "1" ]; then
         }
     ' 2>&1
 
-    # Verify app user can connect
+    # Verify app user
     if php -r 'try { new PDO("mysql:host=".getenv("DB_HOST").";port=".getenv("DB_PORT").";dbname=".getenv("DB_NAME").";charset=".getenv("DB_CHARSET"), getenv("DB_USER"), getenv("DB_PASS"), [PDO::ATTR_TIMEOUT => 5]); exit(0); } catch (Throwable $e) { fwrite(STDERR, "[entrypoint] app-user verify: " . $e->getMessage() . "\n"); exit(1); }' 2>&1; then
         log "app user verified against ${DB_NAME}."
     else
         log "WARNING: app user still can't connect — check DB_PASS."
-        DB_READY=0
+        exit 0
     fi
-else
-    log "DB not reachable after 120s — starting Apache anyway (errors visible in logs)."
-fi
 
-# ── 5. Runtime dirs ──
-mkdir -p /var/www/html/backups \
-         /var/www/html/uploads/events/public \
-         /var/www/html/uploads/events/private 2>/dev/null || true
-chown -R www-data:www-data /var/www/html/logs /var/www/html/backups /var/www/html/uploads 2>/dev/null || true
+    # Migrations
+    if [ "${RUN_MIGRATIONS}" = "1" ] && [ -f /var/www/html/tools/run_events_migration.php ]; then
+        log "running migrations…"
+        php /var/www/html/tools/run_events_migration.php 2>&1 || log "migration warnings (non-fatal)."
+    fi
 
-# ── 6. Migrations ──
-if [ "$DB_READY" = "1" ] && [ "${RUN_MIGRATIONS}" = "1" ] && [ -f /var/www/html/tools/run_events_migration.php ]; then
-    log "running migrations…"
-    php /var/www/html/tools/run_events_migration.php 2>&1 || log "migration warnings (non-fatal)."
-fi
-
-# ── 7. Auto-create superadmin ──
-if [ "$DB_READY" = "1" ] && [ "$AUTO_CREATE_ADMIN" = "1" ]; then
-    ADMIN_PASS_FILE="$LOG_DIR/.admin_password"
-    php -r '
-        require "/var/www/html/includes/config.php";
-        try {
-            $db = getDB();
-            $c = (int)$db->query("SELECT COUNT(*) FROM users WHERE role=\x27superadmin\x27")->fetchColumn();
-            if ($c > 0) { fwrite(STDOUT, "[entrypoint] superadmin already exists.\n"); exit(0); }
-            $pw = bin2hex(random_bytes(6));
-            $hash = password_hash($pw, PASSWORD_DEFAULT);
-            $sid = null;
+    # Auto-create superadmin
+    if [ "$AUTO_CREATE_ADMIN" = "1" ]; then
+        ADMIN_PASS_FILE="$LOG_DIR/.admin_password"
+        export ADMIN_PASS_FILE
+        php -r '
+            require "/var/www/html/includes/config.php";
             try {
-                $planId = (int)$db->query("SELECT id FROM plans WHERE slug=\x27pro\x27 AND active=1 LIMIT 1")->fetchColumn();
-                if (!$planId) $planId = (int)$db->query("SELECT id FROM plans WHERE active=1 LIMIT 1")->fetchColumn();
-                if ($planId) {
-                    $db->prepare("INSERT INTO schools (name, email, plan_id, plan_status, trial_ends, active) VALUES (?, ?, ?, \x27active\x27, DATE_ADD(NOW(), INTERVAL 3650 DAY), 1)")
-                       ->execute(["MAster Admin School", getenv("ADMIN_EMAIL"), $planId]);
-                    $sid = (int)$db->lastInsertId();
-                }
-            } catch (Throwable $e) { $sid = null; }
-            $db->prepare("INSERT INTO users (school_id, name, email, password, role, active) VALUES (?, ?, ?, ?, \x27superadmin\x27, 1)")
-               ->execute([$sid, getenv("ADMIN_NAME"), getenv("ADMIN_EMAIL"), $hash]);
-            file_put_contents(getenv("ADMIN_PASS_FILE"), $pw);
-            @chmod(getenv("ADMIN_PASS_FILE"), 0600);
-            fwrite(STDOUT, "\n[entrypoint] ═══════════════════════════════════════════════════\n");
-            fwrite(STDOUT, "[entrypoint] Created superadmin.\n");
-            fwrite(STDOUT, "[entrypoint]   Email:    " . getenv("ADMIN_EMAIL") . "\n");
-            fwrite(STDOUT, "[entrypoint]   Password: " . $pw . "\n");
-            fwrite(STDOUT, "[entrypoint]   Login:    /login.php\n");
-            fwrite(STDOUT, "[entrypoint] ═══════════════════════════════════════════════════\n\n");
-        } catch (Throwable $e) {
-            fwrite(STDERR, "[entrypoint] auto-create superadmin failed: " . $e->getMessage() . "\n");
-        }
-    ' 2>&1
-fi
+                $db = getDB();
+                $c = (int)$db->query("SELECT COUNT(*) FROM users WHERE role=\x27superadmin\x27")->fetchColumn();
+                if ($c > 0) { fwrite(STDOUT, "[entrypoint] superadmin already exists.\n"); exit(0); }
+                $pw = bin2hex(random_bytes(6));
+                $hash = password_hash($pw, PASSWORD_DEFAULT);
+                $sid = null;
+                try {
+                    $planId = (int)$db->query("SELECT id FROM plans WHERE slug=\x27pro\x27 AND active=1 LIMIT 1")->fetchColumn();
+                    if (!$planId) $planId = (int)$db->query("SELECT id FROM plans WHERE active=1 LIMIT 1")->fetchColumn();
+                    if ($planId) {
+                        $db->prepare("INSERT INTO schools (name, email, plan_id, plan_status, trial_ends, active) VALUES (?, ?, ?, \x27active\x27, DATE_ADD(NOW(), INTERVAL 3650 DAY), 1)")
+                           ->execute(["MAster Admin School", getenv("ADMIN_EMAIL"), $planId]);
+                        $sid = (int)$db->lastInsertId();
+                    }
+                } catch (Throwable $e) { $sid = null; }
+                $db->prepare("INSERT INTO users (school_id, name, email, password, role, active) VALUES (?, ?, ?, ?, \x27superadmin\x27, 1)")
+                   ->execute([$sid, getenv("ADMIN_NAME"), getenv("ADMIN_EMAIL"), $hash]);
+                file_put_contents(getenv("ADMIN_PASS_FILE"), $pw);
+                @chmod(getenv("ADMIN_PASS_FILE"), 0600);
+                fwrite(STDOUT, "\n[entrypoint] ═══════════════════════════════════════════════════\n");
+                fwrite(STDOUT, "[entrypoint] Created superadmin.\n");
+                fwrite(STDOUT, "[entrypoint]   Email:    " . getenv("ADMIN_EMAIL") . "\n");
+                fwrite(STDOUT, "[entrypoint]   Password: " . $pw . "\n");
+                fwrite(STDOUT, "[entrypoint]   Login:    /login.php\n");
+                fwrite(STDOUT, "[entrypoint] ═══════════════════════════════════════════════════\n\n");
+            } catch (Throwable $e) {
+                fwrite(STDERR, "[entrypoint] auto-create superadmin failed: " . $e->getMessage() . "\n");
+            }
+        ' 2>&1
+    fi
 
-log "handing off to: $*"
-exec "$@"
+    log "provisioning done."
+) &
+
+# ── 6. Wait on Apache (this is what keeps container alive) ──
+log "handing off — waiting on Apache (PID $APACHE_PID)."
+wait $APACHE_PID
+EXIT_CODE=$?
+log "Apache exited with code $EXIT_CODE"
+exit $EXIT_CODE
