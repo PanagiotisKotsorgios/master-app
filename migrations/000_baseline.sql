@@ -63,7 +63,7 @@ CREATE TABLE IF NOT EXISTS `athletes` (
   `mother_name` varchar(100) DEFAULT NULL,
   `birthdate` date DEFAULT NULL,
   `amka` varchar(20) DEFAULT NULL,
-  `registration_date` date DEFAULT curdate(),
+  `registration_date` date DEFAULT (curdate()),
   `phone` varchar(30) DEFAULT NULL,
   `parent_phone` varchar(30) DEFAULT NULL,
   `email` varchar(150) DEFAULT NULL,
