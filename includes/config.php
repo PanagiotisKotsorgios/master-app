@@ -43,7 +43,67 @@ if (!defined('DB_CHARSET')) define('DB_CHARSET', getenv('DB_CHARSET') ?: 'utf8mb
 //    από system_settings table (admin-configurable)
 // ══════════════════════════════════════════════════════════════
 if (!defined('APP_NAME'))         define('APP_NAME',         getenv('APP_NAME')  ?: 'MAster');
-if (!defined('APP_URL'))          define('APP_URL',          getenv('APP_URL')   ?: 'https://master-app.gr');
+
+// APP_URL resolution — priority chain:
+//   1. Auto-detect from the actual request (works behind Traefik/Coolify)
+//   2. APP_URL env var (if user pinned one explicitly)
+//   3. Coolify's COOLIFY_URL (auto-injected by Coolify when a domain is set)
+//   4. Coolify's COOLIFY_FQDN
+//   5. Hard fallback for CLI / cron contexts
+// Rationale: hardcoding a wrong APP_URL breaks every link on the site.
+// Auto-detection from headers means the URL always matches what the user
+// typed, whether that's master-app.gr, www.master-app.gr, or a dev domain.
+if (!defined('APP_URL')) {
+    $_master_app_url = null;
+
+    // Try request headers first (only in web context, not CLI)
+    if (!empty($_SERVER['HTTP_HOST'])) {
+        // Trust X-Forwarded-* from Traefik/Coolify's reverse proxy
+        $proto = $_SERVER['HTTP_X_FORWARDED_PROTO']
+              ?? ((!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http');
+        $host  = $_SERVER['HTTP_X_FORWARDED_HOST'] ?? $_SERVER['HTTP_HOST'];
+        // X-Forwarded-Host may contain a comma-separated chain; take first
+        $host  = trim(explode(',', $host)[0]);
+        if ($host && $host !== 'localhost' && $host !== '127.0.0.1') {
+            $_master_app_url = $proto . '://' . $host;
+        }
+    }
+
+    // Env var overrides only if it's not a useless localhost default
+    if ($_master_app_url === null) {
+        $envUrl = getenv('APP_URL') ?: '';
+        if ($envUrl && !preg_match('#^https?://(localhost|127\.0\.0\.1)#i', $envUrl)) {
+            $_master_app_url = $envUrl;
+        }
+    }
+
+    // Coolify auto-injected env vars
+    if ($_master_app_url === null) {
+        $coolifyUrl = getenv('COOLIFY_URL') ?: '';
+        if ($coolifyUrl) {
+            // COOLIFY_URL can be a comma-separated list of domains
+            $_master_app_url = trim(explode(',', $coolifyUrl)[0]);
+        }
+    }
+    if ($_master_app_url === null) {
+        $coolifyFqdn = getenv('COOLIFY_FQDN') ?: '';
+        if ($coolifyFqdn) {
+            $fqdn = trim(explode(',', $coolifyFqdn)[0]);
+            if ($fqdn && $fqdn !== 'http') {
+                $_master_app_url = 'https://' . preg_replace('#^https?://#i', '', $fqdn);
+            }
+        }
+    }
+
+    // Final fallback
+    if ($_master_app_url === null) {
+        $_master_app_url = 'https://master-app.gr';
+    }
+
+    define('APP_URL', rtrim($_master_app_url, '/'));
+    unset($_master_app_url);
+}
+
 if (!defined('SESSION_LIFETIME')) define('SESSION_LIFETIME', (int)(getenv('SESSION_LIFETIME') ?: 3600 * 8));
 // Shared secret required to trigger cron endpoints over HTTP. MUST be set in production.
 if (!defined('CRON_SECRET'))      define('CRON_SECRET',      getenv('CRON_SECRET') ?: '');
@@ -561,11 +621,26 @@ function auditLog(string $action, string $entityType = '', int $entityId = 0, st
  * @param string $url  Target URL (πρέπει να ξεκινά με APP_URL)
  */
 function redirect(string $url): never {
-    // Validate: επιτρέπουμε μόνο absolute URLs στο ίδιο domain
-    // ή relative paths (ξεκινούν με /)
-    $appUrl = rtrim(APP_URL, '/');
-    if (!str_starts_with($url, $appUrl) && !str_starts_with($url, '/')) {
-        // Ύποπτο redirect — log και redirect στο home
+    // Validate: επιτρέπουμε absolute URLs στο ίδιο host (APP_URL host ή
+    // το τρέχον request host) OR relative paths (ξεκινούν με /)
+    $appUrl  = rtrim(APP_URL, '/');
+    $appHost = strtolower(parse_url($appUrl, PHP_URL_HOST) ?: '');
+
+    $isSafe = str_starts_with($url, '/') || str_starts_with($url, $appUrl);
+
+    // Also allow same-host absolute URLs (handles master-app.gr vs www.master-app.gr,
+    // or when APP_URL was set to https://x but the user is on https://y that also
+    // points to this app — both should be considered same-origin).
+    if (!$isSafe) {
+        $targetHost = strtolower(parse_url($url, PHP_URL_HOST) ?: '');
+        $currentHost = strtolower($_SERVER['HTTP_X_FORWARDED_HOST'] ?? $_SERVER['HTTP_HOST'] ?? '');
+        $currentHost = trim(explode(',', $currentHost)[0]);
+        if ($targetHost && ($targetHost === $appHost || $targetHost === $currentHost)) {
+            $isSafe = true;
+        }
+    }
+
+    if (!$isSafe) {
         error_log('[MAster Security] Blocked suspicious redirect to: ' . $url);
         $url = $appUrl . '/';
     }

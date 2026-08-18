@@ -59,9 +59,17 @@ services:
       - db
     environment:
       # ── App ──
-      APP_URL:          "${APP_URL:-http://localhost}"
+      # APP_URL is intentionally empty here — includes/config.php auto-detects
+      # the real URL from the request (Traefik forwards X-Forwarded-Host/Proto)
+      # and falls back to Coolify's COOLIFY_URL / COOLIFY_FQDN.
+      # Hardcoding "http://localhost" here would break every link on the site.
+      APP_URL:          "${APP_URL:-}"
       APP_NAME:         "${APP_NAME:-MAster}"
       SESSION_LIFETIME: "${SESSION_LIFETIME:-28800}"
+      # Coolify auto-injects COOLIFY_URL and COOLIFY_FQDN when a domain is
+      # configured. Pass them through so config.php can use them as fallback.
+      COOLIFY_URL:      "${COOLIFY_URL:-}"
+      COOLIFY_FQDN:     "${COOLIFY_FQDN:-}"
 
       # ── DB (points at the db service above) ──
       DB_HOST:         "db"
