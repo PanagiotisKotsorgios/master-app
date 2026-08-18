@@ -140,40 +140,80 @@ log "Apache PID: $APACHE_PID"
         php /var/www/html/tools/run_events_migration.php 2>&1 || log "migration warnings (non-fatal)."
     fi
 
-    # Auto-create superadmin
+    # Ensure superadmin exists AND its password is known to us.
+    # Rule: if `.admin_password` is missing OR RESET_ADMIN_PASSWORD=1 is set,
+    # we (re)generate a password and either create the admin or reset the
+    # existing one. This lets the user recover access by simply redeploying.
     if [ "$AUTO_CREATE_ADMIN" = "1" ]; then
         ADMIN_PASS_FILE="$LOG_DIR/.admin_password"
         export ADMIN_PASS_FILE
+        export RESET_ADMIN_PASSWORD="${RESET_ADMIN_PASSWORD:-0}"
         php -r '
             require "/var/www/html/includes/config.php";
             try {
                 $db = getDB();
-                $c = (int)$db->query("SELECT COUNT(*) FROM users WHERE role=\x27superadmin\x27")->fetchColumn();
-                if ($c > 0) { fwrite(STDOUT, "[entrypoint] superadmin already exists.\n"); exit(0); }
-                $pw = bin2hex(random_bytes(6));
-                $hash = password_hash($pw, PASSWORD_DEFAULT);
-                $sid = null;
-                try {
-                    $planId = (int)$db->query("SELECT id FROM plans WHERE slug=\x27pro\x27 AND active=1 LIMIT 1")->fetchColumn();
-                    if (!$planId) $planId = (int)$db->query("SELECT id FROM plans WHERE active=1 LIMIT 1")->fetchColumn();
-                    if ($planId) {
-                        $db->prepare("INSERT INTO schools (name, email, plan_id, plan_status, trial_ends, active) VALUES (?, ?, ?, \x27active\x27, DATE_ADD(NOW(), INTERVAL 3650 DAY), 1)")
-                           ->execute(["MAster Admin School", getenv("ADMIN_EMAIL"), $planId]);
-                        $sid = (int)$db->lastInsertId();
+                $email     = getenv("ADMIN_EMAIL");
+                $name      = getenv("ADMIN_NAME");
+                $passFile  = getenv("ADMIN_PASS_FILE");
+                $forceReset = getenv("RESET_ADMIN_PASSWORD") === "1";
+                $fileMissing = !is_file($passFile);
+
+                $existing = $db->prepare("SELECT id FROM users WHERE role=\x27superadmin\x27 ORDER BY id ASC LIMIT 1");
+                $existing->execute();
+                $existingId = (int)$existing->fetchColumn();
+
+                if ($existingId > 0 && !$forceReset && !$fileMissing) {
+                    // Superadmin + password file both exist. Reprint the
+                    // password so it stays visible in `docker logs` — the user
+                    // has no terminal access to read the file directly.
+                    $existingPw = trim(@file_get_contents($passFile) ?: "");
+                    fwrite(STDOUT, "\n[entrypoint] ═══════════════════════════════════════════════════\n");
+                    fwrite(STDOUT, "[entrypoint] Superadmin already exists (password on file).\n");
+                    fwrite(STDOUT, "[entrypoint]   Email:    " . $email . "\n");
+                    if ($existingPw !== "") {
+                        fwrite(STDOUT, "[entrypoint]   Password: " . $existingPw . "\n");
                     }
-                } catch (Throwable $e) { $sid = null; }
-                $db->prepare("INSERT INTO users (school_id, name, email, password, role, active) VALUES (?, ?, ?, ?, \x27superadmin\x27, 1)")
-                   ->execute([$sid, getenv("ADMIN_NAME"), getenv("ADMIN_EMAIL"), $hash]);
-                file_put_contents(getenv("ADMIN_PASS_FILE"), $pw);
-                @chmod(getenv("ADMIN_PASS_FILE"), 0600);
+                    fwrite(STDOUT, "[entrypoint]   Login:    /login.php\n");
+                    fwrite(STDOUT, "[entrypoint]   (Set RESET_ADMIN_PASSWORD=1 to force a fresh password.)\n");
+                    fwrite(STDOUT, "[entrypoint] ═══════════════════════════════════════════════════\n\n");
+                    exit(0);
+                }
+
+                $pw   = bin2hex(random_bytes(6));
+                $hash = password_hash($pw, PASSWORD_DEFAULT);
+
+                if ($existingId > 0) {
+                    // Reset password (and email/name) on the existing superadmin
+                    $db->prepare("UPDATE users SET password=?, email=?, name=?, active=1 WHERE id=?")
+                       ->execute([$hash, $email, $name, $existingId]);
+                    $action = "Password reset for existing superadmin";
+                } else {
+                    // Create a fresh superadmin (+ school for it if plans exist)
+                    $sid = null;
+                    try {
+                        $planId = (int)$db->query("SELECT id FROM plans WHERE slug=\x27pro\x27 AND active=1 LIMIT 1")->fetchColumn();
+                        if (!$planId) $planId = (int)$db->query("SELECT id FROM plans WHERE active=1 LIMIT 1")->fetchColumn();
+                        if ($planId) {
+                            $db->prepare("INSERT INTO schools (name, email, plan_id, plan_status, trial_ends, active) VALUES (?, ?, ?, \x27active\x27, DATE_ADD(NOW(), INTERVAL 3650 DAY), 1)")
+                               ->execute(["MAster Admin School", $email, $planId]);
+                            $sid = (int)$db->lastInsertId();
+                        }
+                    } catch (Throwable $e) { $sid = null; }
+                    $db->prepare("INSERT INTO users (school_id, name, email, password, role, active) VALUES (?, ?, ?, ?, \x27superadmin\x27, 1)")
+                       ->execute([$sid, $name, $email, $hash]);
+                    $action = "Created superadmin";
+                }
+
+                file_put_contents($passFile, $pw);
+                @chmod($passFile, 0600);
                 fwrite(STDOUT, "\n[entrypoint] ═══════════════════════════════════════════════════\n");
-                fwrite(STDOUT, "[entrypoint] Created superadmin.\n");
-                fwrite(STDOUT, "[entrypoint]   Email:    " . getenv("ADMIN_EMAIL") . "\n");
+                fwrite(STDOUT, "[entrypoint] " . $action . ".\n");
+                fwrite(STDOUT, "[entrypoint]   Email:    " . $email . "\n");
                 fwrite(STDOUT, "[entrypoint]   Password: " . $pw . "\n");
                 fwrite(STDOUT, "[entrypoint]   Login:    /login.php\n");
                 fwrite(STDOUT, "[entrypoint] ═══════════════════════════════════════════════════\n\n");
             } catch (Throwable $e) {
-                fwrite(STDERR, "[entrypoint] auto-create superadmin failed: " . $e->getMessage() . "\n");
+                fwrite(STDERR, "[entrypoint] admin provisioning failed: " . $e->getMessage() . "\n");
             }
         ' 2>&1
     fi
