@@ -77,7 +77,13 @@ $metaDesc  = 'Ανακαλύψτε πρωταθλήματα, φιλικούς α
 <div class="top">
   <div class="top-inner">
     <a href="<?= APP_URL ?>/" class="brand">MA<em>ster</em> · Events</a>
-    <a href="<?= APP_URL ?>/login.php" class="btn-login">Σύνδεση</a>
+    <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap">
+      <a href="<?= APP_URL ?>/events/calendar.php"
+         style="padding:.5rem .85rem;border-radius:8px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.03);color:#c9cee1;font-weight:600;font-size:.9rem;display:inline-flex;align-items:center;gap:.4rem;text-decoration:none;transition:all .18s">
+        <i class="fa-regular fa-calendar"></i> Ημερολόγιο
+      </a>
+      <a href="<?= APP_URL ?>/login.php" class="btn-login">Σύνδεση</a>
+    </div>
   </div>
 </div>
 

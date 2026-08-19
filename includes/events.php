@@ -526,6 +526,42 @@ function eventsPublicSearch(array $filters = [], int $limit = 40, int $offset = 
     return $st->fetchAll();
 }
 
+/**
+ * Return all public events whose date range overlaps the given month.
+ * Used by the /events/calendar.php monthly grid view.
+ *
+ * @param int $year   Full year (e.g. 2026)
+ * @param int $month  1–12
+ * @return array      List of event rows with organiser_name joined
+ */
+function eventsForMonth(int $year, int $month): array {
+    // Clamp inputs — safe against ?y=99999
+    $month = max(1, min(12, $month));
+    $year  = max(2000, min(2100, $year));
+
+    $monthStart = sprintf('%04d-%02d-01 00:00:00', $year, $month);
+    $monthEnd   = date('Y-m-t 23:59:59', strtotime($monthStart));
+
+    // An event overlaps the month if:
+    //   starts_at (or ends_at as fallback) falls inside the window, OR
+    //   it spans across the window (starts before + ends after).
+    $sql = "SELECT e.*, s.name AS organiser_name
+              FROM events e
+              LEFT JOIN schools s ON s.id = e.organiser_school_id
+             WHERE e.visibility = 'public'
+               AND e.status IN ('open','in_progress','completed')
+               AND (
+                     (e.starts_at IS NOT NULL AND e.starts_at BETWEEN ? AND ?)
+                  OR (e.ends_at   IS NOT NULL AND e.ends_at   BETWEEN ? AND ?)
+                  OR (e.starts_at IS NOT NULL AND e.ends_at IS NOT NULL
+                      AND e.starts_at <= ? AND e.ends_at >= ?)
+               )
+             ORDER BY (starts_at IS NULL), starts_at ASC, id ASC";
+    $st = getDB()->prepare($sql);
+    $st->execute([$monthStart, $monthEnd, $monthStart, $monthEnd, $monthStart, $monthEnd]);
+    return $st->fetchAll();
+}
+
 function eventsPublicCount(array $filters = []): int {
     $where = ["visibility = 'public'", "status IN ('open','in_progress','completed')"];
     $args  = [];
