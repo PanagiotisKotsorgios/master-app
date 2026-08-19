@@ -1,0 +1,394 @@
+/* ============================================================
+   prelogin-portal-theme.css
+   Applies tkd_portal's LIGHT navy + gold aesthetic to every
+   pre-login page (index, login, register, forgot-password,
+   contact, maintenance, legal, unsubscribe, pending-approval).
+   Layout, nav items, logo, structure — unchanged.
+
+   Palette (from tkd_portal globals.css):
+     background      #f5f7fa   (very light blue-gray)
+     foreground      #0f172a   (deep navy text)
+     primary         #1a3355   (deep navy, buttons/links)
+     accent (gold)   #f5b800   (secondary CTA / highlights)
+     destructive     #dc2626   (errors, danger)
+     muted-fg        #64748b   (secondary text)
+     border          #cbd5e1   (thick 2px card borders)
+     radius-lg       0.625rem  (buttons/inputs → 10px, cards 16px)
+
+   Loaded AFTER prelogin-polish.css so declarations here win the
+   cascade at equal specificity. !important is used sparingly on
+   the base body/text and where inline styles must be overridden.
+   ============================================================ */
+
+/* ── Base palette overrides ── */
+body {
+  background: #f5f7fa !important;
+  background-attachment: fixed !important;
+  color: #0f172a !important;
+  /* Kill master-app's radial-gradient dark aurora + grid */
+}
+body::before, body::after {
+  display: none !important;
+  content: none !important;
+}
+
+/* Global text defaults on any element that inherits color */
+body, body p, body div, body span, body li, body td, body th,
+body h1, body h2, body h3, body h4, body h5, body h6,
+body label, body dt, body dd, body figcaption {
+  color: #0f172a !important;
+}
+/* Muted text — anything that master-app sets to grays like
+   #8892b0, #6b7494, #4a5270 needs to inherit our slate-500 */
+[style*="color:#8892b0"], [style*="color:#6b7494"], [style*="color:#4a5270"],
+[style*="color:#3d4362"], [style*="color:#c9cee1"],
+[style*="color: #8892b0"], [style*="color: #6b7494"], [style*="color: #4a5270"] {
+  color: #64748b !important;
+}
+[style*="color:#f0f2ff"], [style*="color: #f0f2ff"],
+[style*="color:#e3e6f2"], [style*="color: #e3e6f2"] {
+  color: #0f172a !important;
+}
+
+/* Anchors */
+a { color: #1a3355 !important; }
+a:hover { color: #0e1e35 !important; }
+
+/* ── Navigation refinement ── */
+.nav {
+  background: rgba(255,255,255,.92) !important;
+  backdrop-filter: blur(20px) saturate(160%) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(160%) !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+  box-shadow: 0 1px 3px rgba(15,23,42,.04) !important;
+}
+.nav.scrolled {
+  background: rgba(255,255,255,.98) !important;
+  box-shadow: 0 4px 12px rgba(15,23,42,.08) !important;
+}
+.nav-links a { color: #475569 !important; font-weight: 600 !important; }
+.nav-links a:hover { color: #1a3355 !important; }
+.nav-links a::after {
+  background: linear-gradient(90deg, #1a3355, #f5b800) !important;
+}
+
+/* Mobile menu (fullscreen) */
+.mobile-menu, .mmenu {
+  background: rgba(255,255,255,.98) !important;
+  color: #0f172a !important;
+}
+.mobile-menu a, .mmenu a {
+  color: #0f172a !important;
+  border-bottom-color: #e2e8f0 !important;
+}
+
+/* Burger */
+.burger span, .burger::before, .burger::after {
+  background: #0f172a !important;
+}
+
+/* ── Buttons ── */
+button:not(.no-polish),
+input[type="submit"],
+button[type="submit"],
+.btn,
+.btn-primary,
+.cta-primary,
+.btn-login,
+a.btn,
+a.cta {
+  border-radius: 10px !important;
+  font-family: 'Inter','DM Sans','Outfit',sans-serif !important;
+  font-weight: 700 !important;
+  letter-spacing: 0 !important;
+  transition: transform .15s cubic-bezier(.34,1.56,.64,1),
+              box-shadow .2s ease,
+              background .2s ease !important;
+  border: none !important;
+}
+
+.btn-primary,
+.cta-primary,
+input[type="submit"],
+button[type="submit"],
+.btn-login {
+  background: #1a3355 !important;
+  color: #ffffff !important;
+  box-shadow: 0 1px 2px rgba(15,23,42,.08),
+              0 4px 12px -4px rgba(26,51,85,.35) !important;
+}
+.btn-primary:hover,
+.cta-primary:hover,
+input[type="submit"]:hover,
+button[type="submit"]:hover,
+.btn-login:hover {
+  background: #0e1e35 !important;
+  box-shadow: 0 2px 4px rgba(15,23,42,.1),
+              0 8px 20px -6px rgba(26,51,85,.5) !important;
+  transform: translateY(-1px);
+}
+.btn-primary:active,
+.cta-primary:active,
+input[type="submit"]:active,
+button[type="submit"]:active {
+  transform: scale(.96);
+}
+
+/* Secondary / outline */
+.btn-secondary, .cta-secondary, .btn-outline, .btn-ghost {
+  background: #ffffff !important;
+  color: #0f172a !important;
+  border: 2px solid #cbd5e1 !important;
+  box-shadow: none !important;
+}
+.btn-secondary:hover, .cta-secondary:hover, .btn-outline:hover, .btn-ghost:hover {
+  background: #f1f5f9 !important;
+  border-color: #94a3b8 !important;
+  transform: translateY(-1px);
+}
+
+/* Accent (gold) buttons — used where master-app shows something urgent */
+.btn-accent, .btn-gold, .cta-accent {
+  background: #f5b800 !important;
+  color: #0f172a !important;
+  border: none !important;
+  box-shadow: 0 1px 2px rgba(15,23,42,.08),
+              0 4px 12px -4px rgba(245,184,0,.5) !important;
+}
+
+/* Parent portal button on landing (red-outline in dark) → subtle navy outline in light */
+.btn-parent-portal {
+  color: #1a3355 !important;
+  border: 1.5px solid #1a3355 !important;
+  background: transparent !important;
+}
+.btn-parent-portal:hover {
+  background: #1a3355 !important;
+  color: #fff !important;
+}
+
+/* ── Form fields ── */
+input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]):not([type="color"]):not([type="file"]),
+textarea,
+select {
+  background: #ffffff !important;
+  color: #0f172a !important;
+  border: 2px solid #cbd5e1 !important;
+  border-radius: 10px !important;
+  transition: border-color .18s ease, box-shadow .18s ease !important;
+}
+input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]):not([type="color"]):not([type="file"]):focus,
+textarea:focus, select:focus {
+  outline: none !important;
+  border-color: #1a3355 !important;
+  box-shadow: 0 0 0 3px rgba(26,51,85,.15) !important;
+  background: #ffffff !important;
+}
+input::placeholder, textarea::placeholder {
+  color: #94a3b8 !important;
+}
+
+/* Checkbox + radio accent → navy */
+input[type="checkbox"], input[type="radio"] {
+  accent-color: #1a3355 !important;
+}
+
+/* Focus ring on interactive elements */
+button:focus-visible, .btn:focus-visible, a.btn:focus-visible {
+  outline: 2px solid #1a3355 !important;
+  outline-offset: 2px !important;
+}
+
+/* ── Cards / panels ── */
+.card, .panel, .hero-card, .feature-card, .pricing-card, .plan-card,
+.login-box, .register-box, .form-container, .contact-form,
+.legal-content, [class*="-card"], .box, .info-box {
+  background: #ffffff !important;
+  border: 2px solid #e2e8f0 !important;
+  border-radius: 16px !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  box-shadow: 0 1px 3px rgba(15,23,42,.06),
+              0 6px 24px -12px rgba(15,23,42,.12) !important;
+  color: #0f172a !important;
+}
+.card:hover, .feature-card:hover, .pricing-card:hover, .plan-card:hover {
+  border-color: #cbd5e1 !important;
+  box-shadow: 0 4px 12px rgba(15,23,42,.08),
+              0 12px 32px -12px rgba(15,23,42,.2) !important;
+  transform: translateY(-2px);
+}
+
+/* Featured / recommended plan → gold accent */
+.pricing-card.featured, .plan-card.featured,
+.pricing-card.popular, .plan-card.popular {
+  border: 2px solid #f5b800 !important;
+  box-shadow: 0 0 0 4px rgba(245,184,0,.15),
+              0 12px 24px -8px rgba(245,184,0,.3),
+              0 4px 12px rgba(15,23,42,.08) !important;
+}
+
+/* Section dividers */
+section + section::before, .section + .section::before {
+  background: linear-gradient(90deg, transparent, #e2e8f0 50%, transparent) !important;
+}
+
+/* Hero + section backgrounds — flatten to base */
+.hero, .section, section {
+  background: transparent !important;
+}
+.hero h1, .hero-title {
+  color: #0f172a !important;
+  text-shadow: none !important;
+}
+
+/* ── Gradient text → navy → gold ── */
+.text-gradient, .gradient-text {
+  background: linear-gradient(135deg, #1a3355 0%, #f5b800 100%) !important;
+  -webkit-background-clip: text !important;
+  background-clip: text !important;
+  color: transparent !important;
+  -webkit-text-fill-color: transparent !important;
+}
+
+/* ── Alerts ── */
+.alert, .flash, .error-message, .success-message, .notice {
+  border-radius: 12px !important;
+  border-width: 2px !important;
+  border-style: solid !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+.alert.error, .flash.error, .error-message, .alert-danger,
+.alert-error, .alert.alert-danger {
+  background: #fef2f2 !important;
+  border-color: #fecaca !important;
+  color: #991b1b !important;
+}
+.alert.success, .flash.success, .success-message, .alert-success {
+  background: #f0fdf4 !important;
+  border-color: #bbf7d0 !important;
+  color: #14532d !important;
+}
+.alert.warning, .flash.warning, .alert-warning {
+  background: #fffbeb !important;
+  border-color: #fde68a !important;
+  color: #78350f !important;
+}
+.alert.info, .flash.info, .alert-info {
+  background: #eff6ff !important;
+  border-color: #bfdbfe !important;
+  color: #1e3a8a !important;
+}
+
+/* ── Footer ── */
+footer, .footer, .site-footer {
+  background: #ffffff !important;
+  border-top: 1px solid #e2e8f0 !important;
+  color: #475569 !important;
+  box-shadow: 0 -1px 3px rgba(15,23,42,.03) !important;
+}
+footer a, .footer a, .site-footer a {
+  color: #475569 !important;
+}
+footer a:hover, .footer a:hover, .site-footer a:hover {
+  color: #1a3355 !important;
+}
+footer h4, .footer h4, .site-footer h4 {
+  color: #0f172a !important;
+}
+
+/* Newsletter block (added earlier) → white card treatment */
+#newsletter {
+  background: #ffffff !important;
+  border: 2px solid #e2e8f0 !important;
+  box-shadow: 0 1px 3px rgba(15,23,42,.06) !important;
+}
+#newsletter input[type="email"] {
+  background: #ffffff !important;
+  color: #0f172a !important;
+  border: 2px solid #cbd5e1 !important;
+}
+
+/* Login / Register / Forgot boxes — remove sheen line */
+.login-box::before, .register-box::before,
+.forgot-box::before, .auth-box::before {
+  display: none !important;
+  content: none !important;
+}
+
+/* Icons color adjustments — Font Awesome icons in muted context */
+.nav i, footer i, .footer i {
+  color: inherit !important;
+}
+
+/* Selection */
+::selection {
+  background: rgba(26,51,85,.15) !important;
+  color: #0f172a !important;
+}
+
+/* Scrollbar — light */
+::-webkit-scrollbar-track { background: #f1f5f9 !important; }
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1 !important;
+  border: 2px solid #f1f5f9 !important;
+  background-clip: padding-box !important;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8 !important;
+  border: 2px solid #f1f5f9 !important;
+  background-clip: padding-box !important;
+}
+
+/* ── Bespoke overrides for pages with heavy inline dark tokens ── */
+
+/* register/login page containers */
+[style*="background:#07090f"], [style*="background: #07090f"],
+[style*="background:#060810"], [style*="background: #060810"],
+[style*="background:#0d1017"], [style*="background: #0d1017"],
+[style*="background:#131722"], [style*="background: #131722"],
+[style*="background:#111520"], [style*="background: #111520"] {
+  background: #ffffff !important;
+}
+[style*="border:1px solid #1e2536"], [style*="border: 1px solid #1e2536"] {
+  border-color: #e2e8f0 !important;
+}
+
+/* Maintenance page */
+.icon-wrap { color: #1a3355 !important; }
+.progress-fill { background: #f5b800 !important; }
+
+/* Legal pages */
+.legal-content h2, .legal-content h3 { color: #0f172a !important; }
+.legal-content p, .legal-content li { color: #334155 !important; }
+.legal-content code, .legal-content pre {
+  background: #f1f5f9 !important;
+  color: #0f172a !important;
+  border: 1px solid #e2e8f0 !important;
+}
+
+/* Pending-approval + unsubscribe standalone boxes */
+.box .icon.ok  { background: linear-gradient(135deg, rgba(22,163,74,.15), rgba(22,163,74,.08)) !important; color: #16a34a !important; border-color: rgba(22,163,74,.3) !important; }
+.box .icon.err { background: linear-gradient(135deg, rgba(220,38,38,.15), rgba(220,38,38,.08)) !important; color: #dc2626 !important; border-color: rgba(220,38,38,.3) !important; }
+.box .icon     { background: linear-gradient(135deg, rgba(245,184,0,.2), rgba(245,184,0,.08)) !important; color: #b45309 !important; border-color: rgba(245,184,0,.35) !important; }
+.box h1 { color: #0f172a !important; }
+.box p  { color: #475569 !important; }
+.status {
+  background: rgba(245,184,0,.15) !important;
+  border-color: rgba(245,184,0,.35) !important;
+  color: #b45309 !important;
+}
+
+/* Force any leftover deep-dark background attributes on wrappers */
+.wrap, .app-wrap { background: transparent !important; }
+
+/* Prefer Inter for that clean portal look, fall back to master's fonts */
+body {
+  font-family: 'Inter', 'DM Sans', 'Outfit', system-ui, -apple-system, sans-serif !important;
+}
+
+/* Print: keep clean */
+@media print {
+  body { background: #fff !important; color: #000 !important; }
+}
