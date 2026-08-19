@@ -260,6 +260,128 @@ function eventCategoryDelete(int $categoryId, int $eventId): void {
     $st->execute([$categoryId, $eventId]);
 }
 
+// ══════════════════════════════════════════════════════════════
+// Age groups + Weight classes (new hierarchical model, optional).
+// When the organiser clicks "Generate categories", we materialise
+// the cartesian product into event_categories so the rest of the
+// bracket/registration pipeline keeps working unchanged.
+// ══════════════════════════════════════════════════════════════
+
+function eventAgeGroups(int $eventId): array {
+    $st = getDB()->prepare("SELECT * FROM event_age_groups WHERE event_id = ? ORDER BY sort_order ASC, id ASC");
+    $st->execute([$eventId]);
+    return $st->fetchAll();
+}
+
+function eventAgeGroupCreate(int $eventId, array $data): int {
+    $st = getDB()->prepare("INSERT INTO event_age_groups
+        (event_id, name, min_age, max_age, gender, sort_order, notes)
+        VALUES (?, ?, ?, ?, ?, ?, ?)");
+    $st->execute([
+        $eventId,
+        mb_substr(trim($data['name'] ?? 'Age group'), 0, 80),
+        ($data['min_age'] ?? '') !== '' ? (int)$data['min_age'] : null,
+        ($data['max_age'] ?? '') !== '' ? (int)$data['max_age'] : null,
+        in_array($data['gender'] ?? '', ['M','F','MX'], true) ? $data['gender'] : 'MX',
+        (int)($data['sort_order'] ?? 0),
+        mb_substr(trim($data['notes'] ?? ''), 0, 255) ?: null,
+    ]);
+    return (int)getDB()->lastInsertId();
+}
+
+function eventAgeGroupDelete(int $ageGroupId, int $eventId): void {
+    $st = getDB()->prepare("DELETE FROM event_age_groups WHERE id = ? AND event_id = ?");
+    $st->execute([$ageGroupId, $eventId]);
+}
+
+function eventWeightClasses(int $ageGroupId): array {
+    $st = getDB()->prepare("SELECT * FROM event_weight_classes WHERE age_group_id = ? ORDER BY sort_order ASC, min_weight ASC, id ASC");
+    $st->execute([$ageGroupId]);
+    return $st->fetchAll();
+}
+
+function eventWeightClassCreate(int $ageGroupId, array $data): int {
+    $st = getDB()->prepare("INSERT INTO event_weight_classes
+        (age_group_id, name, min_weight, max_weight, sort_order, fee_amount)
+        VALUES (?, ?, ?, ?, ?, ?)");
+    $st->execute([
+        $ageGroupId,
+        mb_substr(trim($data['name'] ?? 'Class'), 0, 60),
+        ($data['min_weight'] ?? '') !== '' ? (float)$data['min_weight'] : null,
+        ($data['max_weight'] ?? '') !== '' ? (float)$data['max_weight'] : null,
+        (int)($data['sort_order'] ?? 0),
+        ($data['fee_amount'] ?? '') !== '' ? (float)$data['fee_amount'] : null,
+    ]);
+    return (int)getDB()->lastInsertId();
+}
+
+function eventWeightClassDelete(int $classId, int $ageGroupId): void {
+    $st = getDB()->prepare("DELETE FROM event_weight_classes WHERE id = ? AND age_group_id = ?");
+    $st->execute([$classId, $ageGroupId]);
+}
+
+/**
+ * Generate event_categories rows from every (age group × weight class)
+ * combination that isn't already generated. Idempotent — skips pairs
+ * where an event_categories row with the same generated_from_* pair
+ * already exists.
+ *
+ * Returns the number of new categories created.
+ */
+function eventGenerateCategoriesFromAgeWeight(int $eventId): int {
+    $db = getDB();
+    $created = 0;
+
+    $groups = eventAgeGroups($eventId);
+    if (!$groups) return 0;
+
+    $existing = $db->prepare("SELECT COUNT(*) FROM event_categories
+                              WHERE event_id = ? AND generated_from_age_group_id = ? AND generated_from_weight_class_id = ?");
+
+    $ins = $db->prepare("INSERT INTO event_categories
+        (event_id, name, gender, min_age, max_age, min_weight, max_weight,
+         generated_from_age_group_id, generated_from_weight_class_id,
+         format, pool_size, display_order)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'single_elim', 4, ?)");
+
+    $order = 0;
+    foreach ($groups as $ag) {
+        $classes = eventWeightClasses((int)$ag['id']);
+        if (!$classes) {
+            // Age group with no weight classes → one category per age group
+            $order++;
+            $existing->execute([$eventId, (int)$ag['id'], 0]);
+            if ((int)$existing->fetchColumn() > 0) continue;
+            $name = $ag['name'];
+            $ins->execute([
+                $eventId, mb_substr($name, 0, 120), $ag['gender'],
+                $ag['min_age'], $ag['max_age'], null, null,
+                (int)$ag['id'], null, $order
+            ]);
+            $created++;
+            continue;
+        }
+        foreach ($classes as $wc) {
+            $order++;
+            $existing->execute([$eventId, (int)$ag['id'], (int)$wc['id']]);
+            if ((int)$existing->fetchColumn() > 0) continue;
+            $name = trim($ag['name'] . ' — ' . $wc['name']);
+            $ins->execute([
+                $eventId, mb_substr($name, 0, 120), $ag['gender'],
+                $ag['min_age'], $ag['max_age'],
+                $wc['min_weight'], $wc['max_weight'],
+                (int)$ag['id'], (int)$wc['id'], $order
+            ]);
+            $created++;
+        }
+    }
+
+    if ($created > 0) {
+        auditLog('event_categories_generated', 'event', $eventId, (string)$created);
+    }
+    return $created;
+}
+
 
 // ══════════════════════════════════════════════════════════════
 // 4. REGISTRATION & ELIGIBILITY
