@@ -332,6 +332,7 @@ function renderSidebar(string $active = ''): void {
                 ['href' => APP_URL.'/admin/audit.php',           'icon' => 'fa-solid fa-clipboard-list',    'label' => 'Audit Log',         'key' => 'admin_audit'],
                 ['href' => APP_URL.'/admin/consent-logs.php',    'icon' => 'fa-solid fa-file-shield',       'label' => 'Consent Log',       'key' => 'admin_consent_logs'],
                 ['href' => APP_URL.'/admin/event_moderation.php','icon' => 'fa-solid fa-flag',              'label' => 'Event Moderation',  'key' => 'admin_event_mod'],
+                ['href' => APP_URL.'/admin/event_invoices.php',  'icon' => 'fa-solid fa-file-invoice',      'label' => 'Τιμολόγια Events',  'key' => 'admin_event_invoices'],
                 ['href' => APP_URL.'/admin/health.php',          'icon' => 'fa-solid fa-heart-pulse',       'label' => 'System Health',     'key' => 'admin_health'],
                 ['href' => APP_URL.'/admin/backups.php',         'icon' => 'fa-solid fa-database',          'label' => 'Backups',           'key' => 'admin_backups'],
                 ['href' => APP_URL.'/admin/system-settings.php', 'icon' => 'fa-solid fa-gears',             'label' => 'System Settings',   'key' => 'admin_sys_settings'],
@@ -347,6 +348,7 @@ function renderSidebar(string $active = ''): void {
             ['href' => APP_URL.'/pages/departments.php',   'icon' => 'fa-solid fa-folder-open',     'label' => 'Τμήματα',           'key' => 'departments'],
             ['href' => APP_URL.'/pages/notifications.php', 'icon' => 'fa-solid fa-paper-plane',     'label' => 'Ειδοποιήσεις',      'key' => 'notifications'],
             ['href' => APP_URL.'/pages/events.php',        'icon' => 'fa-solid fa-trophy',          'label' => 'Events',            'key' => 'events'],
+            ['href' => APP_URL.'/pages/event_invoices.php','icon' => 'fa-regular fa-file-lines',    'label' => 'Τιμολόγια Events',  'key' => 'event_invoices'],
         ];
 
         if (!$privacyMode && $planSlug === 'pro') {

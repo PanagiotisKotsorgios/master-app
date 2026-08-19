@@ -498,6 +498,120 @@ function eventPaymentsForSchool(int $eventId, int $schoolId): array {
     return $st->fetchAll();
 }
 
+/**
+ * All payments for a school across every event.
+ * Used by /pages/event_invoices.php (school-side invoices tab).
+ */
+function eventPaymentsAllForSchool(int $schoolId): array {
+    $st = getDB()->prepare("
+        SELECT p.*, e.title AS event_title, e.slug AS event_slug, e.starts_at AS event_starts_at
+          FROM event_payments p
+          JOIN events e ON e.id = p.event_id
+         WHERE p.paying_school_id = ?
+         ORDER BY p.created_at DESC");
+    $st->execute([$schoolId]);
+    return $st->fetchAll();
+}
+
+/**
+ * All verified payments platform-wide (for admin invoice upload page).
+ * Optional filter: only rows still missing an invoice.
+ */
+function eventPaymentsForAdmin(bool $pendingInvoiceOnly = false): array {
+    $where = ["p.status = 'verified'"];
+    if ($pendingInvoiceOnly) $where[] = "(p.invoice_file_path IS NULL OR p.invoice_file_path = '')";
+    $sql = "SELECT p.*, e.title AS event_title, e.slug AS event_slug,
+                   s.name AS school_name
+              FROM event_payments p
+              JOIN events e  ON e.id = p.event_id
+         LEFT JOIN schools s ON s.id = p.paying_school_id
+             WHERE " . implode(' AND ', $where) . "
+             ORDER BY p.verified_at DESC, p.id DESC";
+    return getDB()->query($sql)->fetchAll();
+}
+
+function eventPaymentGet(int $paymentId): ?array {
+    $st = getDB()->prepare("SELECT * FROM event_payments WHERE id = ? LIMIT 1");
+    $st->execute([$paymentId]);
+    $row = $st->fetch();
+    return $row ?: null;
+}
+
+/**
+ * Persist an uploaded invoice PDF for a payment.
+ * Stores path under uploads/events/invoices/{payment_id}-{random}.pdf
+ * and updates the payment row.
+ *
+ * @param int    $paymentId  target event_payments.id
+ * @param string $tmpPath    $_FILES[...]['tmp_name']
+ * @param string $origName   original filename (used to enforce .pdf)
+ * @param int    $uploaderId user id doing the upload (admin/superadmin)
+ * @return string            relative path saved to DB
+ * @throws RuntimeException  on validation failure
+ */
+function eventPaymentUploadInvoice(int $paymentId, string $tmpPath, string $origName, int $uploaderId): string {
+    if (!is_file($tmpPath) || !is_uploaded_file($tmpPath)) {
+        throw new RuntimeException('Δεν βρέθηκε ανεβασμένο αρχείο.');
+    }
+    $ext = strtolower(pathinfo($origName, PATHINFO_EXTENSION));
+    if ($ext !== 'pdf') {
+        throw new RuntimeException('Επιτρέπονται μόνο αρχεία PDF.');
+    }
+    $size = @filesize($tmpPath) ?: 0;
+    if ($size <= 0 || $size > 10 * 1024 * 1024) {
+        throw new RuntimeException('Το αρχείο πρέπει να είναι 0-10 MB.');
+    }
+
+    // Verify payment exists
+    $pay = eventPaymentGet($paymentId);
+    if (!$pay) throw new RuntimeException('Η πληρωμή δεν βρέθηκε.');
+
+    // Destination — private-ish subdir, served via download.php
+    $baseDir = __DIR__ . '/../uploads/events/invoices';
+    if (!is_dir($baseDir)) @mkdir($baseDir, 0755, true);
+    if (!is_dir($baseDir)) throw new RuntimeException('Δεν μπόρεσε να δημιουργηθεί ο φάκελος αποθήκευσης.');
+
+    $random  = bin2hex(random_bytes(6));
+    $fname   = sprintf('%d-%s.pdf', $paymentId, $random);
+    $dest    = $baseDir . '/' . $fname;
+    if (!@move_uploaded_file($tmpPath, $dest)) {
+        throw new RuntimeException('Η αποθήκευση του αρχείου απέτυχε.');
+    }
+    @chmod($dest, 0644);
+
+    $relPath = 'uploads/events/invoices/' . $fname;
+
+    getDB()->prepare("UPDATE event_payments
+                         SET invoice_file_path  = ?,
+                             invoice_uploaded_at = NOW(),
+                             invoice_uploaded_by = ?
+                       WHERE id = ?")
+           ->execute([$relPath, $uploaderId, $paymentId]);
+
+    auditLog('event_invoice_uploaded', 'event_payment', $paymentId, $fname);
+    return $relPath;
+}
+
+/**
+ * Remove an uploaded invoice (admin action).
+ */
+function eventPaymentRemoveInvoice(int $paymentId): void {
+    $pay = eventPaymentGet($paymentId);
+    if (!$pay || empty($pay['invoice_file_path'])) return;
+
+    $full = __DIR__ . '/../' . ltrim($pay['invoice_file_path'], '/');
+    if (is_file($full)) @unlink($full);
+
+    getDB()->prepare("UPDATE event_payments
+                         SET invoice_file_path  = NULL,
+                             invoice_uploaded_at = NULL,
+                             invoice_uploaded_by = NULL
+                       WHERE id = ?")
+           ->execute([$paymentId]);
+
+    auditLog('event_invoice_removed', 'event_payment', $paymentId);
+}
+
 
 // ══════════════════════════════════════════════════════════════
 // 6. PUBLIC DISCOVERY
