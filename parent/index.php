@@ -9,6 +9,7 @@ error_reporting(E_ALL);
 
 require_once __DIR__ . "/../includes/config.php";
 require_once __DIR__ . "/auth.php";
+require_once __DIR__ . "/../includes/marketing_popup.php";
 
 requireParentLogin();
 
@@ -544,6 +545,8 @@ $firstName   = ucfirst(explode('@', $parentEmail)[0]);
   </style>
 </head>
 <body>
+
+<?php renderMarketingPopup(); ?>
 
 <?php if (!empty($_SESSION['admin_impersonating_parent'])): ?>
 <div style="background:#f0a500;color:#000;font-size:.8rem;font-weight:700;text-align:center;padding:.5rem 0.75rem;position:sticky;top:0;z-index:9998;display:flex;align-items:center;justify-content:center;gap:.75rem;flex-wrap:wrap">

@@ -323,6 +323,7 @@ function renderSidebar(string $active = ''): void {
                 ['href' => APP_URL.'/admin/coupons.php',         'icon' => 'fa-solid fa-ticket',            'label' => 'Κουπόνια',          'key' => 'admin_coupons'],
                 ['href' => APP_URL.'/admin/notifications.php',   'icon' => 'fa-solid fa-paper-plane',       'label' => 'Αποστολές',         'key' => 'admin_notif'],
                 ['href' => APP_URL.'/admin/broadcast.php',       'icon' => 'fa-solid fa-bullhorn',          'label' => 'Broadcast',         'key' => 'admin_broadcast'],
+                ['href' => APP_URL.'/admin/marketing-popup.php', 'icon' => 'fa-solid fa-lightbulb',         'label' => 'Popup Καμπάνιας',   'key' => 'admin_marketing_popup'],
                 ['href' => APP_URL.'/admin/email-logs.php',      'icon' => 'fa-solid fa-envelope-open-text','label' => 'Email & SMS Logs',  'key' => 'admin_email_logs'],
                 ['href' => APP_URL.'/admin/sms-calculator.php',  'icon' => 'fa-solid fa-calculator',        'label' => 'SMS Κοστολόγηση',   'key' => 'admin_sms_calc'],
                 ['href' => APP_URL.'/admin/activity.php',        'icon' => 'fa-solid fa-wave-square',       'label' => 'Activity Feed',     'key' => 'admin_activity'],
