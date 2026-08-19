@@ -824,6 +824,23 @@ body::after{content:'';position:fixed;inset:0;background-image:url("data:image/s
         </ul>
       </div>
     </div>
+    <!-- Newsletter opt-in -->
+    <div id="newsletter" style="margin-top:2rem;padding:1.5rem 1.75rem;border:1px solid rgba(255,255,255,.08);border-radius:16px;background:linear-gradient(135deg,rgba(230,57,70,.08),rgba(240,165,0,.05));display:flex;flex-wrap:wrap;gap:1.5rem;align-items:center;justify-content:space-between">
+      <div style="flex:1;min-width:240px">
+        <div style="font-weight:800;font-size:1.05rem;margin-bottom:.25rem;letter-spacing:-.01em">Λάβετε ενημερώσεις</div>
+        <div style="color:var(--muted);font-size:.88rem;line-height:1.5">Νέα, features και ανακοινώσεις events — απευθείας στο email σας. Καμία spam.</div>
+      </div>
+      <form id="newsletter-form" style="display:flex;gap:.5rem;flex-wrap:wrap;flex:1;min-width:260px;max-width:520px" onsubmit="return newsletterSubmit(event)">
+        <input type="email" name="email" required placeholder="you@example.com"
+               style="flex:1;min-width:180px;padding:.7rem .95rem;border-radius:10px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.03);color:#f0f2ff;font-family:inherit;font-size:.9rem">
+        <button type="submit"
+                style="padding:.7rem 1.1rem;border-radius:10px;border:none;background:linear-gradient(135deg,#e63946,#c72832);color:#fff;font-weight:700;font-size:.85rem;cursor:pointer;font-family:inherit;letter-spacing:.01em">
+          Εγγραφή
+        </button>
+        <div id="newsletter-msg" role="status" aria-live="polite" style="width:100%;font-size:.82rem;color:#8892b0;min-height:1.2em"></div>
+      </form>
+    </div>
+
     <div class="foot-divider"></div>
     <div class="foot-bot">
       <div class="foot-bot-left">
@@ -834,6 +851,36 @@ body::after{content:'';position:fixed;inset:0;background-image:url("data:image/s
 </footer>
 
 <script>
+// ── Newsletter subscribe ──
+function newsletterSubmit(e) {
+  e.preventDefault();
+  const form = e.target;
+  const btn  = form.querySelector('button');
+  const msg  = document.getElementById('newsletter-msg');
+  const email = form.email.value.trim();
+  if (!email) return false;
+  btn.disabled = true;
+  const originalLabel = btn.textContent;
+  btn.textContent = '…';
+  msg.style.color = '#8892b0';
+  msg.textContent = 'Στέλνουμε…';
+  const data = new FormData();
+  data.append('email', email);
+  fetch('<?= APP_URL ?>/api/newsletter_subscribe.php', { method:'POST', body:data })
+    .then(r => r.json())
+    .then(res => {
+      msg.style.color = res.ok ? '#7bffb4' : '#ffb0b8';
+      msg.textContent = res.message || (res.ok ? 'Εγγραφή επιτυχής.' : 'Πρόβλημα.');
+      if (res.ok) form.email.value = '';
+    })
+    .catch(() => {
+      msg.style.color = '#ffb0b8';
+      msg.textContent = 'Δεν ήταν δυνατή η επικοινωνία με τον server.';
+    })
+    .finally(() => { btn.disabled = false; btn.textContent = originalLabel; });
+  return false;
+}
+
 // ── Navbar scroll effect ──
 const nav = document.getElementById('nav');
 window.addEventListener('scroll', () => nav.classList.toggle('scrolled', window.scrollY > 20));
