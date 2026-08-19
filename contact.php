@@ -526,7 +526,6 @@ body::after{
     </a>
 
     <ul class="nav-links">
-      <li><a href="<?= APP_URL ?>/index.php#for-whom">Για Ποιους</a></li>
       <li><a href="<?= APP_URL ?>/index.php#features">Λειτουργίες</a></li>
       <li><a href="<?= APP_URL ?>/index.php#how-it-works">Πώς Λειτουργεί</a></li>
       <li><a href="<?= APP_URL ?>/index.php#pricing">Τιμές</a></li>
@@ -555,7 +554,6 @@ body::after{
 <!-- MOBILE MENU -->
 <div class="mobile-menu" id="mmenu">
   <a href="<?= APP_URL ?>/index.php#features"><i class="fas fa-bolt"></i> Λειτουργίες</a>
-  <a href="<?= APP_URL ?>/index.php#for-whom"><i class="fas fa-bullseye"></i> Για Ποιους</a>
   <a href="<?= APP_URL ?>/index.php#how-it-works"><i class="fas fa-rocket"></i> Πώς Λειτουργεί</a>
   <a href="<?= APP_URL ?>/index.php#pricing"><i class="fas fa-credit-card"></i> Τιμές</a>
   <div class="mob-divider"></div>

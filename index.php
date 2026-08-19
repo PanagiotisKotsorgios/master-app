@@ -565,7 +565,6 @@ body::after{content:'';position:fixed;inset:0;background-image:url("data:image/s
       <img src="./assets/img/logo-tr.png" alt="MAster" class="nav-logo-img" width="180">
     </a>
     <ul class="nav-links">
-      <li><a href="#for-whom">Για Ποιους</a></li>
       <li><a href="#features">Λειτουργίες</a></li>
       <li><a href="#how-it-works">Πώς Λειτουργεί</a></li>
       <li><a href="#pricing">Τιμές</a></li>
@@ -592,7 +591,6 @@ body::after{content:'';position:fixed;inset:0;background-image:url("data:image/s
 <!-- Mobile fullscreen menu -->
 <div class="mobile-menu" id="mmenu">
   <a href="#features"><i class="fas fa-bolt"></i> Λειτουργίες</a>
-  <a href="#for-whom"><i class="fas fa-bullseye"></i> Για Ποιους</a>
   <a href="#how-it-works"><i class="fas fa-rocket"></i> Πώς Λειτουργεί</a>
   <a href="#pricing"><i class="fas fa-credit-card"></i> Τιμές</a>
   <a href="<?= APP_URL ?>/events/" style="color:#ff6b74"><i class="fas fa-trophy"></i> Events · Πρωταθλήματα</a>
