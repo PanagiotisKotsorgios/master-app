@@ -510,6 +510,101 @@ function eventRegistrationsForOrganiser(int $eventId): array {
 }
 
 // ══════════════════════════════════════════════════════════════
+// Venue layout: zones, tatamis, schedule blocks (all optional).
+// ══════════════════════════════════════════════════════════════
+
+function eventZones(int $eventId): array {
+    $st = getDB()->prepare("SELECT * FROM event_zones WHERE event_id = ? ORDER BY sort_order ASC, id ASC");
+    $st->execute([$eventId]);
+    return $st->fetchAll();
+}
+function eventZoneCreate(int $eventId, array $data): int {
+    $db = getDB();
+    $st = $db->prepare("INSERT INTO event_zones (event_id, name, sort_order, notes) VALUES (?, ?, ?, ?)");
+    $st->execute([
+        $eventId,
+        mb_substr(trim($data['name'] ?? 'Zone'), 0, 80),
+        (int)($data['sort_order'] ?? 0),
+        mb_substr(trim($data['notes'] ?? ''), 0, 255) ?: null,
+    ]);
+    return (int)$db->lastInsertId();
+}
+function eventZoneDelete(int $zoneId, int $eventId): void {
+    getDB()->prepare("DELETE FROM event_zones WHERE id = ? AND event_id = ?")
+           ->execute([$zoneId, $eventId]);
+}
+
+function eventTatamis(int $eventId): array {
+    $st = getDB()->prepare("SELECT t.*, z.name AS zone_name
+                              FROM event_tatamis t
+                         LEFT JOIN event_zones z ON z.id = t.zone_id
+                             WHERE t.event_id = ?
+                             ORDER BY t.ring_number ASC, t.id ASC");
+    $st->execute([$eventId]);
+    return $st->fetchAll();
+}
+function eventTatamiCreate(int $eventId, array $data): int {
+    $db = getDB();
+    $ring = (int)($data['ring_number'] ?? 0);
+    if ($ring <= 0) {
+        // Auto-assign next number
+        $st = $db->prepare("SELECT COALESCE(MAX(ring_number), 0) + 1 FROM event_tatamis WHERE event_id = ?");
+        $st->execute([$eventId]);
+        $ring = (int)$st->fetchColumn();
+    }
+    $st = $db->prepare("INSERT INTO event_tatamis
+        (event_id, zone_id, name, ring_number, color, sort_order, active)
+        VALUES (?, ?, ?, ?, ?, ?, 1)");
+    $st->execute([
+        $eventId,
+        ($data['zone_id'] ?? '') !== '' ? (int)$data['zone_id'] : null,
+        mb_substr(trim($data['name'] ?? ('Tatami ' . $ring)), 0, 60),
+        $ring,
+        mb_substr(trim($data['color'] ?? ''), 0, 20) ?: null,
+        (int)($data['sort_order'] ?? 0),
+    ]);
+    return (int)$db->lastInsertId();
+}
+function eventTatamiDelete(int $tatamiId, int $eventId): void {
+    getDB()->prepare("DELETE FROM event_tatamis WHERE id = ? AND event_id = ?")
+           ->execute([$tatamiId, $eventId]);
+}
+
+function eventScheduleBlocks(int $eventId): array {
+    $st = getDB()->prepare("SELECT b.*, t.name AS tatami_name, c.name AS category_name
+                              FROM event_schedule_blocks b
+                         LEFT JOIN event_tatamis    t ON t.id = b.tatami_id
+                         LEFT JOIN event_categories c ON c.id = b.category_id
+                             WHERE b.event_id = ?
+                             ORDER BY b.starts_at ASC, b.id ASC");
+    $st->execute([$eventId]);
+    return $st->fetchAll();
+}
+function eventScheduleBlockCreate(int $eventId, array $data): int {
+    $db = getDB();
+    $type = in_array($data['block_type'] ?? '', ['category','break','ceremony','other'], true) ? $data['block_type'] : 'category';
+    $st = $db->prepare("INSERT INTO event_schedule_blocks
+        (event_id, tatami_id, category_id, title, block_type, starts_at, ends_at, color, notes)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+    $st->execute([
+        $eventId,
+        ($data['tatami_id']   ?? '') !== '' ? (int)$data['tatami_id']   : null,
+        ($data['category_id'] ?? '') !== '' ? (int)$data['category_id'] : null,
+        mb_substr(trim($data['title'] ?? 'Block'), 0, 120),
+        $type,
+        $data['starts_at'] ?: date('Y-m-d H:i:s'),
+        $data['ends_at']   ?: date('Y-m-d H:i:s', time() + 1800),
+        mb_substr(trim($data['color'] ?? ''), 0, 20) ?: null,
+        mb_substr(trim($data['notes'] ?? ''), 0, 255) ?: null,
+    ]);
+    return (int)$db->lastInsertId();
+}
+function eventScheduleBlockDelete(int $blockId, int $eventId): void {
+    getDB()->prepare("DELETE FROM event_schedule_blocks WHERE id = ? AND event_id = ?")
+           ->execute([$blockId, $eventId]);
+}
+
+// ══════════════════════════════════════════════════════════════
 // Camp-specific extras (attached to any event_registrations row).
 // Only relevant when the parent event.type = 'camp'. Fully
 // optional — a camp registration works without camp_registrations.
