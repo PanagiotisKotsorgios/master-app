@@ -628,6 +628,64 @@ footer #newsletter button, .footer #newsletter button {
 /* Any leftover pure white forced backgrounds are fine on this theme;
    nothing to do. */
 
+/* ═════════════════════════════════════════════════════
+   PASSWORD EYE TOGGLE — force it to sit INSIDE the
+   input on the right, on every page that uses the
+   .eye-btn convention. Overrides page-inline positioning
+   in case any theme layer stomps on it.
+   ═════════════════════════════════════════════════════ */
+
+.input-wrap, .field-wrap, .pwd-wrap, .password-wrap {
+  position: relative !important;
+  display: block !important;
+}
+.input-wrap input,
+.field-wrap input,
+.pwd-wrap input,
+.password-wrap input,
+input[type="password"] {
+  padding-right: 3.25rem !important;
+}
+.eye-btn,
+button.eye-btn,
+.password-toggle,
+button.password-toggle {
+  position: absolute !important;
+  right: .5rem !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+  width: 40px !important;
+  height: 40px !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  background: transparent !important;
+  border: none !important;
+  color: #64748b !important;
+  cursor: pointer !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 8px !important;
+  font-size: 1.1rem !important;
+  line-height: 1 !important;
+  z-index: 2 !important;
+  box-shadow: none !important;
+  transition: color .15s ease, background .15s ease !important;
+}
+.eye-btn:hover, .password-toggle:hover {
+  color: #0f172a !important;
+  background: rgba(15,23,42,.06) !important;
+}
+.eye-btn i, .eye-btn svg,
+.password-toggle i, .password-toggle svg {
+  pointer-events: none !important;
+  color: inherit !important;
+}
+/* Dark-navy contexts (nav, cookie banners): eye stays legible */
+.nav .eye-btn, #dm-cookie-bar .eye-btn, #ck-banner .eye-btn {
+  color: #c1c8d4 !important;
+}
+
 /* Print */
 @media print {
   body { background: #fff !important; color: #000 !important; }

@@ -70,6 +70,7 @@ body{font-family:'DM Sans',sans-serif;background:#000;color:#fff;overflow:hidden
 .ring-single .player{font-size:2rem}
 .ring-single .score{font-size:4rem;min-width:180px}
 </style>
+<?php include __DIR__ . "/../includes/prelogin_polish.php"; ?>
 </head>
 <body class="<?= $ring ? 'ring-single' : '' ?>">
 

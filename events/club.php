@@ -69,6 +69,7 @@ h3{font-size:1rem;margin-bottom:.35rem;line-height:1.3}
 .meta{color:#6b7494;font-size:.82rem;display:flex;gap:1rem;flex-wrap:wrap;margin-top:.4rem}
 .empty{text-align:center;padding:2rem;color:#6b7494;border:1px dashed #2a3248;border-radius:14px}
 </style>
+<?php include __DIR__ . "/../includes/prelogin_polish.php"; ?>
 </head>
 <body>
 

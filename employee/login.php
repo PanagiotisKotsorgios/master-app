@@ -239,6 +239,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     .card > *:nth-child(6){ animation-delay:.30s; }
     @media (prefers-reduced-motion: reduce){ .card > *{ animation:none!important; opacity:1; } }
   </style>
+<?php include __DIR__ . "/../includes/prelogin_polish.php"; ?>
 </head>
 <body>
 

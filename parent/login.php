@@ -233,6 +233,7 @@ input[type="email"], input[type="password"], input[type="text"]#password {
       .card { padding: 1.6rem 1.25rem; border-radius: 20px; }
     }
   </style>
+<?php include __DIR__ . "/../includes/prelogin_polish.php"; ?>
 </head>
 <body>
 

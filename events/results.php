@@ -52,6 +52,7 @@ h1{font-size:1.8rem;margin-bottom:.5rem}
 .print{position:fixed;top:1rem;right:1rem;padding:.6rem 1rem;background:#e63946;color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:700;font-family:inherit;text-decoration:none}
 @media print{.top,.print{display:none}body{background:#fff;color:#000}.cat{border-color:#ccc;background:#fff;box-shadow:none;page-break-inside:avoid}.row{background:#fff}h2,.athlete{color:#000}}
 </style>
+<?php include __DIR__ . "/../includes/prelogin_polish.php"; ?>
 </head>
 <body>
 

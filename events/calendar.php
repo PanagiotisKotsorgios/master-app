@@ -217,6 +217,7 @@ $metaDesc  = 'Μηνιαίο ημερολόγιο για πρωταθλήματ�
     .cal-dow div{font-size:.6rem;letter-spacing:.08em}
   }
 </style>
+<?php include __DIR__ . "/../includes/prelogin_polish.php"; ?>
 </head>
 <body>
 

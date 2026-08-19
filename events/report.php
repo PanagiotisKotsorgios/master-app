@@ -61,6 +61,7 @@ button{width:100%;padding:.85rem;background:#e63946;color:#fff;border:none;borde
 .err{background:rgba(230,57,70,.1);border:1px solid rgba(230,57,70,.35);color:#ffb3b8;padding:1rem;border-radius:10px;margin-bottom:1rem}
 a{color:#8892b0;text-decoration:none;font-size:.85rem;display:inline-block;margin-top:1rem}
 </style>
+<?php include __DIR__ . "/../includes/prelogin_polish.php"; ?>
 </head><body>
 <div class="card">
   <?php if ($done): ?>

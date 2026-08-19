@@ -81,6 +81,7 @@ h1{font-size:1.8rem;margin-bottom:.5rem}
 .evt-meta{color:#6b7494;font-size:.8rem;margin-top:.15rem}
 .empty{text-align:center;padding:2rem;color:#6b7494;border:1px dashed #2a3248;border-radius:14px}
 </style>
+<?php include __DIR__ . "/../includes/prelogin_polish.php"; ?>
 </head>
 <body>
 

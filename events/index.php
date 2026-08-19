@@ -71,6 +71,7 @@ $metaDesc  = 'Ανακαλύψτε πρωταθλήματα, φιλικούς α
   .pagination .cur{background:#e63946;color:#fff;border-color:#e63946}
   @media(max-width:640px){.filters{grid-template-columns:1fr 1fr;grid-template-rows:auto auto}.filters input[name=q]{grid-column:1/-1}}
 </style>
+<?php include __DIR__ . "/../includes/prelogin_polish.php"; ?>
 </head>
 <body>
 

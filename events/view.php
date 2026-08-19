@@ -114,6 +114,7 @@ $canonical = eventPublicUrl($ev);
   .cta-row{display:flex;gap:.6rem;flex-wrap:wrap;margin-top:1.25rem}
   @media(max-width:640px){h1{font-size:1.5rem}.header{padding:1.5rem 1.25rem}.section{padding:1.15rem 1.25rem}}
 </style>
+<?php include __DIR__ . "/../includes/prelogin_polish.php"; ?>
 </head>
 <body>
 

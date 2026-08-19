@@ -71,6 +71,7 @@ h1{font-family:'Playfair Display',serif;font-size:3.4rem;color:#0d0d1a;line-heig
 .print-btn{position:fixed;top:1rem;right:1rem;padding:.75rem 1.5rem;background:#e63946;color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:800;font-family:inherit;font-size:1rem;box-shadow:0 4px 20px rgba(230,57,70,.5)}
 @media print{body{background:#fff;padding:0}.cert{box-shadow:none;margin:0}.print-btn{display:none}}
 </style>
+<?php include __DIR__ . "/../includes/prelogin_polish.php"; ?>
 </head>
 <body>
 
