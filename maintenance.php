@@ -223,6 +223,7 @@ h1 {
   .icon-wrap svg, .progress-fill { animation: none; }
 }
 </style>
+<?php include __DIR__ . '/includes/prelogin_polish.php'; ?>
 </head>
 <body>
 

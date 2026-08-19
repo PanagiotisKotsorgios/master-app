@@ -226,6 +226,7 @@ body::after{content:'';position:fixed;inset:0;background-image:url("data:image/s
   .info-box p{font-size:.82rem}
 }
 </style>
+<?php include __DIR__ . '/../includes/prelogin_polish.php'; ?>
 </head>
 <body>
 

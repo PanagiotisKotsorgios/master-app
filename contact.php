@@ -514,6 +514,7 @@ body::after{
   .nav-logo-img{height:clamp(100px,11vw,120px);}
 }
 </style>
+<?php include __DIR__ . '/includes/prelogin_polish.php'; ?>
 </head>
 <body>
 

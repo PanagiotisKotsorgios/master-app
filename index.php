@@ -554,6 +554,7 @@ body::after{content:'';position:fixed;inset:0;background-image:url("data:image/s
 .foot-copy a:hover { color:var(--white); }
 .foot-copy a strong { color:inherit; font-weight:500; }
 </style>
+<?php include __DIR__ . '/includes/prelogin_polish.php'; ?>
 </head>
 <body>
 

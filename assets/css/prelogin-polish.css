@@ -1,0 +1,441 @@
+/* ============================================================
+   prelogin-polish.css — Modern refinement layer for all
+   pre-login pages (index, login, register, forgot-password,
+   contact, maintenance, legal).
+
+   Design goals:
+   • Same color palette (dark bg, red, gold accents).
+   • Softer, more atmospheric backgrounds (no more blocky
+     'AI-generated' gradients).
+   • Glass-morphism panels with real depth.
+   • Refined buttons and inputs (shadcn / Vercel / Linear feel).
+   • Improved typography and focus states.
+   • Micro-interactions on hover.
+   • Same responsiveness and sizing — no layout changes.
+
+   Loaded AFTER each page's inline <style> so declarations here
+   win the cascade at equal specificity.
+   ============================================================ */
+
+/* ── Ambient atmosphere: replace flat backgrounds with a
+      subtle multi-color aurora + fine grid, so no section
+      reads as a plain colored square ── */
+body {
+  background:
+    radial-gradient(1200px 700px at 12% -8%, rgba(230, 57, 70, .12), transparent 60%),
+    radial-gradient(900px 600px at 92% 0%, rgba(240, 165, 0, .08), transparent 55%),
+    radial-gradient(1000px 800px at 50% 110%, rgba(78, 91, 168, .10), transparent 65%),
+    #060810 !important;
+  background-attachment: fixed !important;
+}
+
+/* Soft grid overlay — barely visible, gives depth without noise */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, .015) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, .015) 1px, transparent 1px);
+  background-size: 56px 56px;
+  pointer-events: none;
+  z-index: 0;
+  mask-image: radial-gradient(1400px 1000px at 50% 30%, #000 40%, transparent 90%);
+  -webkit-mask-image: radial-gradient(1400px 1000px at 50% 30%, #000 40%, transparent 90%);
+}
+
+/* Tame the old noise so it just adds paper-grain, not static */
+body::after {
+  opacity: .015 !important;
+  z-index: 1 !important;
+}
+
+/* ── Navigation refinement ── */
+.nav {
+  transition: background .35s ease, border-color .35s ease, backdrop-filter .35s ease !important;
+}
+.nav.scrolled,
+body:not(.no-scroll) .nav {
+  background: linear-gradient(180deg, rgba(6, 8, 16, .78) 0%, rgba(6, 8, 16, .62) 100%) !important;
+  backdrop-filter: blur(20px) saturate(160%) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(160%) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, .06) !important;
+}
+
+/* Nav links: cleaner tracking, subtle underline animation */
+.nav-links a {
+  position: relative;
+  transition: color .2s ease !important;
+}
+.nav-links a::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: -6px;
+  width: 0;
+  height: 1.5px;
+  background: linear-gradient(90deg, #e63946, #f0a500);
+  transition: width .3s ease, left .3s ease;
+  border-radius: 2px;
+}
+.nav-links a:hover::after {
+  width: 100%;
+  left: 0;
+}
+
+/* ── Buttons: modern gradient with press feedback and glow ── */
+.btn,
+button:not(.no-polish),
+.cta-primary,
+.cta-secondary,
+.btn-primary,
+.btn-secondary,
+input[type="submit"],
+button[type="submit"] {
+  position: relative;
+  border: none;
+  font-family: 'Outfit', 'DM Sans', sans-serif;
+  font-weight: 700;
+  letter-spacing: .01em;
+  border-radius: 10px !important;
+  transition: transform .18s cubic-bezier(.34, 1.56, .64, 1), box-shadow .25s ease, background .25s ease !important;
+  cursor: pointer;
+  isolation: isolate;
+}
+
+.btn-primary,
+.cta-primary,
+input[type="submit"],
+button[type="submit"] {
+  background: linear-gradient(135deg, #e63946 0%, #c72832 100%) !important;
+  color: #fff !important;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, .12) inset,
+    0 8px 24px -8px rgba(230, 57, 70, .55),
+    0 2px 8px rgba(0, 0, 0, .35) !important;
+}
+.btn-primary:hover,
+.cta-primary:hover,
+input[type="submit"]:hover,
+button[type="submit"]:hover {
+  transform: translateY(-1px);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, .18) inset,
+    0 14px 32px -8px rgba(230, 57, 70, .65),
+    0 4px 12px rgba(0, 0, 0, .4) !important;
+}
+.btn-primary:active,
+.cta-primary:active,
+input[type="submit"]:active,
+button[type="submit"]:active {
+  transform: translateY(0);
+}
+
+/* Secondary / outline buttons */
+.btn-secondary,
+.cta-secondary,
+.btn-outline {
+  background: rgba(255, 255, 255, .04) !important;
+  color: #f0f2ff !important;
+  border: 1px solid rgba(255, 255, 255, .12) !important;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+.btn-secondary:hover,
+.cta-secondary:hover,
+.btn-outline:hover {
+  background: rgba(255, 255, 255, .08) !important;
+  border-color: rgba(255, 255, 255, .2) !important;
+  transform: translateY(-1px);
+}
+
+/* Focus rings — accessibility + modern shadcn feel */
+button:focus-visible,
+.btn:focus-visible,
+a.btn:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: 2px solid rgba(230, 57, 70, .55) !important;
+  outline-offset: 2px !important;
+}
+
+/* ── Form inputs: modern soft border + focus ring ── */
+input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]),
+textarea,
+select {
+  background: rgba(255, 255, 255, .025) !important;
+  border: 1px solid rgba(255, 255, 255, .08) !important;
+  color: #f0f2ff !important;
+  border-radius: 10px !important;
+  transition: border-color .18s ease, box-shadow .18s ease, background .18s ease !important;
+}
+input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]):hover,
+textarea:hover,
+select:hover {
+  border-color: rgba(255, 255, 255, .14) !important;
+}
+input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]):focus,
+textarea:focus,
+select:focus {
+  outline: none !important;
+  border-color: rgba(230, 57, 70, .55) !important;
+  background: rgba(255, 255, 255, .04) !important;
+  box-shadow:
+    0 0 0 3px rgba(230, 57, 70, .12),
+    0 1px 0 rgba(255, 255, 255, .04) inset !important;
+}
+input::placeholder,
+textarea::placeholder {
+  color: rgba(240, 242, 255, .35) !important;
+}
+
+/* Labels: cleaner tracking */
+label {
+  letter-spacing: .01em;
+}
+
+/* ── Card / panel modernization — glassy with soft border ── */
+.card,
+.panel,
+.hero-card,
+.feature-card,
+.pricing-card,
+.plan-card,
+.login-box,
+.register-box,
+.form-container,
+.section-inner > .card,
+.contact-form,
+.legal-content,
+[class*="-card"] {
+  background:
+    linear-gradient(180deg, rgba(19, 23, 34, .82) 0%, rgba(13, 16, 23, .78) 100%) !important;
+  border: 1px solid rgba(255, 255, 255, .07) !important;
+  border-radius: 16px !important;
+  backdrop-filter: blur(20px) saturate(160%);
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, .04) inset,
+    0 20px 40px -20px rgba(0, 0, 0, .5),
+    0 8px 16px -8px rgba(0, 0, 0, .3) !important;
+  position: relative;
+  z-index: 2;
+}
+
+/* Section blocks — remove hard edges, keep them airy */
+section,
+.section {
+  position: relative;
+  z-index: 2;
+}
+
+/* Section dividers as fade gradients rather than solid lines */
+section + section,
+.section + .section {
+  position: relative;
+}
+section + section::before,
+.section + .section::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 15%;
+  right: 15%;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, .08) 50%,
+    transparent 100%
+  );
+}
+
+/* ── Typography polish ── */
+h1, h2, h3, h4, h5, h6 {
+  letter-spacing: -.015em;
+}
+h1 {
+  letter-spacing: -.025em;
+}
+
+/* Hero headlines get a subtle text-shadow depth */
+.hero h1, .hero-title, h1.hero-title {
+  text-shadow: 0 2px 40px rgba(230, 57, 70, .15);
+}
+
+/* Gradient accents on strong text where the design already uses gold */
+.text-gradient,
+.gradient-text {
+  background: linear-gradient(135deg, #f0a500 0%, #ff6b7a 55%, #e63946 100%) !important;
+  -webkit-background-clip: text !important;
+  background-clip: text !important;
+  color: transparent !important;
+  -webkit-text-fill-color: transparent !important;
+}
+
+/* ── Pricing / feature cards subtle hover ── */
+.pricing-card,
+.plan-card,
+.feature-card {
+  transition: transform .35s cubic-bezier(.22, 1, .36, 1), border-color .35s ease, box-shadow .35s ease !important;
+}
+.pricing-card:hover,
+.plan-card:hover,
+.feature-card:hover {
+  transform: translateY(-4px);
+  border-color: rgba(230, 57, 70, .35) !important;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, .06) inset,
+    0 28px 56px -20px rgba(230, 57, 70, .25),
+    0 12px 24px -12px rgba(0, 0, 0, .5) !important;
+}
+
+/* Featured / recommended plan gets a warm halo */
+.pricing-card.featured,
+.plan-card.featured,
+.pricing-card.popular,
+.plan-card.popular {
+  border: 1px solid rgba(230, 57, 70, .4) !important;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, .1) inset,
+    0 0 0 1px rgba(230, 57, 70, .08),
+    0 24px 48px -20px rgba(230, 57, 70, .35),
+    0 12px 24px -12px rgba(0, 0, 0, .5) !important;
+}
+
+/* ── Alerts / flash messages softer, modernized ── */
+.alert,
+.flash,
+.error-message,
+.success-message,
+.notice {
+  border-radius: 12px !important;
+  border: 1px solid rgba(255, 255, 255, .08) !important;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+.alert.error, .flash.error, .error-message, .alert-danger,
+.alert-error, .alert.alert-danger {
+  background: linear-gradient(180deg, rgba(230, 57, 70, .12), rgba(230, 57, 70, .06)) !important;
+  border-color: rgba(230, 57, 70, .25) !important;
+  color: #ffe6e8 !important;
+}
+.alert.success, .flash.success, .success-message, .alert-success {
+  background: linear-gradient(180deg, rgba(45, 198, 83, .12), rgba(45, 198, 83, .06)) !important;
+  border-color: rgba(45, 198, 83, .25) !important;
+  color: #d5ffd8 !important;
+}
+.alert.warning, .flash.warning, .alert-warning {
+  background: linear-gradient(180deg, rgba(240, 165, 0, .12), rgba(240, 165, 0, .06)) !important;
+  border-color: rgba(240, 165, 0, .25) !important;
+  color: #fff2c9 !important;
+}
+.alert.info, .flash.info, .alert-info {
+  background: linear-gradient(180deg, rgba(78, 132, 255, .12), rgba(78, 132, 255, .06)) !important;
+  border-color: rgba(78, 132, 255, .25) !important;
+  color: #dbe6ff !important;
+}
+
+/* ── Links: subtle underline on hover ── */
+main a:not(.btn):not(.nav-links a):not(.nav-ctas a):not([class*="btn"]):not([class*="card"]) {
+  transition: color .18s ease, text-decoration-color .18s ease;
+}
+
+/* ── Footer polish ── */
+footer,
+.footer,
+.site-footer {
+  border-top: 1px solid rgba(255, 255, 255, .06);
+  background: linear-gradient(180deg, transparent 0%, rgba(6, 8, 16, .6) 100%);
+}
+
+/* ── Login / Register / Forgot boxes special polish ── */
+.login-box,
+.register-box,
+.forgot-box,
+.auth-box,
+.form-box {
+  position: relative;
+  overflow: hidden;
+}
+/* Subtle inner top-edge sheen */
+.login-box::before,
+.register-box::before,
+.forgot-box::before,
+.auth-box::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 20%;
+  right: 20%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, .3), transparent);
+  z-index: 3;
+}
+
+/* ── Checkboxes / radios: cleaner tick ── */
+input[type="checkbox"],
+input[type="radio"] {
+  accent-color: #e63946;
+  cursor: pointer;
+}
+
+/* ── Scrollbar styling — modern thin ── */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(6, 8, 16, .5);
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, .1);
+  border-radius: 10px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, .18);
+  background-clip: padding-box;
+  border: 2px solid transparent;
+}
+
+/* ── Selection color to match brand ── */
+::selection {
+  background: rgba(230, 57, 70, .35);
+  color: #fff;
+}
+
+/* ── Motion respect ── */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: .01ms !important;
+    transition-duration: .01ms !important;
+  }
+}
+
+/* ── Small screens — keep the polish, tighten shadows ── */
+@media (max-width: 640px) {
+  .card,
+  .panel,
+  .login-box,
+  .register-box,
+  [class*="-card"] {
+    box-shadow:
+      0 1px 0 rgba(255, 255, 255, .04) inset,
+      0 12px 24px -12px rgba(0, 0, 0, .5) !important;
+  }
+  body::before {
+    background-size: 40px 40px;
+  }
+}
+
+/* ── Print: keep it clean ── */
+@media print {
+  body {
+    background: #fff !important;
+    color: #000 !important;
+  }
+  body::before, body::after { display: none !important; }
+}

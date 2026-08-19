@@ -476,6 +476,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['new_password'])) {
     .modal-btn-retry:hover { background:var(--red-dark); transform:translateY(-1px); }
     @media (max-width:420px) { .modal-box { padding:1.5rem 1.25rem; border-radius:18px; } }
   </style>
+<?php include __DIR__ . '/includes/prelogin_polish.php'; ?>
 </head>
 <body>
 

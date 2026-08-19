@@ -756,6 +756,7 @@ HTML;
       .card { padding:.9rem 1rem; }
     }
   </style>
+<?php include __DIR__ . '/includes/prelogin_polish.php'; ?>
 </head>
 <body>
 
