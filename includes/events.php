@@ -509,6 +509,55 @@ function eventRegistrationsForOrganiser(int $eventId): array {
     return $st->fetchAll();
 }
 
+// ══════════════════════════════════════════════════════════════
+// Camp-specific extras (attached to any event_registrations row).
+// Only relevant when the parent event.type = 'camp'. Fully
+// optional — a camp registration works without camp_registrations.
+// ══════════════════════════════════════════════════════════════
+
+function campRegistrationGet(int $registrationId): ?array {
+    $st = getDB()->prepare("SELECT * FROM camp_registrations WHERE registration_id = ? LIMIT 1");
+    $st->execute([$registrationId]);
+    $r = $st->fetch();
+    return $r ?: null;
+}
+
+/**
+ * Insert or update camp-specific fields for a registration.
+ * Whitelists inputs; safe to call from POST forms.
+ */
+function campRegistrationSave(int $registrationId, array $data): int {
+    $db = getDB();
+
+    $cols = [
+        'arrival_at'              => ($data['arrival_at']              ?? '') ?: null,
+        'departure_at'            => ($data['departure_at']            ?? '') ?: null,
+        'tshirt_size'             => in_array($data['tshirt_size'] ?? '', ['XS','S','M','L','XL','XXL','3XL'], true) ? $data['tshirt_size'] : null,
+        'dietary_notes'           => mb_substr(trim($data['dietary_notes']       ?? ''), 0, 255) ?: null,
+        'medical_notes'           => mb_substr(trim($data['medical_notes']       ?? ''), 0, 500) ?: null,
+        'roommate_preference'     => mb_substr(trim($data['roommate_preference'] ?? ''), 0, 120) ?: null,
+        'accompanying_adults'     => max(0, min(20, (int)($data['accompanying_adults'] ?? 0))),
+        'transportation'          => in_array($data['transportation'] ?? '', ['own','shared_bus','pickup_needed'], true) ? $data['transportation'] : null,
+        'emergency_contact_name'  => mb_substr(trim($data['emergency_contact_name']  ?? ''), 0, 120) ?: null,
+        'emergency_contact_phone' => mb_substr(trim($data['emergency_contact_phone'] ?? ''), 0, 40)  ?: null,
+        'notes'                   => trim($data['notes'] ?? '') ?: null,
+    ];
+
+    $existing = campRegistrationGet($registrationId);
+    if ($existing) {
+        $set = implode(',', array_map(fn($k) => "$k = ?", array_keys($cols)));
+        $st = $db->prepare("UPDATE camp_registrations SET $set WHERE registration_id = ?");
+        $st->execute([...array_values($cols), $registrationId]);
+        return (int)$existing['id'];
+    }
+    $fields = array_keys($cols);
+    $ph     = implode(',', array_fill(0, count($fields), '?'));
+    $sql    = "INSERT INTO camp_registrations (registration_id, " . implode(',', $fields) . ") VALUES (?, $ph)";
+    $st = $db->prepare($sql);
+    $st->execute([$registrationId, ...array_values($cols)]);
+    return (int)$db->lastInsertId();
+}
+
 function eventRegistrationsForParticipant(int $eventId, int $schoolId): array {
     $sql = "SELECT r.*, c.name AS cat_name, a.full_name AS athlete_name
             FROM event_registrations r
