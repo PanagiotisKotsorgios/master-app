@@ -445,7 +445,8 @@ h2 { font-size: 1.2rem !important; font-weight: 700 !important; }
       <td class="text-xs"><?=formatDate(substr($s['created_at'],0,10))?></td>
       <td><div class="quick-actions">
         <a href="?edit=<?=$s['id']?>" class="btn btn-ghost btn-sm" title="Επεξεργασία"><i class="fa-solid fa-pen-to-square"></i></a>
-        <a href="?impersonate=<?=$s['id']?>" class="btn btn-ghost btn-sm" title="Login ως σχολή" onclick="return confirm('Login ως <?=h(addslashes($s['name']))?>;')"><i class="fa-solid fa-user-secret"></i></a>
+        <a href="<?= APP_URL ?>/admin/impersonate.php?school=<?=$s['id']?>" class="btn btn-ghost btn-sm" title="Impersonate με OTP (recommended)"><i class="fa-solid fa-shield-halved"></i></a>
+        <a href="?impersonate=<?=$s['id']?>" class="btn btn-ghost btn-sm" title="Instant impersonate (legacy)" onclick="return confirm('Login ως <?=h(addslashes($s['name']))?>;')"><i class="fa-solid fa-user-secret"></i></a>
         <button type="button" class="btn btn-ghost btn-sm" title="Παράταση Trial" onclick="openExtendTrial(<?=$s['id']?>,'<?=h(addslashes($s['name']))?>','<?=h($s['trial_ends']??'')?>')"><i class="fa-solid fa-clock-rotate-left" style="color:#f0a500"></i></button>
         <button type="button" class="btn btn-ghost btn-sm" title="Χειροκίνητο Πλάνο" onclick="openManualPlan(<?=$s['id']?>,'<?=h(addslashes($s['name']))?>',<?=$s['plan_id']?>,'<?=h($s['plan_expires']??'')?>')"><i class="fa-solid fa-wand-magic-sparkles" style="color:#3b82f6"></i></button>
         <button type="button" class="btn btn-ghost btn-sm" title="Σημείωση Admin" onclick="openNote(<?=$s['id']?>,'<?=h(addslashes($s['name']))?>',<?=json_encode($s['admin_note']??'')?>)"><i class="fa-solid fa-note-sticky" style="color:<?=$hasNote?'#f0a500':'var(--muted)'?>"></i></button>
