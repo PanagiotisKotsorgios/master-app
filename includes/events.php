@@ -139,6 +139,24 @@ function eventCreate(array $data, int $schoolId, int $userId): int {
 
     $newId = (int)$db->lastInsertId();
     auditLog('event_created', 'event', $newId, $cols['title']);
+
+    // If admin has set a non-zero default creation fee, apply it to this
+    // event and create the pending payment row. Safe to fail silently:
+    // the columns may not exist yet on a pre-migration deploy.
+    try {
+        $feeDefault = eventCreationFeeDefault();
+        if ($feeDefault > 0) {
+            $db->prepare("UPDATE events
+                             SET creation_fee_amount = ?,
+                                 creation_fee_status = 'unpaid'
+                           WHERE id = ?")
+               ->execute([$feeDefault, $newId]);
+            eventCreationFeeCreatePayment($newId, $schoolId, $feeDefault);
+        }
+    } catch (Throwable $e) {
+        error_log('[MAster] event creation-fee wiring skipped: ' . $e->getMessage());
+    }
+
     return $newId;
 }
 
@@ -433,6 +451,9 @@ function eventPaymentVerify(int $paymentId, int $eventId, int $verifiedBy, strin
         WHERE pr.payment_id = ?");
     $upd->execute([$verifiedBy, $paymentId]);
 
+    // Also sync event.creation_fee_status when this was a creation-fee payment
+    try { eventCreationFeeSyncFromPayment($eventId); } catch (Throwable $e) {}
+
     auditLog('event_payment_verified', 'event_payment', $paymentId);
 }
 
@@ -535,6 +556,86 @@ function eventPaymentGet(int $paymentId): ?array {
     $st->execute([$paymentId]);
     $row = $st->fetch();
     return $row ?: null;
+}
+
+// ══════════════════════════════════════════════════════════════
+// Event creation fee (€50-style organiser fee).
+// Non-breaking: fee amount defaults to 0 → status 'waived' → no gate.
+// Set setting 'event_creation_fee_default' to a non-zero number to
+// require it on newly created events. Set per-event via
+// events.creation_fee_amount.
+// ══════════════════════════════════════════════════════════════
+
+/** Global default fee amount (0 = feature effectively off). */
+function eventCreationFeeDefault(): float {
+    return (float)(getSetting('event_creation_fee_default', '0'));
+}
+
+/** Does THIS event actually require a creation fee to be paid? */
+function eventRequiresCreationFee(array $event): bool {
+    return ((float)($event['creation_fee_amount'] ?? 0)) > 0
+        && (($event['creation_fee_status'] ?? 'waived') !== 'waived');
+}
+
+/** Was it paid + verified? */
+function eventCreationFeePaid(array $event): bool {
+    if (!eventRequiresCreationFee($event)) return true; // waived counts as paid
+    return ($event['creation_fee_status'] ?? '') === 'verified';
+}
+
+/**
+ * Get the single event_payments row for this event's creation fee
+ * (or null if none created yet).
+ */
+function eventCreationFeePayment(int $eventId): ?array {
+    $st = getDB()->prepare("SELECT * FROM event_payments
+                             WHERE event_id = ? AND purpose = 'creation'
+                             ORDER BY id DESC LIMIT 1");
+    $st->execute([$eventId]);
+    $row = $st->fetch();
+    return $row ?: null;
+}
+
+/**
+ * Create the initial creation-fee payment row (idempotent — returns
+ * existing id if one is already pending). Called by the organiser
+ * from the event manage page.
+ */
+function eventCreationFeeCreatePayment(int $eventId, int $schoolId, float $amount): int {
+    $existing = eventCreationFeePayment($eventId);
+    if ($existing) return (int)$existing['id'];
+
+    $db = getDB();
+    $st = $db->prepare("INSERT INTO event_payments
+        (event_id, paying_school_id, purpose, amount, currency, method, status)
+        VALUES (?, ?, 'creation', ?, 'EUR', 'bank', 'pending')");
+    $st->execute([$eventId, $schoolId, $amount]);
+    $pid = (int)$db->lastInsertId();
+
+    // Mark event as unpaid (creation fee owed)
+    $db->prepare("UPDATE events SET creation_fee_status = 'unpaid' WHERE id = ?")->execute([$eventId]);
+    return $pid;
+}
+
+/**
+ * Reflect a payment status change back onto the event's
+ * creation_fee_status column. Call this after an admin verifies
+ * / rejects the creation-fee payment via existing event_payments
+ * flows.
+ */
+function eventCreationFeeSyncFromPayment(int $eventId): void {
+    $pay = eventCreationFeePayment($eventId);
+    if (!$pay) return;
+    $map = [
+        'pending'         => 'unpaid',
+        'proof_uploaded'  => 'proof_uploaded',
+        'verified'        => 'verified',
+        'rejected'        => 'unpaid',
+        'refunded'        => 'waived',
+    ];
+    $newStatus = $map[$pay['status']] ?? 'unpaid';
+    getDB()->prepare("UPDATE events SET creation_fee_status = ? WHERE id = ?")
+           ->execute([$newStatus, $eventId]);
 }
 
 /**
