@@ -230,29 +230,63 @@ function eventCategoryGet(int $categoryId): ?array {
 
 function eventCategoryCreate(int $eventId, array $data): int {
     $db = getDB();
-    $sql = "INSERT INTO event_categories
-              (event_id, name, gender, min_age, max_age, min_weight, max_weight,
-               belt_from, belt_to, style, max_slots, fee_override, format, pool_size, display_order)
-            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
-    $st = $db->prepare($sql);
-    $st->execute([
-        $eventId,
-        mb_substr(trim($data['name'] ?? 'Κατηγορία'), 0, 120),
-        in_array($data['gender'] ?? '', ['M','F','MX'], true) ? $data['gender'] : 'MX',
-        $data['min_age'] !== '' ? (int)$data['min_age'] : null,
-        $data['max_age'] !== '' ? (int)$data['max_age'] : null,
-        $data['min_weight'] !== '' ? (float)$data['min_weight'] : null,
-        $data['max_weight'] !== '' ? (float)$data['max_weight'] : null,
-        trim($data['belt_from'] ?? '') ?: null,
-        trim($data['belt_to'] ?? '') ?: null,
-        trim($data['style'] ?? '') ?: null,
-        $data['max_slots'] !== '' ? (int)$data['max_slots'] : null,
-        $data['fee_override'] !== '' ? (float)$data['fee_override'] : null,
-        in_array($data['format'] ?? '', ['single_elim','double_elim','round_robin','pool_ko','pool_only','exhibition'], true) ? $data['format'] : 'single_elim',
-        max(2, (int)($data['pool_size'] ?? 4)),
-        (int)($data['display_order'] ?? 0),
-    ]);
-    return (int)$db->lastInsertId();
+    $format = in_array($data['format'] ?? '', ['single_elim','double_elim','round_robin','pool_ko','pool_only','exhibition','group_weight'], true)
+              ? $data['format'] : 'single_elim';
+    $marginKg = ($data['weight_margin_kg'] ?? '') !== '' ? (float)$data['weight_margin_kg'] : 0.0;
+
+    // Best-effort include the new column; safe if migration 009 hasn't run
+    // (we degrade gracefully to the old column set).
+    try {
+        $sql = "INSERT INTO event_categories
+                  (event_id, name, gender, min_age, max_age, min_weight, max_weight,
+                   belt_from, belt_to, style, max_slots, fee_override, format, pool_size, weight_margin_kg, display_order)
+                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+        $st = $db->prepare($sql);
+        $st->execute([
+            $eventId,
+            mb_substr(trim($data['name'] ?? 'Κατηγορία'), 0, 120),
+            in_array($data['gender'] ?? '', ['M','F','MX'], true) ? $data['gender'] : 'MX',
+            $data['min_age'] !== '' ? (int)$data['min_age'] : null,
+            $data['max_age'] !== '' ? (int)$data['max_age'] : null,
+            $data['min_weight'] !== '' ? (float)$data['min_weight'] : null,
+            $data['max_weight'] !== '' ? (float)$data['max_weight'] : null,
+            trim($data['belt_from'] ?? '') ?: null,
+            trim($data['belt_to'] ?? '') ?: null,
+            trim($data['style'] ?? '') ?: null,
+            $data['max_slots'] !== '' ? (int)$data['max_slots'] : null,
+            $data['fee_override'] !== '' ? (float)$data['fee_override'] : null,
+            $format,
+            max(2, (int)($data['pool_size'] ?? 4)),
+            $marginKg,
+            (int)($data['display_order'] ?? 0),
+        ]);
+        return (int)$db->lastInsertId();
+    } catch (Throwable $e) {
+        // Legacy fallback (pre-migration-009 column set)
+        $sql = "INSERT INTO event_categories
+                  (event_id, name, gender, min_age, max_age, min_weight, max_weight,
+                   belt_from, belt_to, style, max_slots, fee_override, format, pool_size, display_order)
+                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+        $st = $db->prepare($sql);
+        $st->execute([
+            $eventId,
+            mb_substr(trim($data['name'] ?? 'Κατηγορία'), 0, 120),
+            in_array($data['gender'] ?? '', ['M','F','MX'], true) ? $data['gender'] : 'MX',
+            $data['min_age'] !== '' ? (int)$data['min_age'] : null,
+            $data['max_age'] !== '' ? (int)$data['max_age'] : null,
+            $data['min_weight'] !== '' ? (float)$data['min_weight'] : null,
+            $data['max_weight'] !== '' ? (float)$data['max_weight'] : null,
+            trim($data['belt_from'] ?? '') ?: null,
+            trim($data['belt_to'] ?? '') ?: null,
+            trim($data['style'] ?? '') ?: null,
+            $data['max_slots'] !== '' ? (int)$data['max_slots'] : null,
+            $data['fee_override'] !== '' ? (float)$data['fee_override'] : null,
+            $format,
+            max(2, (int)($data['pool_size'] ?? 4)),
+            (int)($data['display_order'] ?? 0),
+        ]);
+        return (int)$db->lastInsertId();
+    }
 }
 
 function eventCategoryDelete(int $categoryId, int $eventId): void {

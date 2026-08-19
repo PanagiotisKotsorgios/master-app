@@ -148,10 +148,113 @@ function bracketGenerate(int $eventId, int $categoryId): int {
         'pool_ko'     => bracketGenPoolKo($eventId, $categoryId, $regs, (int)$cat['pool_size']),
         'round_robin' => bracketGenRoundRobin($eventId, $categoryId, $regs),
         'pool_only'   => bracketGenPoolOnly($eventId, $categoryId, $regs, (int)$cat['pool_size']),
+        'group_weight'=> bracketGenGroupByWeight(
+                            $eventId, $categoryId, $regs,
+                            (int)$cat['pool_size'],
+                            (float)($cat['weight_margin_kg'] ?? 0)),
         'double_elim' => bracketGenSingleElim($eventId, $categoryId, $regs), // TODO Phase 3
         'exhibition'  => 0,
         default       => 0,
     };
+}
+
+/**
+ * GROUP_BASED matchmaking: sort athletes by their latest recorded
+ * weight and split them into round-robin pools of size $poolSize.
+ * If $marginKg > 0, force a new pool whenever the weight jump from
+ * one athlete to the next exceeds $marginKg — so athletes fight
+ * roughly comparable opponents even without hardcoded categories.
+ *
+ * Athletes without any weight_history row go into a final pool
+ * marked 'Unranked' and still get round-robin matches among
+ * themselves.
+ *
+ * Returns the count of matches created.
+ */
+function bracketGenGroupByWeight(int $eventId, int $categoryId, array $regs, int $poolSize, float $marginKg = 0.0): int {
+    if (!$regs) return 0;
+    $poolSize = max(2, $poolSize);
+
+    // Fetch latest weight per athlete in a single query
+    $ids = array_filter(array_map(fn($r) => (int)$r['athlete_id'], $regs));
+    $weights = [];
+    if ($ids) {
+        $ph = implode(',', array_fill(0, count($ids), '?'));
+        $wq = getDB()->prepare("
+            SELECT wh.athlete_id, wh.weight
+              FROM weight_history wh
+              JOIN (
+                    SELECT athlete_id, MAX(recorded_at) AS m
+                      FROM weight_history
+                     WHERE athlete_id IN ($ph)
+                     GROUP BY athlete_id
+                   ) latest
+                ON latest.athlete_id = wh.athlete_id AND latest.m = wh.recorded_at
+        ");
+        $wq->execute($ids);
+        foreach ($wq->fetchAll() as $row) {
+            $weights[(int)$row['athlete_id']] = (float)$row['weight'];
+        }
+    }
+
+    // Split regs into ranked (has weight) + unranked
+    $ranked = []; $unranked = [];
+    foreach ($regs as $r) {
+        $w = $weights[(int)$r['athlete_id']] ?? null;
+        if ($w !== null) { $r['_weight'] = $w; $ranked[] = $r; }
+        else             { $unranked[] = $r; }
+    }
+    usort($ranked, fn($a, $b) => $a['_weight'] <=> $b['_weight']);
+
+    // Build pools honoring poolSize and (optionally) marginKg splits
+    $pools = [];
+    $current = [];
+    $prevWeight = null;
+    foreach ($ranked as $r) {
+        if ($marginKg > 0 && $prevWeight !== null && ($r['_weight'] - $prevWeight) > $marginKg && $current) {
+            $pools[] = $current;
+            $current = [];
+        }
+        $current[] = $r;
+        $prevWeight = $r['_weight'];
+        if (count($current) >= $poolSize) {
+            $pools[] = $current;
+            $current = [];
+            $prevWeight = null;
+        }
+    }
+    if ($current) $pools[] = $current;
+    if ($unranked) $pools[] = $unranked;
+
+    // Persist pools + round-robin matches
+    $db = getDB();
+    $poolInsert = $db->prepare("INSERT INTO event_pools (event_id, category_id, name, format, display_order) VALUES (?,?,?, 'round_robin', ?)");
+    $regUpdate  = $db->prepare("UPDATE event_registrations SET pool_id = ? WHERE id = ?");
+    $matchIns   = $db->prepare("INSERT INTO event_matches
+        (event_id, category_id, pool_id, round_label, bracket_position, ring_number,
+         red_registration_id, blue_registration_id, result_type, status)
+        VALUES (?,?,?,?,?,1,?,?, 'pending','scheduled')");
+
+    $pos = 1;
+    foreach ($pools as $i => $poolRegs) {
+        if (!$poolRegs) continue;
+        $poolName = ($poolRegs === $unranked) ? 'Unranked' : 'Group ' . chr(65 + $i);
+        $poolInsert->execute([$eventId, $categoryId, $poolName, $i]);
+        $poolId = (int)$db->lastInsertId();
+        foreach ($poolRegs as $r) $regUpdate->execute([$poolId, (int)$r['id']]);
+        $n = count($poolRegs);
+        for ($a = 0; $a < $n; $a++) {
+            for ($b = $a + 1; $b < $n; $b++) {
+                $matchIns->execute([
+                    $eventId, $categoryId, $poolId,
+                    $poolName . ' R', $pos,
+                    (int)$poolRegs[$a]['id'], (int)$poolRegs[$b]['id'],
+                ]);
+                $pos++;
+            }
+        }
+    }
+    return $pos - 1;
 }
 
 function bracketGenSingleElim(int $eventId, int $categoryId, array $regs): int {
