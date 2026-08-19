@@ -525,6 +525,85 @@ function isPlanActive(): bool {
 }
 
 // ══════════════════════════════════════════════════════════════
+// 10b. SCHOOL APPROVAL WORKFLOW
+//     Layered on top of plan_status. Grandfathered to 'approved'
+//     for every existing school by migration 006. Admins can flip
+//     it to 'pending' via /admin/school_approvals.php.
+//
+//     Gate any page that should require approved status with:
+//         requireApprovedSchool();
+//     — it's OFF by default; existing pages are unchanged.
+// ══════════════════════════════════════════════════════════════
+
+/** Fetch the current school's approval status (safe default 'approved'). */
+function schoolApprovalStatus(): string {
+    static $cache = null;
+    if ($cache !== null) return $cache;
+
+    $sid = schoolId();
+    if (!$sid) return $cache = 'approved';
+    try {
+        $st = getDB()->prepare('SELECT approval_status FROM schools WHERE id = ? LIMIT 1');
+        $st->execute([$sid]);
+        $v = $st->fetchColumn();
+        return $cache = ($v ?: 'approved');
+    } catch (Throwable $e) {
+        // Column may not exist yet (pre-migration deploy) — treat as approved.
+        return $cache = 'approved';
+    }
+}
+
+function schoolIsApproved(): bool {
+    if (isSuperAdmin()) return true;
+    return schoolApprovalStatus() === 'approved';
+}
+
+/** Redirect to a "pending approval" landing page if not approved. */
+function requireApprovedSchool(): void {
+    if (schoolIsApproved()) return;
+    $status = schoolApprovalStatus();
+    // Attach status to session so the pending page can show context
+    $_SESSION['school_approval_reason'] = $status;
+    redirect(APP_URL . '/pending-approval.php');
+}
+
+/**
+ * Admin action — flip a school's approval status and log audit row.
+ *
+ * @param int    $schoolId
+ * @param string $newStatus  one of: pending, approved, rejected, suspended
+ * @param string $reason     optional note
+ */
+function schoolSetApproval(int $schoolId, string $newStatus, string $reason = ''): void {
+    $allowed = ['pending', 'approved', 'rejected', 'suspended'];
+    if (!in_array($newStatus, $allowed, true)) {
+        throw new InvalidArgumentException('Invalid approval status');
+    }
+    $db  = getDB();
+    $cur = $db->prepare('SELECT approval_status FROM schools WHERE id = ? LIMIT 1');
+    $cur->execute([$schoolId]);
+    $from = $cur->fetchColumn() ?: null;
+    if ($from === $newStatus) return; // no-op
+
+    $ts = ($newStatus === 'approved') ? 'NOW()' : 'NULL';
+    $db->prepare("UPDATE schools
+                     SET approval_status = ?,
+                         approved_at     = $ts,
+                         approved_by     = ?
+                   WHERE id = ?")
+       ->execute([$newStatus, $newStatus === 'approved' ? userId() : null, $schoolId]);
+
+    try {
+        $db->prepare('INSERT INTO school_approval_history (school_id, actor_id, from_status, to_status, reason) VALUES (?, ?, ?, ?, ?)')
+           ->execute([$schoolId, userId() ?: null, $from, $newStatus, mb_substr($reason, 0, 500)]);
+    } catch (Throwable $e) {
+        error_log('[MAster] approval history insert failed: ' . $e->getMessage());
+    }
+
+    auditLog('school_approval_' . $newStatus, 'school', $schoolId, $reason);
+}
+
+// ══════════════════════════════════════════════════════════════
 // 11. SCHOOL STATUS
 //     Υπολογίζει κατάσταση πλάνου: active/trial/expired
 //     Χρησιμοποιείται για payment wall rendering.

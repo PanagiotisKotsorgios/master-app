@@ -333,6 +333,7 @@ function renderSidebar(string $active = ''): void {
                 ['href' => APP_URL.'/admin/consent-logs.php',    'icon' => 'fa-solid fa-file-shield',       'label' => 'Consent Log',       'key' => 'admin_consent_logs'],
                 ['href' => APP_URL.'/admin/event_moderation.php','icon' => 'fa-solid fa-flag',              'label' => 'Event Moderation',  'key' => 'admin_event_mod'],
                 ['href' => APP_URL.'/admin/event_invoices.php',  'icon' => 'fa-solid fa-file-invoice',      'label' => 'Τιμολόγια Events',  'key' => 'admin_event_invoices'],
+                ['href' => APP_URL.'/admin/school_approvals.php','icon' => 'fa-solid fa-user-check',        'label' => 'Έγκριση Σχολών',    'key' => 'admin_school_approvals'],
                 ['href' => APP_URL.'/admin/health.php',          'icon' => 'fa-solid fa-heart-pulse',       'label' => 'System Health',     'key' => 'admin_health'],
                 ['href' => APP_URL.'/admin/backups.php',         'icon' => 'fa-solid fa-database',          'label' => 'Backups',           'key' => 'admin_backups'],
                 ['href' => APP_URL.'/admin/system-settings.php', 'icon' => 'fa-solid fa-gears',             'label' => 'System Settings',   'key' => 'admin_sys_settings'],
