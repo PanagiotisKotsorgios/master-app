@@ -349,6 +349,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
   .pp-modal p { font-size: 0.8rem; }
 }
 </style>
+<link rel="stylesheet" href="<?= APP_URL ?>/assets/css/postlogin-portal-theme.css?v=<?= @filemtime(__DIR__ . "/../assets/css/postlogin-portal-theme.css") ?: time() ?>">
 </head>
 <body>
 <div style="min-height:100vh;display:flex;flex-direction:column">

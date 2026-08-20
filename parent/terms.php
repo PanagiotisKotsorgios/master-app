@@ -197,6 +197,7 @@ body {
   .terms-header, .terms-body, .terms-footer { padding: 1.2rem 1.25rem; }
 }
 </style>
+<link rel="stylesheet" href="<?= APP_URL ?>/assets/css/postlogin-portal-theme.css?v=<?= @filemtime(__DIR__ . "/../assets/css/postlogin-portal-theme.css") ?: time() ?>">
 </head>
 <body>
 

@@ -1,0 +1,369 @@
+/* ============================================================
+   postlogin-portal-theme.css
+   ============================================================
+   Applies the same deep-navy + red theme used on the pre-login
+   pages to the POST-LOGIN app shell (club dashboard, parent
+   portal, admin panel). Palette-only overrides on top of
+   assets/css/style.css so no page layout changes.
+
+   Loaded after style.css via renderHead() and via
+   /parent/*.php pages.
+   ============================================================ */
+
+/* ── Palette: shift near-black → deep navy, keep red ── */
+:root {
+  --bg:   #0a1628 !important;   /* page canvas */
+  --bg2:  #0e1e35 !important;   /* elevated (sidebar, topbar, cards) */
+  --bg3:  #17304f !important;   /* hover surfaces */
+  --bg4:  #1e3d63 !important;   /* stronger accent */
+
+  --border:  rgba(255,255,255,.08) !important;
+  --border2: rgba(255,255,255,.14) !important;
+
+  --red:       #e63946 !important;
+  --red-dark:  #c72832 !important;
+  --red-glow:  rgba(230,57,70,.18) !important;
+
+  --text:   #ffffff !important;
+  --muted:  #c1c8d4 !important;
+  --muted2: #7c8aa3 !important;
+}
+
+/* ── Base ── */
+html { color-scheme: dark; }
+body {
+  background: #0a1628 !important;
+  color: #e6ebf5 !important;
+  font-family: 'Inter','DM Sans', system-ui, -apple-system, sans-serif !important;
+}
+
+/* Radial gradients from any polish layer — off */
+body::before, body::after {
+  display: none !important;
+  content: none !important;
+}
+
+/* ── Sidebar ── */
+.sidebar {
+  background: linear-gradient(180deg, #0e1e35 0%, #0a1628 100%) !important;
+  border-right: 1px solid rgba(255,255,255,.06) !important;
+}
+.sidebar-header, .sidebar-logo, .sidebar-school {
+  border-bottom-color: rgba(255,255,255,.06) !important;
+}
+.sidebar-logo .logo-text { color: #ffffff !important; }
+.sidebar-logo .logo-text em { color: #e63946 !important; font-style: normal !important; }
+.sidebar-logo .logo-icon {
+  background: linear-gradient(135deg, #e63946, #c72832) !important;
+  box-shadow: 0 4px 12px -4px rgba(230,57,70,.55) !important;
+}
+.sidebar-school { color: #7c8aa3 !important; }
+.sidebar-bottom { border-top-color: rgba(255,255,255,.06) !important; }
+
+/* Nav items */
+.sidebar .nav-item, .nav-item {
+  color: #c1c8d4 !important;
+  border-radius: 8px !important;
+  transition: color .18s ease, background .18s ease !important;
+}
+.sidebar .nav-item:hover, .nav-item:hover {
+  color: #ffffff !important;
+  background: rgba(255,255,255,.05) !important;
+}
+.sidebar .nav-item.active, .nav-item.active {
+  color: #ffffff !important;
+  background: linear-gradient(90deg, rgba(230,57,70,.22), rgba(230,57,70,.08)) !important;
+  border-left: 3px solid #e63946 !important;
+}
+.sidebar .nav-item i, .nav-item i { color: inherit !important; }
+
+/* Sidebar plan chip */
+.sidebar-plan {
+  background: rgba(255,255,255,.04) !important;
+  border: 1px solid rgba(255,255,255,.08) !important;
+  color: #c1c8d4 !important;
+}
+.sidebar-plan strong { color: #ffffff !important; }
+
+/* ── Topbar ── */
+.topbar {
+  background: rgba(14,30,53,.85) !important;
+  backdrop-filter: blur(14px) saturate(160%) !important;
+  -webkit-backdrop-filter: blur(14px) saturate(160%) !important;
+  border-bottom: 1px solid rgba(255,255,255,.06) !important;
+  color: #ffffff !important;
+}
+.topbar h1, .topbar h2, .topbar .title { color: #ffffff !important; }
+
+.user-chip {
+  background: rgba(255,255,255,.04) !important;
+  border: 1px solid rgba(255,255,255,.1) !important;
+  color: #ffffff !important;
+}
+.user-chip:hover {
+  background: rgba(255,255,255,.08) !important;
+  border-color: rgba(230,57,70,.35) !important;
+}
+.user-chip .uname { color: #ffffff !important; }
+.user-chip .avatar {
+  background: linear-gradient(135deg, #e63946, #c72832) !important;
+  color: #ffffff !important;
+  box-shadow: 0 2px 6px -2px rgba(230,57,70,.5) !important;
+}
+
+/* ── Main content area ── */
+.main-content, .main-wrap, main {
+  background: #0a1628 !important;
+  color: #e6ebf5 !important;
+}
+
+/* ── Cards / stat blocks ── */
+.card, .stat-card, .panel, .box:not(#ck-banner):not(#dm-cookie-bar), .info-box {
+  background: linear-gradient(180deg, rgba(23,48,79,.65), rgba(14,30,53,.65)) !important;
+  border: 1px solid rgba(255,255,255,.08) !important;
+  border-radius: 14px !important;
+  color: #e6ebf5 !important;
+  box-shadow: 0 4px 20px -12px rgba(0,0,0,.5) !important;
+}
+.card:hover, .stat-card:hover {
+  border-color: rgba(255,255,255,.14) !important;
+}
+.card h1, .card h2, .card h3, .card h4, .card h5,
+.stat-card h1, .stat-card h2, .stat-card h3, .stat-card h4 {
+  color: #ffffff !important;
+}
+.stat-card .stat-value, .stat-card .value { color: #ffffff !important; }
+.stat-card .stat-label, .stat-card .label { color: #7c8aa3 !important; }
+
+/* Colored icon pills */
+.icon-red    { background: rgba(230,57,70,.15) !important; color: #ff8891 !important; }
+.icon-blue   { background: rgba(96,165,250,.15) !important; color: #93c5fd !important; }
+.icon-green  { background: rgba(74,222,128,.15) !important; color: #86efac !important; }
+.icon-gold   { background: rgba(240,165,0,.15) !important; color: #fbbf24 !important; }
+.icon-purple { background: rgba(168,85,247,.15) !important; color: #c4b5fd !important; }
+
+/* ── Tables ── */
+table { color: #e6ebf5 !important; }
+thead th {
+  background: rgba(255,255,255,.03) !important;
+  color: #7c8aa3 !important;
+  border-bottom: 1px solid rgba(255,255,255,.08) !important;
+}
+tbody td {
+  color: #e6ebf5 !important;
+  border-bottom: 1px solid rgba(255,255,255,.05) !important;
+}
+tbody tr:hover td {
+  background: rgba(255,255,255,.03) !important;
+}
+
+/* ── Badges ── */
+.badge {
+  border-radius: 999px !important;
+  font-weight: 700 !important;
+  letter-spacing: .02em !important;
+}
+.badge-paid, .badge-active, .badge-success {
+  background: rgba(74,222,128,.15) !important; color: #86efac !important;
+}
+.badge-pending, .badge-warning, .badge-trial {
+  background: rgba(240,165,0,.15) !important; color: #fbbf24 !important;
+}
+.badge-overdue, .badge-danger, .badge-expired {
+  background: rgba(230,57,70,.15) !important; color: #ff8891 !important;
+}
+.badge-superadmin, .badge-admin {
+  background: rgba(230,57,70,.15) !important; color: #ff8891 !important;
+}
+.badge-info {
+  background: rgba(96,165,250,.15) !important; color: #93c5fd !important;
+}
+
+/* ── Buttons ── */
+.btn, button:not(.no-polish):not(.eye-btn):not(.ck-switch input):not(.dm-cm-switch input) {
+  border-radius: 10px !important;
+  font-family: 'Inter','DM Sans', system-ui, sans-serif !important;
+  font-weight: 700 !important;
+  transition: transform .12s ease, box-shadow .2s ease, background .2s ease !important;
+}
+.btn-primary, .btn-red, button[type="submit"]:not(.btn-secondary):not(.btn-ghost) {
+  background: linear-gradient(135deg, #e63946 0%, #c72832 100%) !important;
+  color: #ffffff !important;
+  border: none !important;
+  box-shadow: 0 1px 0 rgba(255,255,255,.15) inset,
+              0 6px 16px -8px rgba(230,57,70,.55) !important;
+}
+.btn-primary:hover, .btn-red:hover {
+  background: linear-gradient(135deg, #f04957 0%, #d02f3a 100%) !important;
+  transform: translateY(-1px);
+  box-shadow: 0 1px 0 rgba(255,255,255,.2) inset,
+              0 10px 22px -8px rgba(230,57,70,.7) !important;
+}
+.btn-secondary, .btn-outline, .btn-ghost {
+  background: rgba(255,255,255,.04) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255,255,255,.12) !important;
+}
+.btn-secondary:hover, .btn-outline:hover, .btn-ghost:hover {
+  background: rgba(255,255,255,.08) !important;
+  border-color: rgba(230,57,70,.4) !important;
+}
+
+/* ── Forms ── */
+.form-control, input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]):not([type="color"]):not([type="file"]),
+textarea, select {
+  background: rgba(255,255,255,.04) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255,255,255,.1) !important;
+  border-radius: 10px !important;
+  transition: border-color .18s ease, box-shadow .18s ease, background .18s ease !important;
+}
+.form-control:hover, input:hover, textarea:hover, select:hover {
+  border-color: rgba(255,255,255,.18) !important;
+}
+.form-control:focus, input:focus, textarea:focus, select:focus {
+  outline: none !important;
+  border-color: rgba(230,57,70,.65) !important;
+  box-shadow: 0 0 0 3px rgba(230,57,70,.18) !important;
+  background: rgba(255,255,255,.06) !important;
+}
+input::placeholder, textarea::placeholder { color: #7c8aa3 !important; }
+label { color: #c1c8d4 !important; }
+input[type="checkbox"], input[type="radio"] { accent-color: #e63946 !important; }
+
+/* Select dropdown arrows should be visible on dark bg */
+select { color-scheme: dark; }
+
+/* ── Alerts ── */
+.alert, .flash {
+  border-radius: 12px !important;
+  border-width: 1px !important;
+  border-style: solid !important;
+}
+.alert-success, .flash.success {
+  background: rgba(74,222,128,.1) !important;
+  border-color: rgba(74,222,128,.28) !important;
+  color: #86efac !important;
+}
+.alert-danger, .alert-error, .flash.danger, .flash.error {
+  background: rgba(230,57,70,.1) !important;
+  border-color: rgba(230,57,70,.3) !important;
+  color: #ff8891 !important;
+}
+.alert-warning, .flash.warning {
+  background: rgba(240,165,0,.1) !important;
+  border-color: rgba(240,165,0,.28) !important;
+  color: #fbbf24 !important;
+}
+.alert-info, .flash.info {
+  background: rgba(96,165,250,.1) !important;
+  border-color: rgba(96,165,250,.28) !important;
+  color: #93c5fd !important;
+}
+
+/* ── Modals / overlays ── */
+.modal-overlay, .overlay { background: rgba(10,22,40,.7) !important; backdrop-filter: blur(4px) !important; -webkit-backdrop-filter: blur(4px) !important; }
+.modal, .modal-dialog {
+  background: linear-gradient(180deg, #17304f 0%, #122540 100%) !important;
+  border: 1px solid rgba(255,255,255,.1) !important;
+  border-radius: 16px !important;
+  color: #e6ebf5 !important;
+  box-shadow: 0 30px 80px -20px rgba(0,0,0,.6) !important;
+}
+
+/* ── Tabs ── */
+.tabs, .tab-nav {
+  border-bottom: 1px solid rgba(255,255,255,.08) !important;
+}
+.tab, .tab-btn {
+  color: #7c8aa3 !important;
+  border-bottom: 2px solid transparent !important;
+  transition: color .18s ease, border-color .18s ease !important;
+}
+.tab:hover, .tab-btn:hover { color: #ffffff !important; }
+.tab.active, .tab-btn.active {
+  color: #ffffff !important;
+  border-bottom-color: #e63946 !important;
+}
+
+/* Anchors */
+a { color: #ff8891 !important; }
+a:hover { color: #ffffff !important; }
+a.nav-item, a.brand, a.logo, a.no-color { color: inherit !important; }
+
+/* Headings inside content */
+.main-content h1, .main-content h2, .main-content h3, .main-content h4, .main-content h5 {
+  color: #ffffff !important;
+  letter-spacing: -.015em !important;
+}
+
+/* Divider */
+hr { border: none !important; height: 1px !important; background: rgba(255,255,255,.08) !important; }
+
+/* Selection */
+::selection { background: rgba(230,57,70,.4) !important; color: #ffffff !important; }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: #0a1628 !important; }
+::-webkit-scrollbar-thumb {
+  background: #17304f !important;
+  border: 2px solid #0a1628 !important;
+  border-radius: 10px !important;
+  background-clip: padding-box !important;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #1e3d63 !important;
+  border: 2px solid #0a1628 !important;
+  background-clip: padding-box !important;
+}
+
+/* ── Attribute-selector overrides for inline dark hex codes ── */
+[style*="background:#0a0c10"], [style*="background: #0a0c10"],
+[style*="background:#111318"], [style*="background: #111318"],
+[style*="background:#1c1f29"], [style*="background: #1c1f29"],
+[style*="background:#252935"], [style*="background: #252935"],
+[style*="background:#111520"], [style*="background: #111520"],
+[style*="background:#131722"], [style*="background: #131722"],
+[style*="background:#07090f"], [style*="background: #07090f"] {
+  background: rgba(23,48,79,.55) !important;
+}
+[style*="border:1px solid #252935"], [style*="border: 1px solid #252935"],
+[style*="border-color:#252935"], [style*="border-color: #252935"],
+[style*="border:1px solid #2e3342"], [style*="border: 1px solid #2e3342"] {
+  border-color: rgba(255,255,255,.08) !important;
+}
+
+/* ── Password eye toggle (post-login too) ── */
+.eye-btn, button.eye-btn, .password-toggle, button.password-toggle {
+  position: absolute !important;
+  right: .5rem !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+  width: 40px !important;
+  height: 40px !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border: none !important;
+  color: #7c8aa3 !important;
+  cursor: pointer !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 8px !important;
+  z-index: 2 !important;
+  box-shadow: none !important;
+}
+.eye-btn:hover, .password-toggle:hover {
+  color: #ffffff !important;
+  background: rgba(255,255,255,.06) !important;
+}
+.input-wrap, .pwd-wrap { position: relative !important; }
+.input-wrap input, .pwd-wrap input, input[type="password"] {
+  padding-right: 3.25rem !important;
+}
+
+@media print {
+  body { background: #fff !important; color: #000 !important; }
+  * { color: #000 !important; background: transparent !important; box-shadow: none !important; }
+}

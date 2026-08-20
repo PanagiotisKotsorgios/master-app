@@ -127,7 +127,12 @@ $csrf = $_SESSION['csrf_token'] ?? '';
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Marketing Popup — MAster Admin</title>
+<link rel="stylesheet" href="<?= APP_URL ?>/assets/css/style.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap">
+<link rel="stylesheet" href="<?= APP_URL ?>/assets/css/postlogin-portal-theme.css?v=<?= @filemtime(__DIR__ . '/../assets/css/postlogin-portal-theme.css') ?: time() ?>">
 <style>
   body { font-family: 'Inter','DM Sans',system-ui,sans-serif; }
   .page-wrap { max-width: 1120px; margin: 0 auto; padding: 1.5rem; }

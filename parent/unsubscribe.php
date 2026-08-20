@@ -72,6 +72,7 @@ p { font-size:.95rem; color:var(--muted); line-height:1.65; margin-bottom:1rem; 
 .btn-outline:hover { background:rgba(255,255,255,.1); color:var(--text); }
 .email-badge { display:inline-block; background:rgba(255,255,255,.06); border:1px solid var(--brd); border-radius:8px; padding:.35rem .9rem; font-size:.85rem; font-family:monospace; margin:.5rem 0 1rem; }
 </style>
+<link rel="stylesheet" href="<?= APP_URL ?>/assets/css/postlogin-portal-theme.css?v=<?= @filemtime(__DIR__ . "/../assets/css/postlogin-portal-theme.css") ?: time() ?>">
 </head>
 <body>
 <div class="card">

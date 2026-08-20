@@ -48,6 +48,7 @@ $events = eventsForParent($pid, $sid);
   .btn-view{margin-top:.75rem;padding:.5rem 1rem;background:transparent;border:1px solid #2a3248;color:#f0f2ff;text-decoration:none;border-radius:8px;display:inline-block;font-size:.85rem;font-weight:600}
   .btn-view:hover{border-color:#e63946}
 </style>
+<link rel="stylesheet" href="<?= APP_URL ?>/assets/css/postlogin-portal-theme.css?v=<?= @filemtime(__DIR__ . "/../assets/css/postlogin-portal-theme.css") ?: time() ?>">
 </head>
 <body>
 

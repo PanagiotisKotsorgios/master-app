@@ -287,6 +287,7 @@ try { $children = getParentChildren(); } catch (Throwable $e) { $children = []; 
     .hide-sm { display: none !important; }
   }
   </style>
+<link rel="stylesheet" href="<?= APP_URL ?>/assets/css/postlogin-portal-theme.css?v=<?= @filemtime(__DIR__ . "/../assets/css/postlogin-portal-theme.css") ?: time() ?>">
 </head>
 <body>
 <div class="parent-wrap">
