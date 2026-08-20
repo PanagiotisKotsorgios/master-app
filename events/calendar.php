@@ -70,7 +70,7 @@ $typeLabelsGr = [
 
 $today = date('Y-n-j');
 
-$metaTitle = 'Ημερολόγιο Events — ' . $monthLabel . ' | MAster';
+$metaTitle = 'Ημερολόγιο Διοργανώσεων — ' . $monthLabel . ' | MAster';
 $metaDesc  = 'Μηνιαίο ημερολόγιο για πρωταθλήματα, φιλικούς αγώνες, camps και σεμινάρια πολεμικών τεχνών στην Ελλάδα.';
 ?><!DOCTYPE html>
 <html lang="el">
@@ -225,7 +225,7 @@ $metaDesc  = 'Μηνιαίο ημερολόγιο για πρωταθλήματ�
   <div class="top-inner">
     <div class="top-title">
       <i class="fas fa-calendar-days"></i>
-      Events — Ημερολόγιο
+      Διοργανώσεις — Ημερολόγιο
     </div>
     <div class="top-actions">
       <a href="<?= APP_URL ?>/events/"><i class="fas fa-list"></i> Λίστα</a>

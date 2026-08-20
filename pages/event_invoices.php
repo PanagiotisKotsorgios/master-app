@@ -16,13 +16,13 @@ $sid = schoolId();
 
 $payments = eventPaymentsAllForSchool($sid);
 
-renderHead('Τιμολόγια Events');
+renderHead('Τιμολόγια Διοργανώσεων');
 ?>
 <body>
 <div class="app-layout">
 <?php renderSidebar('events'); ?>
 <div class="main-content">
-<?php renderTopbar('Τιμολόγια Events'); ?>
+<?php renderTopbar('Τιμολόγια Διοργανώσεων'); ?>
 <div class="page-body">
 
   <div style="background:#111520;border:1px solid #1e2536;border-radius:14px;padding:1.1rem 1.35rem;margin-bottom:1rem">
@@ -31,7 +31,7 @@ renderHead('Τιμολόγια Events');
         <i class="fa-solid fa-file-invoice"></i>
       </div>
       <div>
-        <h1 style="margin:0;font-size:1.35rem;color:#f0f2ff">Τιμολόγια Events</h1>
+        <h1 style="margin:0;font-size:1.35rem;color:#f0f2ff">Τιμολόγια Διοργανώσεων</h1>
         <div style="color:#8892b0;font-size:.88rem">Τα τιμολόγια για τις πληρωμές σας σε events εμφανίζονται εδώ μόλις τα ανεβάσει ο administrator.</div>
       </div>
     </div>

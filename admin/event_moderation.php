@@ -58,7 +58,7 @@ $flash = getFlash();
 <div class="app-layout">
 <?php renderSidebar('admin_event_mod'); ?>
 <div class="main-content">
-<?php renderTopbar('Event Moderation'); ?>
+<?php renderTopbar('Έλεγχος Διοργανώσεων'); ?>
 <div class="page-body">
 
   <?php if ($flash): ?>

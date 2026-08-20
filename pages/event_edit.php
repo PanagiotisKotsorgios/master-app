@@ -78,7 +78,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-$title = $ev ? 'Επεξεργασία: ' . $ev['title'] : 'Νέο Event';
+$title = $ev ? 'Επεξεργασία: ' . $ev['title'] : 'Νέα Διοργάνωση';
 renderHead($title);
 $flash = getFlash();
 ?>

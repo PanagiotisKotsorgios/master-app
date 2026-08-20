@@ -50,7 +50,7 @@ $totalAll     = count(eventPaymentsForAdmin(false));
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Τιμολόγια Events · Admin — MAster</title>
+<title>Τιμολόγια Διοργανώσεων · Admin — MAster</title>
 <meta name="robots" content="noindex,nofollow">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
@@ -119,7 +119,7 @@ $totalAll     = count(eventPaymentsForAdmin(false));
 
 <div class="top">
   <div class="top-inner">
-    <div class="top-title"><i class="fa-solid fa-file-invoice"></i> Τιμολόγια Events</div>
+    <div class="top-title"><i class="fa-solid fa-file-invoice"></i> Τιμολόγια Διοργανώσεων</div>
     <a class="top-back" href="<?= APP_URL ?>/admin/"><i class="fa-solid fa-arrow-left"></i> Admin</a>
   </div>
 </div>

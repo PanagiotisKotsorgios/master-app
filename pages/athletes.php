@@ -1777,7 +1777,7 @@ if (!empty($initialDebtDate)) {
   </div>
 
   <?php if($search||$dept||$debtFilter||$status): ?>
-  <a href="<?=APP_URL?>/pages/athletes.php" class="btn btn-ghost btn-sm" style="border:1.5px solid rgba(230,57,70,.5)"><i class="fa-solid fa-xmark"></i> Καθαρισμός Φίλτρων</a>
+  <a href="<?=APP_URL?>/pages/athletes.php" class="btn btn-primary btn-sm" style="background:#e63946;color:#ffffff;border:none"><i class="fa-solid fa-xmark"></i> Καθαρισμός Φίλτρων</a>
   <?php endif; ?>
 </div>
 </form>

@@ -340,8 +340,8 @@ function renderSidebar(string $active = ''): void {
                 ['href' => APP_URL.'/admin/churn.php',           'icon' => 'fa-solid fa-user-slash',        'label' => 'Churn & MRR',       'key' => 'admin_churn'],
                 ['href' => APP_URL.'/admin/audit.php',           'icon' => 'fa-solid fa-clipboard-list',    'label' => 'Audit Log',         'key' => 'admin_audit'],
                 ['href' => APP_URL.'/admin/consent-logs.php',    'icon' => 'fa-solid fa-file-shield',       'label' => 'Consent Log',       'key' => 'admin_consent_logs'],
-                ['href' => APP_URL.'/admin/event_moderation.php','icon' => 'fa-solid fa-flag',              'label' => 'Event Moderation',  'key' => 'admin_event_mod'],
-                ['href' => APP_URL.'/admin/event_invoices.php',  'icon' => 'fa-solid fa-file-invoice',      'label' => 'Τιμολόγια Events',  'key' => 'admin_event_invoices'],
+                ['href' => APP_URL.'/admin/event_moderation.php','icon' => 'fa-solid fa-flag',              'label' => 'Έλεγχος Διοργανώσεων','key' => 'admin_event_mod'],
+                ['href' => APP_URL.'/admin/event_invoices.php',  'icon' => 'fa-solid fa-file-invoice',      'label' => 'Τιμολόγια Διοργανώσεων', 'key' => 'admin_event_invoices'],
                 ['href' => APP_URL.'/admin/school_approvals.php','icon' => 'fa-solid fa-user-check',        'label' => 'Έγκριση Σχολών',    'key' => 'admin_school_approvals'],
                 ['href' => APP_URL.'/admin/health.php',          'icon' => 'fa-solid fa-heart-pulse',       'label' => 'System Health',     'key' => 'admin_health'],
                 ['href' => APP_URL.'/admin/backups.php',         'icon' => 'fa-solid fa-database',          'label' => 'Backups',           'key' => 'admin_backups'],
@@ -357,8 +357,8 @@ function renderSidebar(string $active = ''): void {
             ['href' => APP_URL.'/pages/subscriptions.php', 'icon' => 'fa-solid fa-money-bill-wave', 'label' => 'Πληρωμές',          'key' => 'subscriptions'],
             ['href' => APP_URL.'/pages/departments.php',   'icon' => 'fa-solid fa-folder-open',     'label' => 'Τμήματα',           'key' => 'departments'],
             ['href' => APP_URL.'/pages/notifications.php', 'icon' => 'fa-solid fa-paper-plane',     'label' => 'Ειδοποιήσεις',      'key' => 'notifications'],
-            ['href' => APP_URL.'/pages/events.php',        'icon' => 'fa-solid fa-trophy',          'label' => 'Events',            'key' => 'events'],
-            ['href' => APP_URL.'/pages/event_invoices.php','icon' => 'fa-regular fa-file-lines',    'label' => 'Τιμολόγια Events',  'key' => 'event_invoices'],
+            ['href' => APP_URL.'/pages/events.php',        'icon' => 'fa-solid fa-trophy',          'label' => 'Διοργανώσεις',      'key' => 'events'],
+            ['href' => APP_URL.'/pages/event_invoices.php','icon' => 'fa-regular fa-file-lines',    'label' => 'Τιμολόγια Διοργανώσεων', 'key' => 'event_invoices'],
         ];
 
         if (!$privacyMode && $planSlug === 'pro') {

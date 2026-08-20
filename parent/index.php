@@ -563,7 +563,7 @@ $firstName   = ucfirst(explode('@', $parentEmail)[0]);
     <nav class="pp-nav">
       <a href="index.php" class="active"><i class="fas fa-house"></i><span class="nav-label">Αρχική</span></a>
       <a href="children.php"><i class="fas fa-children"></i><span class="nav-label">Παιδιά</span></a>
-      <a href="events.php"><i class="fas fa-trophy"></i><span class="nav-label">Events</span></a>
+      <a href="events.php"><i class="fas fa-trophy"></i><span class="nav-label">Διοργανώσεις</span></a>
       <a href="settings.php"><i class="fas fa-gear"></i><span class="nav-label">Ρυθμίσεις</span></a>
       <a href="<?= APP_URL ?>/logout.php" class="nav-logout"><i class="fas fa-right-from-bracket"></i><span class="nav-label">Έξοδος</span></a>
     </nav>
@@ -805,7 +805,7 @@ function closeTermsModal() {
   <div class="pp-bottom-nav-inner">
     <a href="index.php" class="active"><i class="fas fa-house"></i>Αρχική</a>
     <a href="children.php"><i class="fas fa-children"></i>Παιδιά</a>
-    <a href="events.php"><i class="fas fa-trophy"></i>Events</a>
+    <a href="events.php"><i class="fas fa-trophy"></i>Διοργανώσεις</a>
     <a href="settings.php"><i class="fas fa-gear"></i>Ρυθμίσεις</a>
     <a href="<?= APP_URL ?>/logout.php" class="nav-logout"><i class="fas fa-right-from-bracket"></i>Έξοδος</a>
   </div>

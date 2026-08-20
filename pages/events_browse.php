@@ -25,7 +25,7 @@ renderHead('Αναζήτηση events');
 <div class="app-layout">
 <?php renderSidebar('events'); ?>
 <div class="main-content">
-<?php renderTopbar('Events άλλων συλλόγων'); ?>
+<?php renderTopbar('Διοργανώσεις άλλων συλλόγων'); ?>
 <div class="page-body">
 
   <form method="GET" style="background:#111520;border:1px solid #1e2536;border-radius:14px;padding:1rem 1.25rem;margin-bottom:1rem;display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:.65rem">

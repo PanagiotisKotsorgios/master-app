@@ -26,7 +26,7 @@ $total  = eventsPublicCount($filters);
 $events = eventsPublicSearch($filters, $perPage, $offset);
 $totalPages = max(1, (int)ceil($total / $perPage));
 
-$metaTitle = 'Events, Πρωταθλήματα & Camps — MAster';
+$metaTitle = 'Διοργανώσεις, Πρωταθλήματα & Camps — MAster';
 $metaDesc  = 'Ανακαλύψτε πρωταθλήματα, φιλικούς αγώνες, camps και σεμινάρια πολεμικών τεχνών από συλλόγους σε όλη την Ελλάδα.';
 ?>
 <!DOCTYPE html>
