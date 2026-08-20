@@ -20,7 +20,7 @@ $events = eventsForParent($pid, $sid);
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Events των παιδιών μου — MAster</title>
+<title>Διοργανώσεις των παιδιών μου — MAster</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
@@ -58,7 +58,7 @@ $events = eventsForParent($pid, $sid);
 </div>
 
 <div class="wrap">
-  <h1>Events των παιδιών μου</h1>
+  <h1>Διοργανώσεις των παιδιών μου</h1>
   <p class="lead">Δείτε σε ποια πρωταθλήματα, φιλικά και camps έχουν δηλωθεί.</p>
 
   <?php if (!$events): ?>
