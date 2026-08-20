@@ -324,26 +324,90 @@ section + section::before, .section + .section::before {
   color: #dbe6ff !important;
 }
 
-/* ── Footer ── */
+/* ── Footer: full-bleed dark navy strip with restrained scale ── */
 footer, .footer, .site-footer {
-  background: #0e1e35 !important;
+  background: linear-gradient(180deg, #0b1c33 0%, #081428 100%) !important;
   border-top: 1px solid rgba(255,255,255,.08) !important;
   color: #c1c8d4 !important;
   box-shadow: 0 -1px 0 rgba(255,255,255,.04) inset !important;
+  /* Force edge-to-edge regardless of any parent max-width */
+  width: 100% !important;
+  max-width: none !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  padding: 3.5rem 2rem 0 !important;
+  position: relative !important;
 }
-footer a, .footer a, .site-footer a {
-  color: #c1c8d4 !important;
+footer::before, .footer::before, .site-footer::before {
+  content: "" !important;
+  position: absolute !important;
+  top: 0; left: 50%;
+  transform: translateX(-50%);
+  width: 120px; height: 3px;
+  background: linear-gradient(90deg, transparent, #e63946, transparent) !important;
+  border-radius: 3px;
+  opacity: .55;
 }
-footer a:hover, .footer a:hover, .site-footer a:hover {
+@media (max-width: 640px) {
+  footer, .footer, .site-footer { padding: 2.5rem 1.25rem 0 !important; }
+}
+
+/* Inner columns stay centered/contained for readability */
+footer .foot-inner, .footer .foot-inner, .site-footer .foot-inner {
+  max-width: 1200px !important;
+  margin: 0 auto !important;
+  width: 100% !important;
+  padding: 0 !important;
+}
+footer .foot-top, .footer .foot-top {
+  padding-bottom: 2.5rem !important;
+  gap: 3.5rem !important;
+}
+footer .foot-col h4, .footer .foot-col h4 {
   color: #ffffff !important;
+  font-size: .78rem !important;
+  letter-spacing: .12em !important;
+  text-transform: uppercase !important;
+  margin-bottom: 1.1rem !important;
+  opacity: .9 !important;
 }
+footer .foot-col h4 i, .footer .foot-col h4 i {
+  color: #e63946 !important;
+  font-size: .7rem !important;
+}
+footer .foot-col ul li, .footer .foot-col ul li { margin-bottom: .05rem !important; }
+footer .foot-col ul li a, .footer .foot-col ul li a {
+  font-size: .92rem !important;
+  color: #a2adc2 !important;
+  padding: .18rem 0 !important;
+  transition: color .18s ease, transform .15s ease !important;
+  display: inline-flex !important;
+}
+footer .foot-col ul li a:hover, .footer .foot-col ul li a:hover {
+  color: #ffffff !important;
+  transform: translateX(2px);
+}
+footer .foot-brand p, .footer .foot-brand p {
+  color: #a2adc2 !important;
+  font-size: .9rem !important;
+  line-height: 1.7 !important;
+  max-width: 300px !important;
+}
+footer .foot-divider, .footer .foot-divider {
+  background: rgba(255,255,255,.07) !important;
+  margin: 0 !important;
+}
+footer .foot-bot, .footer .foot-bot {
+  padding: 1.4rem 0 1.6rem !important;
+  color: #7c8aa3 !important;
+}
+footer a, .footer a, .site-footer a { color: #c1c8d4 !important; }
+footer a:hover, .footer a:hover, .site-footer a:hover { color: #ffffff !important; }
 footer h4, .footer h4, .site-footer h4,
-footer strong, .footer strong, .site-footer strong {
-  color: #ffffff !important;
-}
-.foot-copy, .foot-copy a { color: #7c8aa3 !important; }
-.foot-copy strong { color: #ffffff !important; }
-.foot-divider { background: rgba(255,255,255,.08) !important; }
+footer strong, .footer strong, .site-footer strong { color: #ffffff !important; }
+.foot-copy, .foot-copy a { color: #7c8aa3 !important; font-size: .85rem !important; }
+.foot-copy strong { color: #ffffff !important; font-weight: 600 !important; }
+.foot-flag { font-size: .85rem !important; color: #7c8aa3 !important; }
 
 /* Newsletter block */
 #newsletter {
@@ -653,6 +717,177 @@ footer strong, .footer strong, .site-footer strong {
   border: 1px solid rgba(230,57,70,.3) !important;
   color: #ffe6e8 !important;
 }
+
+/* ═════════════════════════════════════════════════════
+   LEGAL PAGES — bigger, calmer, easier to read
+   Applies to: /legal/privacy, /terms, /cookies, /gdpr,
+   /refunds, /payments (all via legal-base.php).
+   Visual only: wider readable column, larger type,
+   card-like info boxes, restrained accent color.
+   ═════════════════════════════════════════════════════ */
+
+.legal-hero {
+  padding: calc(var(--nav-h,68px) + 3rem) 1.5rem 3rem !important;
+  background:
+    radial-gradient(600px 260px at 50% -10%, rgba(230,57,70,.12), transparent 70%),
+    linear-gradient(180deg, #0e1e35 0%, #0a1628 100%) !important;
+  border-bottom: 1px solid rgba(255,255,255,.06) !important;
+  text-align: center !important;
+}
+.legal-hero-inner { max-width: 800px !important; margin: 0 auto !important; }
+.legal-tag {
+  background: rgba(230,57,70,.12) !important;
+  border: 1px solid rgba(230,57,70,.28) !important;
+  color: #ff8891 !important;
+  padding: .4rem 1.1rem !important;
+  font-size: .72rem !important;
+  letter-spacing: .12em !important;
+  border-radius: 999px !important;
+  margin-bottom: 1.25rem !important;
+}
+.legal-title {
+  color: #ffffff !important;
+  font-size: clamp(1.75rem, 5vw, 2.9rem) !important;
+  font-weight: 800 !important;
+  letter-spacing: -.02em !important;
+  line-height: 1.15 !important;
+  margin-bottom: 1rem !important;
+}
+.legal-title em { color: #e63946 !important; font-style: normal !important; }
+.legal-meta {
+  color: #7c8aa3 !important;
+  font-size: .82rem !important;
+  gap: 1.5rem !important;
+  margin-top: 1rem !important;
+}
+.legal-meta i { color: #e63946 !important; }
+
+/* Readable content column: wider than 820px, comfortable line-length */
+.legal-wrap {
+  max-width: 940px !important;
+  margin: 0 auto !important;
+  padding: 3.5rem 1.5rem 5rem !important;
+}
+
+/* Card-like content container so it feels contained on a big screen */
+.legal-content {
+  background: rgba(255,255,255,.02) !important;
+  border: 1px solid rgba(255,255,255,.06) !important;
+  border-radius: 18px !important;
+  padding: 2.5rem 2.75rem !important;
+  box-shadow: 0 20px 60px -30px rgba(0,0,0,.6) !important;
+}
+@media (max-width: 700px) {
+  .legal-content { padding: 1.75rem 1.4rem !important; border-radius: 14px !important; }
+  .legal-wrap { padding: 2rem 1rem 3.5rem !important; }
+}
+
+.legal-content h2 {
+  color: #ffffff !important;
+  font-size: 1.4rem !important;
+  font-weight: 800 !important;
+  letter-spacing: -.01em !important;
+  margin: 2.75rem 0 1rem !important;
+  padding-bottom: .75rem !important;
+  border-bottom: 1px solid rgba(255,255,255,.08) !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: .6rem !important;
+}
+.legal-content h2:first-child { margin-top: 0 !important; }
+.legal-content h2::before {
+  content: "";
+  display: inline-block;
+  width: 6px; height: 22px;
+  background: #e63946;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+.legal-content h3 {
+  color: #ffb8be !important;
+  font-size: 1.05rem !important;
+  font-weight: 700 !important;
+  letter-spacing: -.005em !important;
+  margin: 1.75rem 0 .75rem !important;
+}
+.legal-content p, .legal-content li {
+  color: #c1c8d4 !important;
+  font-size: 1rem !important;
+  line-height: 1.85 !important;
+}
+.legal-content p { margin-bottom: 1.1rem !important; }
+.legal-content p strong,
+.legal-content li strong { color: #ffffff !important; font-weight: 700 !important; }
+.legal-content ul, .legal-content ol {
+  padding-left: 1.5rem !important;
+  margin: .5rem 0 1.3rem !important;
+}
+.legal-content li { margin-bottom: .5rem !important; }
+.legal-content ul li::marker { color: #e63946 !important; }
+.legal-content a {
+  color: #ff8891 !important;
+  text-decoration: underline !important;
+  text-underline-offset: 3px !important;
+  text-decoration-thickness: 1px !important;
+}
+.legal-content a:hover { color: #ffffff !important; text-decoration-thickness: 2px !important; }
+.legal-content hr {
+  border: none !important;
+  height: 1px !important;
+  background: rgba(255,255,255,.08) !important;
+  margin: 2rem 0 !important;
+}
+.legal-content code {
+  background: rgba(255,255,255,.05) !important;
+  border: 1px solid rgba(255,255,255,.08) !important;
+  color: #ffb8be !important;
+  padding: .1rem .45rem !important;
+  border-radius: 6px !important;
+  font-size: .92em !important;
+}
+
+/* Info callout boxes */
+.info-box {
+  background: rgba(255,255,255,.03) !important;
+  border: 1px solid rgba(255,255,255,.08) !important;
+  border-left: 4px solid #e63946 !important;
+  border-radius: 12px !important;
+  padding: 1.25rem 1.5rem !important;
+  margin: 1.75rem 0 !important;
+}
+.info-box.gold  { border-left-color: #f0a500 !important; }
+.info-box.green { border-left-color: #4ade80 !important; }
+.info-box p { color: #c1c8d4 !important; font-size: .94rem !important; line-height: 1.75 !important; }
+.info-box p strong { color: #ffffff !important; }
+
+/* Tables inside legal content */
+.legal-content .table-wrap,
+.legal-content .table-responsive {
+  background: rgba(255,255,255,.02) !important;
+  border: 1px solid rgba(255,255,255,.08) !important;
+  border-radius: 12px !important;
+  padding: 0 !important;
+  margin: 1.5rem 0 !important;
+}
+.legal-content table {
+  width: 100% !important;
+  border-collapse: collapse !important;
+  font-size: .92rem !important;
+}
+.legal-content table th {
+  background: rgba(255,255,255,.04) !important;
+  color: #ffffff !important;
+  text-align: left !important;
+  padding: .75rem 1rem !important;
+  border-bottom: 1px solid rgba(255,255,255,.08) !important;
+  font-weight: 700 !important;
+}
+.legal-content table td {
+  color: #c1c8d4 !important;
+  padding: .7rem 1rem !important;
+  border-bottom: 1px solid rgba(255,255,255,.05) !important;
+}
+.legal-content table tr:last-child td { border-bottom: none !important; }
 
 /* ═════════════════════════════════════════════════════
    PASSWORD EYE TOGGLE — force it to sit INSIDE the

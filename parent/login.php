@@ -329,8 +329,8 @@ input[type="email"], input[type="password"], input[type="text"]#password {
     <i class="fas fa-circle-info" style="color:#3b82f6;margin-right:.3rem"></i>
     Τα στοιχεία σύνδεσης εστάλησαν στο email σας<br>
     κατά την εγγραφή του παιδιού σας.<br><br>
-    Πρόβλημα σύνδεσης; Επικοινωνήστε με<br>
-    <strong>τη σχολή σας απευθείας</strong>.
+    Πρόβλημα σύνδεσης;
+    <a href="<?= APP_URL ?>/contact.php" style="color:#e63946;font-weight:700;text-decoration:underline;text-underline-offset:3px">Επικοινωνήστε μαζί μας εδώ</a>.
   </div>
 
 </div>

@@ -527,7 +527,6 @@ body::after{
 
     <ul class="nav-links">
       <li><a href="<?= APP_URL ?>/index.php#features">Λειτουργίες</a></li>
-      <li><a href="<?= APP_URL ?>/index.php#how-it-works">Πώς Λειτουργεί</a></li>
       <li><a href="<?= APP_URL ?>/index.php#pricing">Τιμές</a></li>
       <li><a href="<?= APP_URL ?>/contact.php" class="active">Επικοινωνία</a></li>
     </ul>
@@ -554,7 +553,6 @@ body::after{
 <!-- MOBILE MENU -->
 <div class="mobile-menu" id="mmenu">
   <a href="<?= APP_URL ?>/index.php#features"><i class="fas fa-bolt"></i> Λειτουργίες</a>
-  <a href="<?= APP_URL ?>/index.php#how-it-works"><i class="fas fa-rocket"></i> Πώς Λειτουργεί</a>
   <a href="<?= APP_URL ?>/index.php#pricing"><i class="fas fa-credit-card"></i> Τιμές</a>
   <div class="mob-divider"></div>
   <a href="<?= APP_URL ?>/contact.php"><i class="fas fa-envelope"></i> Επικοινωνία</a>
