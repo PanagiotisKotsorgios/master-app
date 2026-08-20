@@ -589,7 +589,8 @@ body::after{
         <div class="ic-icon"><i class="fas fa-phone"></i></div>
         <div>
           <h4>Τηλέφωνο</h4>
-          <a href="tel:+306986788178">+30 698 678 8178</a>
+          <a href="tel:+306986788178" style="display:block">+30 698 678 8178</a>
+          <a href="tel:+302631028971" style="display:block;margin-top:.15rem">+30 26310 28971</a>
           <p style="margin-top:.3rem;font-size:.8rem">Δευ–Παρ 10:00–17:00</p>
         </div>
       </div>
@@ -727,6 +728,8 @@ body::after{
         <h4>Υποστήριξη</h4>
         <ul>
           <li><a href="mailto:pkotsorgios654@gmail.com"><i class="fas fa-envelope"></i> pkotsorgios654@gmail.com</a></li>
+          <li><a href="tel:+306986788178"><i class="fas fa-mobile-alt"></i> +30 698 678 8178</a></li>
+          <li><a href="tel:+302631028971"><i class="fas fa-phone"></i> +30 26310 28971</a></li>
           <li><a href="<?= APP_URL ?>/login.php"><i class="fas fa-lock"></i> Σύνδεση Χρήστη</a></li>
           <li><a href="<?= APP_URL ?>/register.php"><i class="fas fa-user-plus"></i> Εγγραφή Χρήστη</a></li>
         </ul>

@@ -567,7 +567,7 @@ body::after{content:'';position:fixed;inset:0;background-image:url("data:image/s
     <ul class="nav-links">
       <li><a href="#features">Λειτουργίες</a></li>
       <li><a href="#pricing">Τιμές</a></li>
-      <li><a href="<?= APP_URL ?>/events/" style="color:#e63946;font-weight:700"><i class="fa-solid fa-trophy" style="margin-right:.35rem"></i>Events</a></li>
+      <li><a href="<?= APP_URL ?>/events/" style="color:#e63946;font-weight:700"><i class="fa-solid fa-trophy" style="margin-right:.35rem"></i>Διοργανώσεις</a></li>
       <li><a href="<?= APP_URL ?>/contact.php">Επικοινωνία</a></li>
     </ul>
     <div class="nav-ctas">
@@ -591,7 +591,7 @@ body::after{content:'';position:fixed;inset:0;background-image:url("data:image/s
 <div class="mobile-menu" id="mmenu">
   <a href="#features"><i class="fas fa-bolt"></i> Λειτουργίες</a>
   <a href="#pricing"><i class="fas fa-credit-card"></i> Τιμές</a>
-  <a href="<?= APP_URL ?>/events/" style="color:#ff6b74"><i class="fas fa-trophy"></i> Events · Πρωταθλήματα</a>
+  <a href="<?= APP_URL ?>/events/" style="color:#ff6b74"><i class="fas fa-trophy"></i> Διοργανώσεις · Πρωταθλήματα</a>
   <a href="<?= APP_URL ?>/events/athletes.php" style="color:#8892b0"><i class="fas fa-magnifying-glass"></i> Αναζήτηση Αθλητή</a>
   <div class="mob-divider"></div>
   <a href="<?= APP_URL ?>/contact.php"><i class="fas fa-envelope"></i> Επικοινωνία</a>
@@ -816,6 +816,11 @@ body::after{content:'';position:fixed;inset:0;background-image:url("data:image/s
 <li>
   <a href="tel:+306986788178" aria-label="Call us at +30 698 678 8178">
     <i class="fas fa-mobile-alt"></i> +30 698 678 8178
+  </a>
+</li>
+<li>
+  <a href="tel:+302631028971" aria-label="Call us at +30 2631028971">
+    <i class="fas fa-phone"></i> +30 26310 28971
   </a>
 </li>          <li><a href="<?= APP_URL ?>/login.php"><i class="fas fa-lock"></i> Σύνδεση Χρήστη</a></li>
           <li><a href="<?= APP_URL ?>/register.php"><i class="fas fa-user-plus"></i> Εγγραφή Χρήστη</a></li>

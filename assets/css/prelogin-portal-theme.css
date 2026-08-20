@@ -352,12 +352,12 @@ footer::before, .footer::before, .site-footer::before {
   footer, .footer, .site-footer { padding: 2.5rem 1.25rem 0 !important; }
 }
 
-/* Inner columns stay centered/contained for readability */
+/* Inner columns span full width — no cramped 1200px box */
 footer .foot-inner, .footer .foot-inner, .site-footer .foot-inner {
-  max-width: 1200px !important;
-  margin: 0 auto !important;
+  max-width: none !important;
   width: 100% !important;
-  padding: 0 !important;
+  margin: 0 !important;
+  padding: 0 clamp(1rem, 4vw, 4rem) !important;
 }
 footer .foot-top, .footer .foot-top {
   padding-bottom: 2.5rem !important;
