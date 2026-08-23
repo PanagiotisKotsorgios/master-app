@@ -70,30 +70,58 @@ renderHead('Διοργανώσεις');
       </a>
     </div>
   <?php else: ?>
-    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:1rem">
-      <?php foreach ($events as $ev): ?>
-        <a href="<?= h(eventManageUrl((int)$ev['id'])) ?>" style="text-decoration:none;color:inherit">
-          <div class="card" style="background:#111520;border:1px solid #1e2536;border-radius:14px;padding:1.1rem 1.15rem;transition:border-color .15s;cursor:pointer" onmouseover="this.style.borderColor='#e63946'" onmouseout="this.style.borderColor='#1e2536'">
-            <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:.5rem;margin-bottom:.6rem">
-              <div style="font-size:.72rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#e63946">
-                <?= h(eventTypeLabel($ev['type'])) ?>
-              </div>
-              <?= eventStatusBadge($ev['status']) ?>
-            </div>
-            <h3 style="margin:0 0 .3rem;color:#f0f2ff;font-size:1.05rem;line-height:1.3"><?= h($ev['title']) ?></h3>
-            <?php if ($ev['subtitle']): ?>
-              <p style="margin:0 0 .55rem;color:#8892b0;font-size:.85rem;line-height:1.4"><?= h($ev['subtitle']) ?></p>
+    <style>
+      .my-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:1.15rem}
+      .my-card{background:#111520;border:1px solid #1e2536;border-radius:16px;overflow:hidden;
+        display:flex;flex-direction:column;text-decoration:none;color:inherit;
+        transition:transform .22s cubic-bezier(.2,.9,.3,1.1),border-color .22s ease,box-shadow .22s ease}
+      .my-card:hover{transform:translateY(-6px);border-color:#e63946;
+        box-shadow:0 14px 34px -12px rgba(230,57,70,.35),0 6px 16px rgba(0,0,0,.5)}
+      .my-media{position:relative;aspect-ratio:16/9;overflow:hidden;
+        background:linear-gradient(135deg,#131b2e 0%,#0d1017 100%);
+        display:flex;align-items:center;justify-content:center}
+      .my-media img{width:100%;height:100%;object-fit:cover;transition:transform .5s ease}
+      .my-card:hover .my-media img{transform:scale(1.05)}
+      .my-media .my-no-img{color:#2a3248;font-size:3rem}
+      .my-media .my-badge{position:absolute;top:.7rem;left:.7rem;font-size:.68rem;
+        text-transform:uppercase;letter-spacing:.1em;color:#fff;font-weight:800;
+        background:rgba(230,57,70,.92);padding:.32rem .7rem;border-radius:6px;backdrop-filter:blur(6px)}
+      .my-media .my-status{position:absolute;top:.7rem;right:.7rem}
+      .my-body{padding:1rem 1.15rem 1.15rem;display:flex;flex-direction:column;gap:.35rem;flex:1}
+      .my-body h3{margin:0;color:#f0f2ff;font-size:1.05rem;line-height:1.35}
+      .my-body p.sub{margin:.2rem 0 .3rem;color:#c8cfe0;font-size:.87rem;line-height:1.45}
+      .my-meta{display:flex;gap:1rem;flex-wrap:wrap;color:#6b7494;font-size:.8rem;margin-top:.35rem}
+      .my-meta i{color:#e63946;font-size:.75rem;margin-right:.25rem}
+    </style>
+    <div class="my-grid">
+      <?php foreach ($events as $ev):
+        $mUrl = !empty($ev['banner_path'])
+            ? rtrim(APP_URL, '/') . '/uploads/' . ltrim($ev['banner_path'], '/')
+            : '';
+      ?>
+        <a href="<?= h(eventManageUrl((int)$ev['id'])) ?>" class="my-card">
+          <div class="my-media">
+            <?php if ($mUrl): ?>
+              <img src="<?= h($mUrl) ?>" alt="<?= h($ev['title']) ?>" loading="lazy">
+            <?php else: ?>
+              <i class="fa-solid fa-trophy my-no-img"></i>
             <?php endif; ?>
-            <div style="display:flex;gap:1rem;flex-wrap:wrap;color:#6b7494;font-size:.8rem;margin-top:.7rem">
+            <span class="my-badge"><?= h(eventTypeLabel($ev['type'])) ?></span>
+            <span class="my-status"><?= eventStatusBadge($ev['status']) ?></span>
+          </div>
+          <div class="my-body">
+            <h3><?= h($ev['title']) ?></h3>
+            <?php if ($ev['subtitle']): ?>
+              <p class="sub"><?= h($ev['subtitle']) ?></p>
+            <?php endif; ?>
+            <div class="my-meta">
               <?php if ($ev['starts_at']): ?>
-                <span><i class="fa-regular fa-calendar"></i> <?= h(formatDate(substr($ev['starts_at'], 0, 10))) ?></span>
+                <span><i class="fa-regular fa-calendar"></i><?= h(formatDate(substr($ev['starts_at'], 0, 10))) ?></span>
               <?php endif; ?>
               <?php if ($ev['venue_name']): ?>
-                <span><i class="fa-solid fa-location-dot"></i> <?= h($ev['venue_name']) ?></span>
+                <span><i class="fa-solid fa-location-dot"></i><?= h($ev['venue_name']) ?></span>
               <?php endif; ?>
-              <span><i class="fa-solid fa-euro-sign"></i>
-                <?= $ev['fee_model'] === 'free' ? 'Δωρεάν' : number_format((float)$ev['fee_amount'], 2, ',', '.') . '€' ?>
-              </span>
+              <span><i class="fa-solid fa-euro-sign"></i><?= $ev['fee_model'] === 'free' ? 'Δωρεάν' : number_format((float)$ev['fee_amount'], 2, ',', '.') . '€' ?></span>
             </div>
           </div>
         </a>

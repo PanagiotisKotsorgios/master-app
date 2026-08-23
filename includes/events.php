@@ -173,7 +173,7 @@ function eventUpdate(int $id, array $data, int $schoolId): void {
         'max_participants','ring_count','fee_model','fee_amount',
         'late_fee_amount','late_fee_starts_at','refund_policy',
         'bank_iban','bank_beneficiary','bank_name','bank_reference_template',
-        'contact_email','contact_phone',
+        'contact_email','contact_phone','banner_path',
     ];
     $set = []; $args = [];
     foreach ($editable as $k) {

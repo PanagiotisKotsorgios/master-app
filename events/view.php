@@ -59,6 +59,13 @@ $canonical = eventPublicUrl($ev);
 <meta property="og:title" content="<?= h($ev['title']) ?>">
 <meta property="og:description" content="<?= h($metaDesc) ?>">
 <meta property="og:url" content="<?= h($canonical) ?>">
+<?php if (!empty($ev['banner_path'])):
+  $ogImg = rtrim(APP_URL, '/') . '/uploads/' . ltrim($ev['banner_path'], '/');
+?>
+<meta property="og:image" content="<?= h($ogImg) ?>">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="<?= h($ogImg) ?>">
+<?php endif; ?>
 <script type="application/ld+json">
 <?= json_encode([
   '@context' => 'https://schema.org',
@@ -92,6 +99,17 @@ $canonical = eventPublicUrl($ev);
   .btn-primary{background:#e63946;color:#fff}
   .btn-ghost{background:transparent;border:1px solid #2a3248;color:#f0f2ff}
   .wrap{max-width:1000px;margin:0 auto;padding:2rem 1.25rem}
+  .hero-banner{position:relative;border-radius:18px;overflow:hidden;margin-bottom:1.25rem;
+        border:1px solid #1e2536;aspect-ratio:21/9;background:#0d1017;
+        box-shadow:0 14px 40px -18px rgba(0,0,0,.6)}
+  .hero-banner img{width:100%;height:100%;object-fit:cover;display:block}
+  .hero-banner::after{content:"";position:absolute;inset:0;
+        background:linear-gradient(180deg,transparent 40%,rgba(7,9,15,.85) 100%)}
+  .hero-banner .hero-caption{position:absolute;left:0;right:0;bottom:0;padding:1.5rem 1.75rem;z-index:2}
+  .hero-banner .hero-type{display:inline-block;font-size:.68rem;text-transform:uppercase;letter-spacing:.12em;
+        color:#fff;font-weight:800;background:#e63946;padding:.32rem .75rem;border-radius:6px;margin-bottom:.6rem}
+  .hero-banner h1{color:#fff;text-shadow:0 2px 12px rgba(0,0,0,.5);font-size:clamp(1.5rem,4vw,2.4rem)}
+  @media(max-width:640px){.hero-banner{aspect-ratio:4/3}.hero-banner .hero-caption{padding:1rem 1.15rem}}
   .header{background:linear-gradient(135deg,#111520,#0d1017);border:1px solid #1e2536;border-radius:16px;padding:2rem 1.75rem;margin-bottom:1.5rem}
   .type-badge{display:inline-block;font-size:.72rem;text-transform:uppercase;letter-spacing:.1em;color:#e63946;font-weight:800;background:rgba(230,57,70,.1);padding:.35rem .85rem;border-radius:20px;margin-bottom:.9rem}
   h1{font-size:2rem;margin-bottom:.5rem;line-height:1.2}
@@ -130,9 +148,21 @@ $canonical = eventPublicUrl($ev);
 
 <div class="wrap">
 
+  <?php if (!empty($ev['banner_path'])):
+    $viewBanner = rtrim(APP_URL, '/') . '/uploads/' . ltrim($ev['banner_path'], '/');
+  ?>
+    <div class="hero-banner">
+      <img src="<?= h($viewBanner) ?>" alt="<?= h($ev['title']) ?>">
+      <div class="hero-caption">
+        <span class="hero-type"><?= h(eventTypeLabel($ev['type'])) ?></span>
+        <h1><?= h($ev['title']) ?></h1>
+      </div>
+    </div>
+  <?php endif; ?>
+
   <div class="header">
-    <span class="type-badge"><?= h(eventTypeLabel($ev['type'])) ?></span>
-    <h1><?= h($ev['title']) ?></h1>
+    <?php if (empty($ev['banner_path'])): ?><span class="type-badge"><?= h(eventTypeLabel($ev['type'])) ?></span><?php endif; ?>
+    <?php if (empty($ev['banner_path'])): ?><h1><?= h($ev['title']) ?></h1><?php endif; ?>
     <?php if ($ev['subtitle']): ?><p class="subtitle"><?= h($ev['subtitle']) ?></p><?php endif; ?>
 
     <div style="color:#c8cfe0;font-size:.95rem;line-height:1.75">

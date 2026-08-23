@@ -24,6 +24,7 @@ if ($id && (!$ev || (int)$ev['organiser_school_id'] !== $sid)) {
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     verifyCsrf();
     try {
+        $removeBanner = !empty($_POST['remove_banner']);
         $payload = [
             'title'                  => $_POST['title'] ?? '',
             'subtitle'               => $_POST['subtitle'] ?? '',
@@ -66,11 +67,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($id) {
             if (!empty($_POST['status'])) $payload['status'] = $_POST['status'];
             eventUpdate($id, $payload, $sid);
+            // Banner: upload replacement, or remove-only, or leave as-is
+            if (!empty($_FILES['banner']) && ($_FILES['banner']['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_OK) {
+                $rel = eventUploadStore($_FILES['banner'], $id, 'public', ['jpg','jpeg','png','webp'], 4000);
+                if ($rel) eventUpdate($id, ['banner_path' => $rel], $sid);
+            } elseif ($removeBanner) {
+                eventUpdate($id, ['banner_path' => null], $sid);
+            }
             flash('Αποθηκεύτηκαν οι αλλαγές.');
             redirect(eventManageUrl($id));
         } else {
             $newId = eventCreate($payload, $sid, $userId);
-            flash('Το event δημιουργήθηκε. Προσθέστε κατηγορίες για να ανοίξετε εγγραφές.');
+            if (!empty($_FILES['banner']) && ($_FILES['banner']['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_OK) {
+                try {
+                    $rel = eventUploadStore($_FILES['banner'], $newId, 'public', ['jpg','jpeg','png','webp'], 4000);
+                    if ($rel) eventUpdate($newId, ['banner_path' => $rel], $sid);
+                } catch (Throwable $e) {
+                    error_log('[event_edit] banner upload skipped: ' . $e->getMessage());
+                }
+            }
+            flash('Η διοργάνωση δημιουργήθηκε. Προσθέστε κατηγορίες για να ανοίξετε εγγραφές.');
             redirect(eventManageUrl($newId));
         }
     } catch (Throwable $e) {
@@ -93,7 +109,7 @@ $flash = getFlash();
     <div class="alert alert-<?= h($flash['type']) ?>" style="margin-bottom:1rem;padding:.85rem 1rem;border-radius:10px;background:rgba(<?= $flash['type']==='error'?'230,57,70':'45,198,83' ?>,.12);border:1px solid rgba(<?= $flash['type']==='error'?'230,57,70':'45,198,83' ?>,.35);color:#f0f2ff"><?= $flash['msg'] ?></div>
   <?php endif; ?>
 
-  <form method="POST" novalidate>
+  <form method="POST" enctype="multipart/form-data" novalidate>
     <input type="hidden" name="csrf_token" value="<?= csrf() ?>">
 
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.5rem">
@@ -152,6 +168,29 @@ $flash = getFlash();
             <div style="font-size:.85rem;font-weight:700;color:#f0f2ff;margin-bottom:.35rem">Περιγραφή</div>
             <textarea name="description" rows="4" style="width:100%;padding:.7rem .85rem;background:#0d1017;border:1px solid #2a3248;border-radius:9px;color:#f0f2ff;resize:vertical"><?= h($ev['description'] ?? '') ?></textarea>
           </label>
+
+          <!-- Banner / cover image -->
+          <div style="grid-column:1/-1">
+            <div style="font-size:.85rem;font-weight:700;color:#f0f2ff;margin-bottom:.5rem">
+              <i class="fa-solid fa-image" style="color:#e63946;margin-right:.35rem"></i>
+              Λογότυπο / Cover εικόνα διοργάνωσης
+            </div>
+            <?php if (!empty($ev['banner_path'])):
+              $bannerUrl = rtrim(APP_URL, '/') . '/uploads/' . ltrim($ev['banner_path'], '/');
+            ?>
+              <div style="display:flex;gap:1rem;align-items:flex-start;flex-wrap:wrap;margin-bottom:.65rem">
+                <img src="<?= h($bannerUrl) ?>" alt="Τρέχον banner"
+                     style="max-width:220px;width:100%;height:auto;border-radius:10px;border:1px solid #2a3248;background:#0d1017;object-fit:cover">
+                <label style="display:inline-flex;align-items:center;gap:.4rem;color:#ff8891;font-size:.85rem;cursor:pointer;padding:.5rem .8rem;border:1px solid rgba(230,57,70,.35);border-radius:8px;background:rgba(230,57,70,.05)">
+                  <input type="checkbox" name="remove_banner" value="1" style="accent-color:#e63946">
+                  Αφαίρεση τρέχοντος banner
+                </label>
+              </div>
+            <?php endif; ?>
+            <input type="file" name="banner" accept="image/jpeg,image/png,image/webp"
+                   style="width:100%;padding:.55rem .7rem;background:#0d1017;border:1px dashed #2a3248;border-radius:9px;color:#c1c8d4;font-size:.88rem;cursor:pointer">
+            <small style="color:#6b7494;display:block;margin-top:.3rem">JPG/PNG/WEBP · έως 4 MB · προτεινόμενο 1600×600 px για hero, ή 800×600 για card.</small>
+          </div>
         </div>
       </div>
 

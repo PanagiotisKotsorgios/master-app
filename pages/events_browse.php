@@ -45,27 +45,63 @@ renderHead('Αναζήτηση events');
       Δεν βρέθηκαν events με αυτά τα κριτήρια.
     </div>
   <?php else: ?>
-    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:1rem">
-      <?php foreach ($events as $ev): ?>
-        <div class="card" style="background:#111520;border:1px solid #1e2536;border-radius:14px;padding:1.1rem 1.15rem">
-          <div style="font-size:.72rem;text-transform:uppercase;color:#e63946;font-weight:700;letter-spacing:.1em;margin-bottom:.5rem">
-            <?= h(eventTypeLabel($ev['type'])) ?>
+    <style>
+      .browse-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:1.15rem}
+      .b-card{background:#111520;border:1px solid #1e2536;border-radius:16px;overflow:hidden;
+        display:flex;flex-direction:column;transition:transform .22s cubic-bezier(.2,.9,.3,1.1),border-color .22s ease,box-shadow .22s ease}
+      .b-card:hover{transform:translateY(-6px);border-color:#e63946;
+        box-shadow:0 14px 34px -12px rgba(230,57,70,.35),0 6px 16px rgba(0,0,0,.5)}
+      .b-media{position:relative;aspect-ratio:16/9;overflow:hidden;
+        background:linear-gradient(135deg,#131b2e 0%,#0d1017 100%);
+        display:flex;align-items:center;justify-content:center}
+      .b-media img{width:100%;height:100%;object-fit:cover;transition:transform .5s ease}
+      .b-card:hover .b-media img{transform:scale(1.05)}
+      .b-media .b-no-img{color:#2a3248;font-size:3rem}
+      .b-media .b-badge{position:absolute;top:.7rem;left:.7rem;font-size:.68rem;
+        text-transform:uppercase;letter-spacing:.1em;color:#fff;font-weight:800;
+        background:rgba(230,57,70,.92);padding:.32rem .7rem;border-radius:6px;backdrop-filter:blur(6px)}
+      .b-body{padding:1rem 1.15rem 1.15rem;display:flex;flex-direction:column;gap:.35rem;flex:1}
+      .b-body h3{margin:0;color:#f0f2ff;font-size:1.05rem;line-height:1.35}
+      .b-body .b-org{color:#8892b0;font-size:.82rem}
+      .b-body p.b-sub{margin:.2rem 0 .3rem;color:#c8cfe0;font-size:.87rem;line-height:1.45}
+      .b-meta{display:flex;gap:1rem;flex-wrap:wrap;color:#6b7494;font-size:.8rem;margin-top:.35rem}
+      .b-meta i{color:#e63946;font-size:.75rem;margin-right:.25rem}
+      .b-actions{display:flex;gap:.4rem;flex-wrap:wrap;padding:0 1.15rem 1.15rem}
+    </style>
+    <div class="browse-grid">
+      <?php foreach ($events as $ev):
+        $bUrl = !empty($ev['banner_path'])
+            ? rtrim(APP_URL, '/') . '/uploads/' . ltrim($ev['banner_path'], '/')
+            : '';
+      ?>
+        <div class="b-card">
+          <a href="<?= h(eventPublicUrl($ev)) ?>" target="_blank" style="text-decoration:none;color:inherit">
+            <div class="b-media">
+              <?php if ($bUrl): ?>
+                <img src="<?= h($bUrl) ?>" alt="<?= h($ev['title']) ?>" loading="lazy">
+              <?php else: ?>
+                <i class="fa-solid fa-trophy b-no-img"></i>
+              <?php endif; ?>
+              <span class="b-badge"><?= h(eventTypeLabel($ev['type'])) ?></span>
+            </div>
+          </a>
+          <div class="b-body">
+            <h3><?= h($ev['title']) ?></h3>
+            <div class="b-org">από <?= h($ev['organiser_name'] ?? '—') ?></div>
+            <?php if ($ev['subtitle']): ?>
+              <p class="b-sub"><?= h($ev['subtitle']) ?></p>
+            <?php endif; ?>
+            <div class="b-meta">
+              <?php if ($ev['starts_at']): ?><span><i class="fa-regular fa-calendar"></i><?= h(formatDate(substr($ev['starts_at'],0,10))) ?></span><?php endif; ?>
+              <?php if ($ev['venue_name']): ?><span><i class="fa-solid fa-location-dot"></i><?= h($ev['venue_name']) ?></span><?php endif; ?>
+            </div>
           </div>
-          <h3 style="margin:0 0 .3rem;color:#f0f2ff;font-size:1.05rem;line-height:1.3"><?= h($ev['title']) ?></h3>
-          <div style="color:#6b7494;font-size:.82rem;margin-bottom:.55rem">από <?= h($ev['organiser_name'] ?? '—') ?></div>
-          <?php if ($ev['subtitle']): ?>
-            <p style="margin:0 0 .55rem;color:#8892b0;font-size:.85rem;line-height:1.4"><?= h($ev['subtitle']) ?></p>
-          <?php endif; ?>
-          <div style="display:flex;gap:1rem;flex-wrap:wrap;color:#6b7494;font-size:.8rem;margin:.5rem 0 .85rem">
-            <?php if ($ev['starts_at']): ?><span><i class="fa-regular fa-calendar"></i> <?= h(formatDate(substr($ev['starts_at'],0,10))) ?></span><?php endif; ?>
-            <?php if ($ev['venue_name']): ?><span><i class="fa-solid fa-location-dot"></i> <?= h($ev['venue_name']) ?></span><?php endif; ?>
-          </div>
-          <div style="display:flex;gap:.4rem;flex-wrap:wrap">
-            <a href="<?= APP_URL ?>/pages/event_participate.php?id=<?= (int)$ev['id'] ?>" class="btn btn-primary btn-sm">
+          <div class="b-actions">
+            <a href="<?= APP_URL ?>/pages/event_participate.php?id=<?= (int)$ev['id'] ?>" class="btn btn-primary btn-sm" style="flex:1">
               <i class="fa-solid fa-user-plus"></i> Δήλωση συμμετοχής
             </a>
             <a href="<?= h(eventPublicUrl($ev)) ?>" target="_blank" class="btn btn-ghost btn-sm">
-              Λεπτομέρειες <i class="fa-solid fa-arrow-up-right-from-square"></i>
+              <i class="fa-solid fa-arrow-up-right-from-square"></i>
             </a>
           </div>
         </div>

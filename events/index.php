@@ -58,13 +58,29 @@ $metaDesc  = 'Ανακαλύψτε πρωταθλήματα, φιλικούς α
   .filters{background:#111520;border:1px solid #1e2536;border-radius:14px;padding:1rem 1.25rem;margin-bottom:1.5rem;display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:.65rem}
   .filters input,.filters select{padding:.7rem;background:#0d1017;border:1px solid #2a3248;border-radius:8px;color:#f0f2ff;font-family:inherit}
   .filters button{padding:.7rem 1.2rem;background:#e63946;border:none;border-radius:8px;color:#fff;font-weight:700;cursor:pointer}
-  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1rem}
-  .card{background:#111520;border:1px solid #1e2536;border-radius:14px;padding:1.15rem;text-decoration:none;color:inherit;transition:transform .15s,border-color .15s;display:block}
-  .card:hover{transform:translateY(-2px);border-color:#e63946}
-  .type-tag{font-size:.7rem;text-transform:uppercase;letter-spacing:.1em;color:#e63946;font-weight:700;margin-bottom:.5rem}
-  .card h3{font-size:1.05rem;margin-bottom:.3rem;line-height:1.3}
-  .card .org{color:#6b7494;font-size:.82rem;margin-bottom:.6rem}
-  .meta{display:flex;gap:1rem;flex-wrap:wrap;color:#6b7494;font-size:.8rem}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:1.15rem}
+  .card{background:#111520;border:1px solid #1e2536;border-radius:16px;overflow:hidden;text-decoration:none;color:inherit;
+        transition:transform .22s cubic-bezier(.2,.9,.3,1.1), border-color .22s ease, box-shadow .22s ease;
+        display:flex;flex-direction:column;position:relative}
+  .card::after{content:"";position:absolute;inset:0;border-radius:16px;pointer-events:none;
+        background:linear-gradient(180deg,transparent 60%,rgba(230,57,70,0) 100%);transition:background .22s ease}
+  .card:hover{transform:translateY(-6px);border-color:#e63946;
+        box-shadow:0 14px 34px -12px rgba(230,57,70,.35),0 6px 16px rgba(0,0,0,.5)}
+  .card:hover::after{background:linear-gradient(180deg,transparent 55%,rgba(230,57,70,.08) 100%)}
+  .card-media{position:relative;aspect-ratio:16/9;overflow:hidden;background:
+        linear-gradient(135deg,#131b2e 0%,#0d1017 100%);display:flex;align-items:center;justify-content:center}
+  .card-media img{width:100%;height:100%;object-fit:cover;transition:transform .5s ease}
+  .card:hover .card-media img{transform:scale(1.05)}
+  .card-media .no-img{color:#2a3248;font-size:3rem}
+  .card-media .type-badge{position:absolute;top:.7rem;left:.7rem;font-size:.68rem;text-transform:uppercase;
+        letter-spacing:.1em;color:#fff;font-weight:800;background:rgba(230,57,70,.92);
+        padding:.32rem .7rem;border-radius:6px;backdrop-filter:blur(6px)}
+  .card-body{padding:1rem 1.15rem 1.15rem;display:flex;flex-direction:column;gap:.4rem;flex:1}
+  .card h3{font-size:1.05rem;margin:0;line-height:1.35;color:#f0f2ff}
+  .card .org{color:#8892b0;font-size:.82rem}
+  .meta{display:flex;gap:1rem;flex-wrap:wrap;color:#6b7494;font-size:.8rem;margin-top:auto;padding-top:.5rem}
+  .meta span{display:inline-flex;align-items:center;gap:.35rem}
+  .meta i{color:#e63946;font-size:.75rem}
   .empty{text-align:center;padding:3rem 1rem;color:#8892b0;border:1px dashed #2a3248;border-radius:14px;background:#0d1017}
   .pagination{display:flex;justify-content:center;gap:.3rem;margin-top:2rem}
   .pagination a,.pagination span{padding:.55rem .85rem;background:#111520;border:1px solid #1e2536;border-radius:8px;color:#8892b0;text-decoration:none}
@@ -112,14 +128,27 @@ $metaDesc  = 'Ανακαλύψτε πρωταθλήματα, φιλικούς α
   <?php else: ?>
     <p style="color:#8892b0;margin-bottom:1rem"><?= (int)$total ?> events</p>
     <div class="grid">
-      <?php foreach ($events as $ev): ?>
-        <a href="<?= h(eventPublicUrl($ev)) ?>" class="card">
-          <div class="type-tag"><?= h(eventTypeLabel($ev['type'])) ?></div>
-          <h3><?= h($ev['title']) ?></h3>
-          <div class="org">από <?= h($ev['organiser_name'] ?? '—') ?></div>
-          <div class="meta">
-            <?php if ($ev['starts_at']): ?><span><i class="fa-regular fa-calendar"></i> <?= h(formatDate(substr($ev['starts_at'],0,10))) ?></span><?php endif; ?>
-            <?php if ($ev['venue_name']): ?><span><i class="fa-solid fa-location-dot"></i> <?= h($ev['venue_name']) ?></span><?php endif; ?>
+      <?php foreach ($events as $ev):
+        $bannerUrl = !empty($ev['banner_path'])
+            ? rtrim(APP_URL, '/') . '/uploads/' . ltrim($ev['banner_path'], '/')
+            : '';
+      ?>
+        <a href="<?= h(eventPublicUrl($ev)) ?>" class="card" aria-label="<?= h($ev['title']) ?>">
+          <div class="card-media">
+            <?php if ($bannerUrl): ?>
+              <img src="<?= h($bannerUrl) ?>" alt="<?= h($ev['title']) ?>" loading="lazy">
+            <?php else: ?>
+              <i class="fa-solid fa-trophy no-img"></i>
+            <?php endif; ?>
+            <span class="type-badge"><?= h(eventTypeLabel($ev['type'])) ?></span>
+          </div>
+          <div class="card-body">
+            <h3><?= h($ev['title']) ?></h3>
+            <div class="org">από <?= h($ev['organiser_name'] ?? '—') ?></div>
+            <div class="meta">
+              <?php if ($ev['starts_at']): ?><span><i class="fa-regular fa-calendar"></i> <?= h(formatDate(substr($ev['starts_at'],0,10))) ?></span><?php endif; ?>
+              <?php if ($ev['venue_name']): ?><span><i class="fa-solid fa-location-dot"></i> <?= h($ev['venue_name']) ?></span><?php endif; ?>
+            </div>
           </div>
         </a>
       <?php endforeach; ?>
