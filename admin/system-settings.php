@@ -89,11 +89,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'overage_commission_pct',
             'summer_pause_enabled','summer_pause_month','summer_pause_end_month',
             'summer_pause_message','summer_pause_popup_days','summer_pause_reopening_message',
+            'pro_website_banner_enabled','pro_website_banner_title','pro_website_banner_message',
+            'pro_website_banner_cta_label','pro_website_banner_cta_url',
         ];
         try {
             $stmt = $db->prepare("INSERT INTO system_settings (setting_key,setting_value) VALUES (?,?) ON DUPLICATE KEY UPDATE setting_value=?");
             foreach ($fields as $key) {
-                $checkboxKeys = ['maintenance_mode', 'summer_pause_enabled'];
+                $checkboxKeys = ['maintenance_mode', 'summer_pause_enabled', 'pro_website_banner_enabled'];
                 $val = in_array($key, $checkboxKeys, true) ? (isset($_POST[$key]) ? '1' : '0') : trim($_POST[$key] ?? '');
                 $stmt->execute([$key, $val, $val]);
             }
@@ -406,6 +408,7 @@ textarea.form-control{min-height:100px;resize:vertical}
     <button class="tab-btn" onclick="switchTab('maintenance',this)"><i class="fa-solid fa-wrench"></i><span class="tab-lbl"> Maintenance</span></button>
     <button class="tab-btn" onclick="switchTab('overage',this)"><i class="fa-solid fa-cart-shopping" style="color:#f0a500"></i><span class="tab-lbl"> Πακέτα SMS/Email</span></button>
     <button class="tab-btn" onclick="switchTab('summer',this)"><i class="fa-solid fa-sun" style="color:#f0a500"></i><span class="tab-lbl"> Θερινή Παύση</span></button>
+    <button class="tab-btn" onclick="switchTab('prowebsite',this)"><i class="fa-solid fa-globe" style="color:#e63946"></i><span class="tab-lbl"> Pro Website Banner</span></button>
 </div>
 
 <form method="POST" id="settingsForm">
@@ -956,6 +959,78 @@ textarea.form-control{min-height:100px;resize:vertical}
 </div>
 </div>
 <!-- ══ END SUMMER PAUSE TAB ══ -->
+
+<!-- ══ PRO WEBSITE BANNER ══ -->
+<div id="tab-prowebsite" style="display:none" class="anim-2">
+<div class="card">
+    <div class="card-header">
+        <div class="card-title"><i class="fa-solid fa-globe" style="color:#e63946"></i> Pro Website Banner</div>
+    </div>
+    <div class="card-body">
+
+        <div class="alert alert-info" style="margin-bottom:1.2rem">
+            <i class="fa-solid fa-circle-info"></i>
+            <div style="font-size:.83rem;line-height:1.6">
+                Όταν είναι ενεργό, εμφανίζεται ένα banner στο dashboard <strong>μόνο των Pro συνδρομητών</strong> με προσφορά δωρεάν κατασκευής ιστοσελίδας.
+                Ο χρήστης μπορεί να το κλείσει· δεν εμφανίζεται ξανά μέχρι να καθαρίσει τα cookies του.
+                Αν είναι απενεργοποιημένο, δεν εμφανίζεται τίποτα.
+            </div>
+        </div>
+
+        <div class="section-sep"><i class="fa-solid fa-toggle-on"></i> Ενεργοποίηση</div>
+        <div class="toggle-row" style="margin-bottom:1.4rem">
+            <label class="toggle">
+                <input type="checkbox" name="pro_website_banner_enabled" value="1" id="proWebsiteToggle"
+                    <?= ($cfg['pro_website_banner_enabled']??'0')==='1'?'checked':'' ?>>
+                <div class="toggle-track"></div>
+            </label>
+            <label for="proWebsiteToggle" class="toggle-lbl">Το banner είναι <strong>ενεργό</strong> για Pro συνδρομητές</label>
+        </div>
+
+        <div class="section-sep"><i class="fa-solid fa-comment-dots" style="color:#a855f7"></i> Περιεχόμενο Banner</div>
+
+        <div class="form-group" style="margin-bottom:1rem">
+            <label class="form-label">Τίτλος</label>
+            <input type="text" name="pro_website_banner_title" class="form-control" maxlength="120"
+                   value="<?= h(sv($cfg,'pro_website_banner_title','Δωρεάν επαγγελματική ιστοσελίδα για τη σχολή σας')) ?>">
+            <div class="form-hint">Ο τίτλος του banner. Εμφανίζεται στην κορυφή του dashboard.</div>
+        </div>
+
+        <div class="form-group" style="margin-bottom:1rem">
+            <label class="form-label">Μήνυμα</label>
+            <textarea name="pro_website_banner_message" class="form-control" rows="3"><?= h(sv($cfg,'pro_website_banner_message','Ως Pro συνδρομητής δικαιούστε δωρεάν σχεδίαση + φιλοξενία μιας mobile-first ιστοσελίδας για τη σχολή σας — συνδεδεμένη με το MAster.')) ?></textarea>
+            <div class="form-hint">Ένα σύντομο μήνυμα κάτω από τον τίτλο.</div>
+        </div>
+
+        <div class="form-grid" style="margin-bottom:1.4rem">
+            <div class="form-group">
+                <label class="form-label">Κείμενο κουμπιού CTA</label>
+                <input type="text" name="pro_website_banner_cta_label" class="form-control" maxlength="60"
+                       value="<?= h(sv($cfg,'pro_website_banner_cta_label','Ενημερώστε με τώρα')) ?>">
+                <div class="form-hint">π.χ. «Ενημερώστε με τώρα», «Επικοινωνία εδώ».</div>
+            </div>
+            <div class="form-group">
+                <label class="form-label">URL / σύνδεσμος CTA</label>
+                <input type="text" name="pro_website_banner_cta_url" class="form-control"
+                       value="<?= h(sv($cfg,'pro_website_banner_cta_url','/contact.php')) ?>">
+                <div class="form-hint">Σχετικό (<code>/contact.php</code>) ή απόλυτο (<code>https://…</code>, <code>tel:+30…</code>).</div>
+            </div>
+        </div>
+
+        <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:1rem 1.2rem;margin-top:.5rem">
+            <div style="font-size:.75rem;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:#8892b0;margin-bottom:.5rem">
+                <i class="fa-solid fa-eye"></i> Προεπισκόπηση (αναγκάζει εμφάνιση για εσάς)
+            </div>
+            <a href="<?= APP_URL ?>/dashboard/?preview_pro_banner=1" target="_blank"
+               style="background:rgba(230,57,70,.12);color:#ff8891;border:1px solid rgba(230,57,70,.3);padding:.4rem .9rem;border-radius:8px;font-size:.82rem;font-weight:700;text-decoration:none;display:inline-flex;align-items:center;gap:.35rem">
+                <i class="fa-solid fa-globe"></i> Άνοιγμα dashboard με banner
+            </a>
+        </div>
+
+    </div>
+</div>
+</div>
+<!-- ══ END PRO WEBSITE BANNER TAB ══ -->
 
 <!-- ══ MAINTENANCE ══ -->
 <div id="tab-maintenance" style="display:none" class="anim-2">

@@ -572,6 +572,12 @@ $flash = getFlash();
       <i class="fas fa-user-plus"></i>
       Εγγραφή δωρεάν - 14 ημέρες δοκιμή
     </a>
+    <div style="margin-top:1rem;padding-top:1rem;border-top:1px solid rgba(255,255,255,.06);font-size:.85rem;color:#8892b0">
+      Θέλετε να δείτε πρώτα την πλατφόρμα;
+      <a href="<?= APP_URL ?>/demo-login.php" style="color:#ff8891;font-weight:700;text-decoration:none;display:inline-block;margin-top:.4rem">
+        <i class="fa-solid fa-play"></i> Είσοδος στο Live Demo →
+      </a>
+    </div>
   </div>
 
 </div>

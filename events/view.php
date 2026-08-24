@@ -226,6 +226,35 @@ $canonical = eventPublicUrl($ev);
           <i class="fa-solid fa-map"></i> Χάρτης
         </a>
       <?php endif; ?>
+
+      <?php
+        // Save-to-calendar helpers -----------------
+        $icsUrl = APP_URL . '/events/ics.php?slug=' . urlencode($ev['slug']);
+        $gcalStart = $ev['starts_at'] ? gmdate('Ymd\THis\Z', strtotime($ev['starts_at'])) : gmdate('Ymd\THis\Z');
+        $gcalEnd   = $ev['ends_at']   ? gmdate('Ymd\THis\Z', strtotime($ev['ends_at']))
+                                       : ($ev['starts_at'] ? gmdate('Ymd\THis\Z', strtotime($ev['starts_at']) + 3*3600) : gmdate('Ymd\THis\Z'));
+        $gcalUrl = 'https://calendar.google.com/calendar/render?action=TEMPLATE&'
+                 . http_build_query([
+                     'text'     => $ev['title'],
+                     'dates'    => $gcalStart . '/' . $gcalEnd,
+                     'details'  => trim(($ev['subtitle'] ?? '') . "\n\n" . strip_tags($ev['description'] ?? '')) . "\n\n" . eventPublicUrl($ev),
+                     'location' => trim(($ev['venue_name'] ?? '') . ' ' . ($ev['venue_address'] ?? '')),
+                   ]);
+      ?>
+      <div style="position:relative;display:inline-block">
+        <button type="button" onclick="var m=this.nextElementSibling;m.style.display=m.style.display==='block'?'none':'block'" class="btn btn-ghost">
+          <i class="fa-regular fa-calendar-plus"></i> Save to calendar
+        </button>
+        <div style="display:none;position:absolute;top:100%;left:0;margin-top:.35rem;background:#111520;border:1px solid #2a3248;border-radius:10px;padding:.35rem;min-width:200px;box-shadow:0 12px 32px rgba(0,0,0,.5);z-index:20">
+          <a href="<?= h($gcalUrl) ?>" target="_blank" rel="noopener" style="display:block;padding:.55rem .75rem;color:#f0f2ff;text-decoration:none;border-radius:6px;font-size:.9rem" onmouseover="this.style.background='rgba(230,57,70,.1)'" onmouseout="this.style.background='transparent'">
+            <i class="fa-brands fa-google" style="color:#e63946;margin-right:.4rem;width:14px"></i> Google Calendar
+          </a>
+          <a href="<?= h($icsUrl) ?>" style="display:block;padding:.55rem .75rem;color:#f0f2ff;text-decoration:none;border-radius:6px;font-size:.9rem" onmouseover="this.style.background='rgba(230,57,70,.1)'" onmouseout="this.style.background='transparent'">
+            <i class="fa-brands fa-apple" style="color:#e63946;margin-right:.4rem;width:14px"></i> Apple / Outlook (.ics)
+          </a>
+        </div>
+      </div>
+
       <a href="<?= APP_URL ?>/events/report.php?slug=<?= h($ev['slug']) ?>" class="btn btn-ghost" style="color:#8892b0">
         <i class="fa-regular fa-flag"></i> Αναφορά
       </a>
@@ -295,8 +324,27 @@ $canonical = eventPublicUrl($ev);
     </div>
   <?php endif; ?>
 
-  <p style="text-align:center;color:#4a5270;font-size:.8rem;padding:2rem 0">
-    Powered by <a href="<?= APP_URL ?>/" style="color:#e63946;text-decoration:none">MA<em style="font-style:normal">ster</em></a>
+  <!-- Powered-by badge: subtle viral loop → every public event page invites new organisers -->
+  <div style="margin:2.5rem 0 1.5rem;padding:1.5rem 1.75rem;background:linear-gradient(135deg,rgba(230,57,70,.08),rgba(230,57,70,.02));border:1px solid rgba(230,57,70,.22);border-radius:16px;display:flex;align-items:center;justify-content:space-between;gap:1.25rem;flex-wrap:wrap">
+    <div style="display:flex;align-items:center;gap:.9rem;flex:1;min-width:220px">
+      <div style="width:44px;height:44px;background:#e63946;border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 4px 14px -4px rgba(230,57,70,.55)">
+        <i class="fa-solid fa-trophy" style="color:#fff;font-size:1.15rem"></i>
+      </div>
+      <div>
+        <div style="color:#f0f2ff;font-weight:800;font-size:.95rem;line-height:1.3">Διοργανώστε τη δική σας εκδήλωση</div>
+        <div style="color:#8892b0;font-size:.82rem;line-height:1.4;margin-top:.15rem">
+          Δωρεάν σελίδα, εγγραφές, πληρωμές, κληρώσεις, brackets — όλα σε μια πλατφόρμα.
+        </div>
+      </div>
+    </div>
+    <a href="<?= APP_URL ?>/register.php" class="btn btn-primary" style="white-space:nowrap">
+      Ξεκινήστε δωρεάν <i class="fa-solid fa-arrow-right"></i>
+    </a>
+  </div>
+  <p style="text-align:center;color:#4a5270;font-size:.78rem;padding:.5rem 0 2rem">
+    Powered by
+    <a href="<?= APP_URL ?>/" style="color:#e63946;text-decoration:none;font-weight:700">MA<em style="font-style:normal">ster</em></a>
+    · Πλατφόρμα διαχείρισης αθλητικών συλλόγων
   </p>
 </div>
 

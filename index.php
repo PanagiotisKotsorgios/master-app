@@ -613,6 +613,7 @@ body::after{content:'';position:fixed;inset:0;background-image:url("data:image/s
     <p class="hero-sub">Σταματήστε να χάνετε χρήματα από απλήρωτες συνδρομές. Η πλατφόρμα μας προσφέρει αυτόματες υπενθυμίσεις <strong style="color:#b32430;">SMS</strong> & <strong style="color:#3a86ff;">EMAIL</strong>, πλήρη διαχείριση σωματείου, αθλητών και οικονομικών - όλα σε ένα ενιαίο σύστημα διαχείρισης.</p>
     <div class="hero-ctas">
       <a href="<?= APP_URL ?>/register.php" class="btn-primary"><i class="fas fa-rocket"></i> Ξεκινήστε Δωρεάν - 14 ημέρες</a>
+      <a href="<?= APP_URL ?>/demo-login.php" class="btn-outline" style="background:rgba(230,57,70,.06);border-color:rgba(230,57,70,.35);color:#ff8891"><i class="fa-solid fa-play"></i> Δείτε Live Demo — χωρίς εγγραφή</a>
       <a href="login.php" class="btn-outline"><i class="fa-solid fa-arrow-right-to-bracket"></i> Συνδεθείτε Εδώ</a>
     </div>
   </div>

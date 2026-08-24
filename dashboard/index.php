@@ -23,6 +23,7 @@ require_once __DIR__ . '/../includes/layout.php';
 require_once __DIR__ . '/../includes/overage_popup.php';
 require_once __DIR__ . '/../includes/summer_popup.php';
 require_once __DIR__ . '/../includes/marketing_popup.php';
+require_once __DIR__ . '/../includes/pro_website_banner.php';
 requireLogin();
 if (isSuperAdmin() && !isset($_GET['preview_popup'])) redirect(APP_URL.'/admin/');
 renderPaymentWall();
@@ -274,6 +275,7 @@ renderHead('Κεντρική');
 <?php renderOveragePopup(); ?>
 <?php renderSummerPopup(); ?>
 <?php renderMarketingPopup(); ?>
+<?php renderProWebsiteBanner(); ?>
 <div class="app-layout">
 <?php renderSidebar('dashboard'); ?>
 <div id="dm-overlay"></div>
