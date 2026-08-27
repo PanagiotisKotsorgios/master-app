@@ -73,6 +73,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             flash('Καταγράφηκε επιστροφή ' . number_format($amt, 2, ',', '.') . '€.');
             redirect(eventManageUrl($id) . '&tab=payments');
         }
+        // ── Bulk mark all pending regs of a school as paid ──
+        if ($action === 'mark_school_paid') {
+            $psid = (int)($_POST['school_id'] ?? 0);
+            if ($psid > 0) {
+                $upd = getDB()->prepare("
+                    UPDATE event_registrations
+                       SET payment_status = 'verified',
+                           paid_at        = NOW(),
+                           verified_at    = NOW(),
+                           verified_by    = ?
+                     WHERE event_id = ?
+                       AND registering_school_id = ?
+                       AND payment_status IN ('unpaid','proof_uploaded')
+                       AND status NOT IN ('rejected','withdrawn')
+                ");
+                $upd->execute([$userId, $id, $psid]);
+                $n = $upd->rowCount();
+                if (function_exists('auditLog')) auditLog('event_bulk_paid', 'event', $id, "school=$psid n=$n");
+                flash("Σημάνθηκαν $n εγγραφές ως πληρωμένες.");
+            }
+            redirect(eventManageUrl($id) . '&tab=payments');
+        }
         if ($action === 'field_save') {
             eventCustomFieldSave($id, $_POST, isset($_POST['field_id']) && $_POST['field_id']!=='' ? (int)$_POST['field_id'] : null);
             flash('Το πεδίο αποθηκεύτηκε.');
@@ -124,6 +146,11 @@ $flash = getFlash();
       </div>
       <div style="display:flex;gap:.5rem;flex-wrap:wrap">
         <a href="<?= h(eventPublicUrl($ev)) ?>" target="_blank" class="btn btn-ghost btn-sm"><i class="fa-solid fa-eye"></i> Δημόσια</a>
+        <a href="<?= APP_URL ?>/pages/event_draws_print.php?id=<?= (int)$ev['id'] ?>" target="_blank"
+           class="btn btn-ghost btn-sm"
+           style="background:linear-gradient(135deg,rgba(59,130,246,.14),rgba(37,99,235,.05));border:1px solid rgba(59,130,246,.35);color:#93c5fd">
+          <i class="fa-solid fa-print"></i> Εκτύπωση Κληρώσεων
+        </a>
         <a href="<?= APP_URL ?>/pages/event_bracket.php?id=<?= (int)$ev['id'] ?>" class="btn btn-ghost btn-sm"><i class="fa-solid fa-sitemap"></i> Λίστες / Pools</a>
         <a href="<?= APP_URL ?>/events/results.php?slug=<?= h($ev['slug']) ?>" target="_blank" class="btn btn-ghost btn-sm"><i class="fa-solid fa-medal"></i> Αποτελέσματα</a>
         <a href="<?= APP_URL ?>/pages/event_edit.php?id=<?= (int)$ev['id'] ?>" class="btn btn-ghost btn-sm"><i class="fa-solid fa-pen"></i> Επεξεργασία</a>
@@ -307,6 +334,9 @@ $flash = getFlash();
               <td style="padding:.7rem 1rem"><?= h(eventFormatLabel($c['format'] ?? '')) ?></td>
               <td style="padding:.7rem 1rem"><?= $c['fee_override']!==null ? number_format((float)$c['fee_override'],2,',','.').'€' : '<i style="color:#6b7494">default</i>' ?></td>
               <td style="padding:.7rem 1rem;text-align:right;white-space:nowrap">
+                <a href="<?= APP_URL ?>/pages/event_draws_print.php?id=<?= $id ?>&cat=<?= (int)$c['id'] ?>" target="_blank" class="btn btn-ghost btn-sm" title="Εκτύπωση κληρώσεων κατηγορίας">
+                  <i class="fa-solid fa-print"></i>
+                </a>
                 <a href="<?= APP_URL ?>/pages/event_bracket.php?id=<?= $id ?>&cat=<?= (int)$c['id'] ?>" class="btn btn-ghost btn-sm" title="Κληρώσεις κατηγορίας">
                   <i class="fa-solid fa-diagram-project"></i> Κληρώσεις
                 </a>
@@ -491,18 +521,97 @@ $flash = getFlash();
     <?php endif; ?>
 
   <?php elseif ($tab === 'payments'): ?>
-    <?php if (!$payments): ?>
-      <p style="color:#6b7494">Δεν υπάρχουν πληρωμές ακόμα.</p>
-    <?php else: ?>
-      <?php foreach ($payments as $p): ?>
+    <!-- ══ Εκκρεμείς Σχολές (grouped from registrations) ══ -->
+    <?php
+      // Aggregate unpaid registrations per school for this event
+      $pendingBySchool = [];
+      foreach ($registrations as $r) {
+          if (!in_array($r['payment_status'], ['unpaid','proof_uploaded'], true)) continue;
+          if (in_array($r['status'], ['rejected','withdrawn'], true)) continue;
+          $key = (int)$r['registering_school_id'];
+          if (!isset($pendingBySchool[$key])) {
+              $pendingBySchool[$key] = [
+                  'name'   => $r['school_name'] ?? '—',
+                  'count'  => 0,
+                  'total'  => 0.0,
+                  'proof'  => 0,
+                  'ids'    => [],
+              ];
+          }
+          $pendingBySchool[$key]['count']++;
+          $pendingBySchool[$key]['total'] += (float)$r['amount'];
+          if ($r['payment_status'] === 'proof_uploaded') $pendingBySchool[$key]['proof']++;
+          $pendingBySchool[$key]['ids'][] = (int)$r['id'];
+      }
+      $totalPendingClubs   = count($pendingBySchool);
+      $totalPendingAmount  = array_sum(array_column($pendingBySchool, 'total'));
+      // sort by biggest debt first
+      uasort($pendingBySchool, fn($a,$b) => $b['total'] <=> $a['total']);
+    ?>
+    <?php if ($totalPendingClubs > 0): ?>
+      <div style="background:#111520;border:1px solid rgba(230,57,70,.35);border-radius:14px;padding:1.15rem 1.35rem;margin-bottom:1rem">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:.75rem;flex-wrap:wrap;margin-bottom:.85rem">
+          <h3 style="margin:0;color:#ff8891;font-size:1rem;font-weight:800;display:flex;align-items:center;gap:.5rem">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+            Σχολές με εκκρεμείς πληρωμές
+            <span style="background:rgba(230,57,70,.2);color:#ff8891;padding:.1rem .55rem;border-radius:50px;font-size:.72rem;font-weight:900"><?= $totalPendingClubs ?></span>
+          </h3>
+          <div style="color:#c8cfe0;font-size:.9rem">
+            Συνολικό υπόλοιπο: <strong style="color:#f0a500"><?= number_format($totalPendingAmount, 2, ',', '.') ?> €</strong>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:.7rem">
+          <?php foreach ($pendingBySchool as $psid => $ps): ?>
+            <div style="background:#0d1017;border:1px solid #1e2536;border-radius:10px;padding:.85rem 1rem">
+              <div style="font-weight:800;color:#fff;font-size:.98rem;margin-bottom:.35rem"><?= h($ps['name']) ?></div>
+              <div style="display:flex;justify-content:space-between;gap:.75rem;flex-wrap:wrap;color:#8892b0;font-size:.82rem">
+                <span><?= $ps['count'] ?> συμμετοχές<?php if ($ps['proof']): ?> · <span style="color:#93c5fd"><?= $ps['proof'] ?> με αποδεικτικό</span><?php endif; ?></span>
+                <strong style="color:#ff8891"><?= number_format($ps['total'], 2, ',', '.') ?> €</strong>
+              </div>
+              <div style="margin-top:.55rem;display:flex;gap:.35rem;flex-wrap:wrap">
+                <form method="POST" style="display:inline"
+                      onsubmit="return confirm('Σήμανση ΟΛΩΝ των <?= $ps['count'] ?> εγγραφών του <?= h($ps['name']) ?> ως Πληρωμένες;')">
+                  <input type="hidden" name="csrf_token" value="<?= csrf() ?>">
+                  <input type="hidden" name="_action" value="mark_school_paid">
+                  <input type="hidden" name="school_id" value="<?= (int)$psid ?>">
+                  <button type="submit" title="Σήμανση όλων ως πληρωμένες"
+                          style="background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;border:none;padding:.4rem .7rem;border-radius:8px;font-weight:700;font-size:.78rem;cursor:pointer">
+                    <i class="fa-solid fa-check"></i> Έλαβα όλη την πληρωμή
+                  </button>
+                </form>
+              </div>
+            </div>
+          <?php endforeach; ?>
+        </div>
+      </div>
+    <?php endif; ?>
+
+    <?php if (!$payments && $totalPendingClubs === 0): ?>
+      <p style="color:#6b7494">Δεν υπάρχουν εκκρεμείς ή καταχωρημένες πληρωμές ακόμα.</p>
+    <?php elseif (!$payments): ?>
+      <p style="color:#8892b0;font-size:.9rem">Δεν έχουν καταχωρηθεί αιτήματα πληρωμής μέσω του portal ακόμα — οι εγγραφές των παραπάνω σχολών εμφανίζονται ως εκκρεμείς.</p>
+    <?php endif; ?>
+
+    <?php if ($payments): ?>
+      <?php foreach ($payments as $p):
+        $__pmeta = $p['meta'] ? json_decode($p['meta'], true) : [];
+        $__pnote = $__pmeta['payer_note'] ?? '';
+        $__mLbl  = ['bank'=>'Τραπεζικό έμβασμα','iris'=>'IRIS','cash'=>'Μετρητά'][$p['method']] ?? strtoupper($p['method']);
+      ?>
         <div style="background:#111520;border:1px solid #1e2536;border-radius:14px;padding:1.15rem 1.25rem;margin-bottom:.75rem">
           <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;flex-wrap:wrap">
             <div>
               <div style="font-size:.72rem;text-transform:uppercase;color:#6b7494;font-weight:700"><?= h($p['school_name'] ?? '—') ?></div>
               <div style="font-size:1.15rem;color:#f0f2ff;font-weight:800;margin:.2rem 0"><?= number_format((float)$p['amount'],2,',','.') ?> €</div>
               <div style="color:#8892b0;font-size:.85rem">
-                <?= h(strtoupper($p['method'])) ?> · Ref: <code style="background:#0d1017;padding:.1rem .4rem;border-radius:4px"><?= h($p['reference_code']) ?></code>
+                <?= h($__mLbl) ?> · Ref: <code style="background:#0d1017;padding:.1rem .4rem;border-radius:4px"><?= h($p['reference_code']) ?></code>
               </div>
+              <?php if ($__pnote !== ''): ?>
+              <div style="margin-top:.55rem;padding:.55rem .75rem;background:rgba(59,130,246,.08);border:1px solid rgba(59,130,246,.25);border-radius:8px;color:#c8dbff;font-size:.85rem;line-height:1.45">
+                <i class="fa-solid fa-quote-left" style="color:#3b82f6;font-size:.72rem;margin-right:.35rem"></i>
+                <?= nl2br(h($__pnote)) ?>
+              </div>
+              <?php endif; ?>
             </div>
             <div style="text-align:right">
               <div style="margin-bottom:.5rem">

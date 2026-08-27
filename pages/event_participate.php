@@ -52,6 +52,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($action === 'pay_start') {
             $method = in_array($_POST['method'] ?? '', ['bank','iris','cash'], true) ? $_POST['method'] : 'bank';
             $payId  = eventPaymentCreate($id, $sid, $method, $userId);
+            // Save optional payer note in the payment.meta JSON so the
+            // organiser can read it on their manage view.
+            $note = trim((string)($_POST['payer_note'] ?? ''));
+            if ($note !== '' && $payId > 0) {
+                $note = mb_substr($note, 0, 500);
+                $meta = json_encode(['payer_note' => $note], JSON_UNESCAPED_UNICODE);
+                getDB()->prepare("UPDATE event_payments SET meta = ? WHERE id = ?")
+                       ->execute([$meta, $payId]);
+            }
             flash('Δημιουργήθηκε πληρωμή. Ανεβάστε την απόδειξη παρακάτω.');
             redirect(APP_URL . '/pages/event_participate.php?id=' . $id . '#pay-' . $payId);
         }
@@ -60,6 +69,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $rel   = eventUploadStore($_FILES['proof'] ?? [], $id, 'private', ['pdf','jpg','jpeg','png','webp'], 8000);
             if (!$rel) throw new RuntimeException('Επιλέξτε αρχείο απόδειξης.');
             eventPaymentAttachProof($payId, $sid, $rel);
+            // Update payer note if provided alongside proof
+            $note = trim((string)($_POST['payer_note'] ?? ''));
+            if ($note !== '') {
+                $note = mb_substr($note, 0, 500);
+                $meta = json_encode(['payer_note' => $note], JSON_UNESCAPED_UNICODE);
+                getDB()->prepare("UPDATE event_payments SET meta = ? WHERE id = ? AND paying_school_id = ?")
+                       ->execute([$meta, $payId, $sid]);
+            }
             flash('Η απόδειξη ανέβηκε. Ο διοργανωτής θα την επιβεβαιώσει.');
         }
     } catch (Throwable $e) {
@@ -267,15 +284,33 @@ $flash = getFlash();
         <div style="color:#c8cfe0;font-size:.9rem;margin-bottom:.65rem">
           Εκκρεμούν <strong style="color:#f0f2ff"><?= $unpaidCount ?></strong> συμμετοχές συνολικά <strong style="color:#f0a500"><?= number_format($unpaidTotal,2,',','.') ?>€</strong>.
         </div>
-        <form method="POST" style="display:flex;gap:.5rem;flex-wrap:wrap">
+        <?php
+          $__mLabels = ['bank'=>'Τραπεζικό έμβασμα','iris'=>'IRIS','cash'=>'Μετρητά (on-site)'];
+        ?>
+        <form method="POST" style="display:grid;grid-template-columns:1fr;gap:.75rem">
           <input type="hidden" name="csrf_token" value="<?= csrf() ?>">
           <input type="hidden" name="_action" value="pay_start">
-          <select name="method" style="padding:.6rem;background:#0d1017;border:1px solid #2a3248;border-radius:8px;color:#f0f2ff">
-            <?php foreach (explode(',', $ev['payment_methods']) as $m): ?>
-              <option value="<?= h($m) ?>"><?= h(strtoupper($m)) ?></option>
-            <?php endforeach; ?>
-          </select>
-          <button class="btn btn-primary"><i class="fa-solid fa-credit-card"></i> Έναρξη πληρωμής</button>
+          <div>
+            <label style="display:block;font-size:.78rem;font-weight:700;color:#a9b3c9;margin-bottom:.35rem;text-transform:uppercase;letter-spacing:.06em">Τρόπος πληρωμής</label>
+            <select name="method" style="width:100%;padding:.75rem 1rem;background:#0d1017;border:1.5px solid #2a3248;border-radius:10px;color:#fff;font-size:.95rem;min-height:48px">
+              <?php foreach (explode(',', $ev['payment_methods']) as $m):
+                  $m = trim($m);
+                  if (!in_array($m, ['bank','iris','cash'], true)) continue; ?>
+                <option value="<?= h($m) ?>"><?= h($__mLabels[$m] ?? strtoupper($m)) ?></option>
+              <?php endforeach; ?>
+            </select>
+          </div>
+          <div>
+            <label style="display:block;font-size:.78rem;font-weight:700;color:#a9b3c9;margin-bottom:.35rem;text-transform:uppercase;letter-spacing:.06em">
+              Σημείωση προς τον διοργανωτή (προαιρετικό)
+            </label>
+            <textarea name="payer_note" rows="2" maxlength="500"
+                      placeholder="π.χ. Έκανα την κατάθεση σήμερα, ακολουθεί απόδειξη — ή: Θα πληρώσω on-site την ημέρα του πρωταθλήματος."
+                      style="width:100%;padding:.75rem 1rem;background:#0d1017;border:1.5px solid #2a3248;border-radius:10px;color:#fff;font-size:.95rem;font-family:inherit;resize:vertical;min-height:64px"></textarea>
+          </div>
+          <button class="btn btn-primary" style="min-height:48px;font-size:.98rem;font-weight:800">
+            <i class="fa-solid fa-credit-card"></i> Έναρξη πληρωμής
+          </button>
         </form>
       </div>
     <?php endif; ?>
