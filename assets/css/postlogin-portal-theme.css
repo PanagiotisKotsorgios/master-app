@@ -86,13 +86,24 @@ body::before, body::after {
 .sidebar-plan strong { color: #ffffff !important; }
 
 /* ── Topbar ── */
+/* Extra selector specificity + !important so per-page rules
+   (e.g. dashboard/index.php sets z-index:auto!important) can't demote us.
+   backdrop-filter creates a stacking context — we MUST keep z-index high
+   or the user dropdown gets covered by content below. */
+body .topbar,
 .topbar {
   background: rgba(14,30,53,.85) !important;
   backdrop-filter: blur(14px) saturate(160%) !important;
   -webkit-backdrop-filter: blur(14px) saturate(160%) !important;
   border-bottom: 1px solid rgba(255,255,255,.06) !important;
   color: #ffffff !important;
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 500 !important;
 }
+/* Dropdown must overlay every content card, table, etc. below the topbar */
+.user-dropdown { position: relative !important; z-index: 501 !important; }
+.user-dropdown .dropdown-menu { z-index: 10000 !important; }
 .topbar h1, .topbar h2, .topbar .title { color: #ffffff !important; }
 
 .user-chip {

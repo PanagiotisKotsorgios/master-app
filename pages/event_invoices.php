@@ -18,9 +18,30 @@ $payments = eventPaymentsAllForSchool($sid);
 
 renderHead('Τιμολόγια Διοργανώσεων');
 ?>
+<style>
+.main-content { overflow-x: hidden !important; min-width: 0 !important; }
+.page-body    { animation: fadeIn .35s ease both; padding: 1.5rem; }
+@keyframes fadeIn { from { opacity: 0 } to { opacity: 1 } }
+@media (max-width: 900px) {
+  #menuBtn { display: inline-flex !important; min-width: 44px !important; min-height: 44px !important;
+             align-items: center !important; justify-content: center !important;
+             font-size: 1.2rem !important; cursor: pointer !important; }
+  .sidebar { position: fixed !important; top: 0 !important; left: 0 !important; bottom: 0 !important;
+             width: min(280px, 80vw) !important; z-index: 9999 !important;
+             transform: translateX(-110%) !important;
+             transition: transform .28s cubic-bezier(.2,.8,.2,1) !important;
+             overflow-y: auto; -webkit-overflow-scrolling: touch; }
+  .sidebar.open { transform: translateX(0) !important; box-shadow: 6px 0 40px rgba(0,0,0,.6) !important; }
+  .main-content { margin-left: 0 !important; width: 100% !important; }
+  .page-body { padding: 1rem !important; }
+}
+#dm-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.55); z-index: 9998; cursor: pointer; }
+#dm-overlay.on { display: block; }
+</style>
 <body>
 <div class="app-layout">
-<?php renderSidebar('events'); ?>
+<?php renderSidebar('event_invoices'); ?>
+<div id="dm-overlay" onclick="document.getElementById('sidebar').classList.remove('open');this.classList.remove('on')"></div>
 <div class="main-content">
 <?php renderTopbar('Τιμολόγια Διοργανώσεων'); ?>
 <div class="page-body">

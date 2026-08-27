@@ -36,10 +36,13 @@ renderHead('Διοργανώσεις');
   .main-content { margin-left: 0 !important; width: 100% !important; }
   .page-body    { padding: 1rem !important; }
 }
+#dm-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.55); z-index: 9998; cursor: pointer; }
+#dm-overlay.on { display: block; }
 </style>
 <body>
 <div class="app-layout">
 <?php renderSidebar('events'); ?>
+<div id="dm-overlay" onclick="document.getElementById('sidebar').classList.remove('open');this.classList.remove('on')"></div>
 <div class="main-content">
 <?php renderTopbar('Διοργανώσεις — Πρωταθλήματα, Φιλικά, Camps'); ?>
 <div class="page-body">
