@@ -312,14 +312,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $bcStmt->execute([$sid, $bcSubject ?: null, $bcBody, implode(',', $bcChs), $bcFilter, 'sending']);
         $broadcastId = (int)$db->lastInsertId();
 
-        $totalSent = 0;
-        $totalFailed = 0;
+        $totalSent = 0;      // delivery attempts that succeeded (per channel)
+        $totalFailed = 0;    // delivery attempts that failed
+        // Recipient-level counters (an athlete who got both email + SMS
+        // counts as ONE recipient, not two — user pointed this out).
+        $recipientsReached  = 0;
+        $recipientsFailed   = 0;
         // Track WHY each send failed so the user sees a truthful summary
         // instead of a vague "ελλιπή στοιχεία επικοινωνίας" catch-all.
         $failReasons = ['missing' => 0, 'limit' => 0, 'provider' => 0];
         $failSamples = [];   // Up to 5 rows for the user-facing hint
 
         foreach ($bcAthletes as $ath) {
+            $anyChannelSent = false;
+            $anyChannelFail = false;
             $isAdult = true;
             if (!empty($ath['birthdate'])) {
                 try {
@@ -379,28 +385,45 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 if ($sent) {
                     $totalSent++;
+                    $anyChannelSent = true;
                 } else {
                     $totalFailed++;
+                    $anyChannelFail = true;
                     if ($reasonKey) $failReasons[$reasonKey]++;
                     if (count($failSamples) < 5 && $reasonMsg) {
                         $failSamples[] = h($ath['full_name']) . ' — ' . h($reasonMsg);
                     }
                 }
             }
+            // Recipient-level tally (once per athlete, regardless of channel count)
+            if ($anyChannelSent)                       $recipientsReached++;
+            elseif ($anyChannelFail && !$anyChannelSent) $recipientsFailed++;
         }
 
         $db->prepare("UPDATE broadcast_messages SET status='done', total_sent=?, total_failed=?, sent_at=NOW() WHERE id=?")
            ->execute([$totalSent, $totalFailed, $broadcastId]);
 
-        $msg = "Η ανακοίνωση εστάλη σε <strong>{$totalSent}</strong> παραλήπτες!";
-        if ($totalFailed > 0) {
-            // Build a truthful reason breakdown
+        // ── Build the flash summary ──
+        // "N παραλήπτες με M τρόπους (email + sms)" reads naturally
+        // when both channels were used; single-channel keeps it simple.
+        $channelLabels = [];
+        if (in_array('email', $bcChs)) $channelLabels[] = 'email';
+        if (in_array('sms',   $bcChs)) $channelLabels[] = 'SMS';
+        $chanCount = count($channelLabels);
+        $chanText  = $chanCount > 1
+            ? ' με <strong>' . $chanCount . '</strong> τρόπους (' . implode(' + ', $channelLabels) . ')'
+            : (' μέσω <strong>' . implode('', $channelLabels) . '</strong>');
+
+        $recipientWord = $recipientsReached === 1 ? 'παραλήπτη' : 'παραλήπτες';
+        $msg = "Η ανακοίνωση εστάλη σε <strong>{$recipientsReached}</strong> {$recipientWord}{$chanText}!";
+
+        if ($recipientsFailed > 0 || $failReasons['provider'] > 0 || $failReasons['limit'] > 0) {
             $parts = [];
             if ($failReasons['missing']  > 0) $parts[] = $failReasons['missing']  . ' χωρίς στοιχεία επικοινωνίας';
             if ($failReasons['limit']    > 0) $parts[] = $failReasons['limit']    . ' εκτός ορίου SMS';
             if ($failReasons['provider'] > 0) $parts[] = $failReasons['provider'] . ' αποτυχία αποστολής παρόχου';
             $reasonSummary = $parts ? implode(' · ', $parts) : 'άγνωστη αιτία';
-            $msg .= " (<strong>{$totalFailed}</strong> απέτυχαν — {$reasonSummary})";
+            $msg .= " (<strong>{$totalFailed}</strong> αποστολές απέτυχαν — {$reasonSummary})";
             if ($failSamples) {
                 $msg .= '<br><small style="display:block;margin-top:.35rem;opacity:.85">Παραδείγματα: ' . implode(' · ', $failSamples) . '</small>';
             }
@@ -946,23 +969,7 @@ textarea.form-control{min-height:120px;resize:vertical;line-height:1.6}
 <button type="button" id="openAddModal" class="btn btn-primary">
     <i class="fa-solid fa-plus"></i> Αυτόματες Υπενθυμίσεις
 </button>
-
-<form method="POST" action="<?= APP_URL ?>/pages/run_reminders_now.php" style="display:inline"
-      onsubmit="return confirm('Θα εκτελεστεί τώρα το nightly cron των υπενθυμίσεων για τη σχολή σας. Συνέχεια;')">
-  <input type="hidden" name="csrf_token" value="<?= csrf() ?>">
-  <button type="submit" class="btn"
-          style="background:linear-gradient(135deg,rgba(45,198,83,.15),rgba(34,197,94,.06));
-                 border:1.5px solid rgba(45,198,83,.4);color:#2dc653"
-          title="Εκτελεί άμεσα το cron για να δεις τα αποτελέσματα χωρίς να περιμένεις τη νύχτα">
-    <i class="fa-solid fa-play"></i> Δοκιμαστική Εκτέλεση
-  </button>
-</form>
         </div>
-    </div>
-
-    <div style="background:rgba(59,130,246,.08);border:1px solid rgba(59,130,246,.2);border-radius:12px;padding:.85rem 1.1rem;margin-bottom:1rem;color:#c8dbff;font-size:.9rem;line-height:1.6">
-      <strong style="color:#ffffff"><i class="fa-solid fa-clock" style="color:#3b82f6;margin-right:.3rem"></i>Πότε τρέχει το cron;</strong>
-      Οι αυτόματες υπενθυμίσεις πρέπει να καλούνται από εξωτερικό scheduler (Coolify scheduled task ή external cron). Ο ενδεικτικός χρόνος είναι <strong style="color:#ffffff">κάθε πρωί στις 09:00</strong>. Για άμεση δοκιμή, πάτησε <em>Δοκιμαστική Εκτέλεση</em>. Οι αποστολές θα εμφανιστούν στο tab <em>Ιστορικό</em>.
     </div>
 
     <div class="rules-list anim-3">
