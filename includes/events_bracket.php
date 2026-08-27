@@ -29,9 +29,13 @@ require_once __DIR__ . '/events.php';
 
 /** All approved registrations for a category, in current seed order. */
 function bracketCategoryRegs(int $categoryId): array {
+    // NOTE: athletes.belt doesn't exist in the base schema, so we drop
+    // it from the SELECT to avoid 500s. Payment/status columns come
+    // from the registration row itself and power the export.
     $st = getDB()->prepare("
         SELECT r.id, r.athlete_id, r.registering_school_id, r.seed, r.pool_id,
-               a.full_name AS athlete_name, a.belt,
+               r.status, r.payment_status,
+               a.full_name AS athlete_name,
                s.name AS school_name
         FROM event_registrations r
         LEFT JOIN athletes a ON a.id = r.athlete_id

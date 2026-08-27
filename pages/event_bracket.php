@@ -84,6 +84,91 @@ foreach ($allMatches as $m) {
 $rounds = [];
 foreach ($bracketList as $m) $rounds[$m['round_label'] ?: '—'][] = $m;
 
+// ── XLSX export ────────────────────────────────────────────────
+// GET ?id=X&cat=Y&export=xlsx → 3-sheet workbook: participants list,
+// pool round-robins, bracket matches.
+if (($_GET['export'] ?? '') === 'xlsx') {
+    require_once __DIR__ . '/../includes/xlsx_writer.php';
+    $xw = new XlsxWriter();
+
+    // Sheet 1 — Λίστα συμμετεχόντων (with seed)
+    $rows1 = [['Seed', 'Αθλητής', 'Σύλλογος', 'Πληρωμή', 'Κατάσταση']];
+    foreach ($regs as $r) {
+        $rows1[] = [
+            (int)($r['seed'] ?? 0) ?: '',
+            (string)($r['athlete_name'] ?? '—'),
+            (string)($r['school_name']  ?? '—'),
+            match ($r['payment_status'] ?? 'unpaid') {
+                'verified'       => 'Πληρωμένο',
+                'proof_uploaded' => 'Αποδεικτικό ανέβηκε',
+                'waived'         => 'Απαλλαγή',
+                'refunded'       => 'Επιστροφή',
+                default          => 'Εκκρεμεί',
+            },
+            match ($r['status'] ?? 'pending') {
+                'approved'    => 'Εγκεκριμένος',
+                'checked_in'  => 'Παρών',
+                'no_show'     => 'Απουσία',
+                'disqualified'=> 'Αποκλείστηκε',
+                default       => 'Σε αναμονή',
+            },
+        ];
+    }
+    $xw->addSheet('Συμμετέχοντες', $rows1, ['freezeHeader' => true]);
+
+    // Sheet 2 — Pools
+    $poolRows = [['Pool', 'Αγώνας #', 'Κόκκινος', 'Σύλλογος', 'Score',
+                  'Μπλε', 'Σύλλογος', 'Νικητής', 'Τύπος', 'Ring', 'Ώρα']];
+    foreach ($byPool as $poolId => $matches) {
+        foreach ($matches as $m) {
+            $winner = '—';
+            if ((int)$m['winner_registration_id'] === (int)$m['red_registration_id'])  $winner = (string)($m['red_name'] ?? '');
+            if ((int)$m['winner_registration_id'] === (int)$m['blue_registration_id']) $winner = (string)($m['blue_name'] ?? '');
+            $poolRows[] = [
+                'Pool ' . $poolId,
+                (int)$m['bracket_position'],
+                (string)($m['red_name']    ?? '—'),
+                (string)($m['red_school']  ?? '—'),
+                ($m['status']==='completed') ? ((int)$m['red_score'].' - '.(int)$m['blue_score']) : '—',
+                (string)($m['blue_name']   ?? '—'),
+                (string)($m['blue_school'] ?? '—'),
+                $winner,
+                (string)$m['result_type'],
+                (int)$m['ring_number'],
+                $m['scheduled_at'] ? date('d/m H:i', strtotime($m['scheduled_at'])) : '',
+            ];
+        }
+    }
+    $xw->addSheet('Pools', $poolRows, ['freezeHeader' => true]);
+
+    // Sheet 3 — Bracket (elimination rounds)
+    $bracketRows = [['Round', 'Θέση', 'Κόκκινος', 'Σύλλογος', 'Score',
+                     'Μπλε', 'Σύλλογος', 'Νικητής', 'Τύπος', 'Ring', 'Ώρα']];
+    foreach ($bracketList as $m) {
+        $winner = '—';
+        if ((int)$m['winner_registration_id'] === (int)$m['red_registration_id'])  $winner = (string)($m['red_name'] ?? '');
+        if ((int)$m['winner_registration_id'] === (int)$m['blue_registration_id']) $winner = (string)($m['blue_name'] ?? '');
+        $bracketRows[] = [
+            (string)($m['round_label'] ?? '—'),
+            (int)$m['bracket_position'],
+            (string)($m['red_name']    ?? '(αναμονή)'),
+            (string)($m['red_school']  ?? ''),
+            ($m['status']==='completed') ? ((int)$m['red_score'].' - '.(int)$m['blue_score']) : '—',
+            (string)($m['blue_name']   ?? '(αναμονή)'),
+            (string)($m['blue_school'] ?? ''),
+            $winner,
+            (string)$m['result_type'],
+            (int)$m['ring_number'],
+            $m['scheduled_at'] ? date('d/m H:i', strtotime($m['scheduled_at'])) : '',
+        ];
+    }
+    $xw->addSheet('Bracket', $bracketRows, ['freezeHeader' => true]);
+
+    $slug = preg_replace('/[^a-zA-Z0-9_-]/', '-', $cat['name']);
+    $xw->send('event-' . $id . '-cat-' . $catId . '-' . $slug . '.xlsx');
+    exit;
+}
+
 renderHead('Bracket: ' . $cat['name']);
 $flash = getFlash();
 ?>
@@ -114,6 +199,21 @@ $flash = getFlash();
           Pool size: <strong style="color:#f0f2ff"><?= (int)$cat['pool_size'] ?></strong> ·
           Συμμετέχοντες: <strong style="color:#f0f2ff"><?= count($regs) ?></strong>
         </div>
+      </div>
+      <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+        <a href="?id=<?= $id ?>&cat=<?= $catId ?>&export=xlsx"
+           style="display:inline-flex;align-items:center;gap:.5rem;padding:.7rem 1.15rem;border-radius:10px;
+                  background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;font-weight:800;font-size:.92rem;
+                  text-decoration:none;min-height:44px;box-shadow:0 6px 18px -6px rgba(34,197,94,.55)"
+           title="Λίστα συμμετεχόντων + Pools + Bracket σε ένα αρχείο">
+          <i class="fa-solid fa-file-excel"></i> Εξαγωγή XLSX
+        </a>
+        <button type="button" onclick="window.print()"
+                style="display:inline-flex;align-items:center;gap:.5rem;padding:.7rem 1.15rem;border-radius:10px;
+                       background:linear-gradient(135deg,#3b82f6,#2563eb);color:#fff;font-weight:800;font-size:.92rem;
+                       border:none;cursor:pointer;min-height:44px;font-family:inherit;box-shadow:0 6px 18px -6px rgba(59,130,246,.55)">
+          <i class="fa-solid fa-print"></i> Εκτύπωση
+        </button>
       </div>
     </div>
   </div>
