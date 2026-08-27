@@ -494,7 +494,14 @@ select.form-control{cursor:pointer}
                     $athJson  = htmlspecialchars(json_encode($athletesByDept[$d['id']] ?? [], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES), ENT_QUOTES, 'UTF-8');
                 ?>
                 <tr class="dept-row"
-                    data-name="<?= strtolower(htmlspecialchars($d['name'], ENT_QUOTES, 'UTF-8')) ?>"
+                    data-name="<?= htmlspecialchars(mb_strtolower((string)$d['name'], 'UTF-8'), ENT_QUOTES, 'UTF-8') ?>"
+                    data-search="<?= htmlspecialchars(
+                        mb_strtolower(trim(
+                            (string)$d['name'] . ' ' .
+                            sportLabel((string)($d['sport'] ?? '')) . ' ' .
+                            (string)($d['schedule'] ?? '')
+                        ), 'UTF-8'), ENT_QUOTES, 'UTF-8'
+                    ) ?>"
                     data-status="<?= $d['active'] ? 'active' : 'inactive' ?>"
                     onclick="openDetailModal(<?= $dJson ?>, <?= $athJson ?>)">
 
@@ -888,19 +895,66 @@ select.form-control{cursor:pointer}
     });
 })();
 
-// Live filter
+// Live filter — Greek-friendly, accent-insensitive, fuzzy (subsequence)
+// Searches across name + sport + schedule via each row's data-search.
 (function(){
     var srch   = document.getElementById('deptSearch');
     var rows   = Array.from(document.querySelectorAll('#deptTableBody .dept-row'));
     var noRes  = document.getElementById('deptNoResults');
     var cntLbl = document.getElementById('deptCountLabel');
 
+    // Normalise: strip diacritics, lowercase, unify Greek final sigma,
+    // collapse whitespace. Handles Έφηβοι → εφηβοι, ώ → ω, ς → σ.
+    function norm(s){
+        if(!s) return '';
+        return s.toString()
+            .normalize('NFD')                      // separate combining marks
+            .replace(/[̀-ͯ]/g, '')       // drop diacritics (tonos, diaeresis)
+            .toLowerCase()
+            .replace(/ς/g, 'σ')          // Greek final sigma ς → σ
+            .replace(/\s+/g, ' ')
+            .trim();
+    }
+
+    // Fuzzy: every char of needle appears in haystack in order.
+    // Combined with substring check → tolerates typos/missing letters.
+    function subseq(haystack, needle){
+        var i = 0, j = 0;
+        while(i < haystack.length && j < needle.length){
+            if(haystack[i] === needle[j]) j++;
+            i++;
+        }
+        return j === needle.length;
+    }
+
+    // Precompute normalised search string per row (avoids re-normalising
+    // on every keystroke).
+    rows.forEach(function(r){
+        var raw = r.dataset.search || r.dataset.name || (r.textContent || '');
+        r.__searchIdx = norm(raw);
+    });
+
     function filter(){
-        var q = (srch && srch.value ? srch.value : '').toLowerCase().trim();
+        var raw = srch && srch.value ? srch.value : '';
+        var q   = norm(raw);
         var shown = 0;
 
+        // Split query into whitespace tokens — every token must match
+        // (AND semantics) so multi-word queries stay predictable.
+        var tokens = q ? q.split(' ').filter(Boolean) : [];
+
         rows.forEach(function(r){
-            var show = !q || (r.dataset.name || '').indexOf(q) >= 0;
+            var hay = r.__searchIdx || '';
+            var show;
+            if(tokens.length === 0){
+                show = true;
+            } else {
+                show = tokens.every(function(t){
+                    // Substring wins first (cheapest, most-relevant),
+                    // subsequence catches typos and skipped letters.
+                    return hay.indexOf(t) >= 0 || subseq(hay, t);
+                });
+            }
             r.style.display = show ? '' : 'none';
             if(show) shown++;
         });
