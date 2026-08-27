@@ -590,20 +590,50 @@ renderHead('Αυτόματες Ειδοποιήσεις');
 .tab-panel.active{display:block}
 
 /* ────────────────────────────────────────────────────────────
-   RULE CARDS
+   RULES TABLE (was: cards)
 ──────────────────────────────────────────────────────────── */
-.rules-list{display:flex;flex-direction:column;gap:.75rem}
-.rule-card{border-radius:16px;padding:1rem 1.1rem;transition:box-shadow .2s;border:1px solid var(--border,#1e2536);background:var(--card-bg,#131929)}
-.rule-card:hover{box-shadow:0 4px 24px rgba(0,0,0,.3)}
-.rule-card.is-off{opacity:.45}
-.rule-top{display:flex;align-items:flex-start;gap:.85rem;flex-wrap:wrap}
-.rule-toggle-btn{background:none;border:none;cursor:pointer;padding:0;display:flex;align-items:center;flex-shrink:0;margin-top:.1rem}
-.rule-toggle-btn i{font-size:1.85rem;transition:color .2s}
-.rule-info{flex:1;min-width:180px}
-.rule-name{font-size:1.05rem!important;font-weight:800;margin-bottom:.35rem}
-.rule-meta{display:flex;align-items:center;gap:.4rem;flex-wrap:wrap;margin-bottom:.45rem}
-.rule-body-preview{font-size:.92rem!important;color:var(--muted,#8892b0);line-height:1.55;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
-.rule-actions{display:flex;gap:.4rem;flex-shrink:0;flex-wrap:wrap}
+.rules-list{border:1px solid var(--border,#1e2536);border-radius:14px;overflow:hidden;background:var(--card-bg,#131929)}
+.rules-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.rules-table{width:100%;border-collapse:collapse;font-size:.94rem;min-width:720px}
+.rules-table thead th{
+  background:rgba(255,255,255,.04)!important;
+  color:#ffffff!important;
+  font-size:clamp(.86rem,2.4vw,.98rem)!important;
+  font-weight:800!important;
+  letter-spacing:.05em!important;
+  text-transform:uppercase!important;
+  padding:.75rem .85rem!important;
+  text-align:left;
+  border-bottom:1px solid rgba(255,255,255,.12);
+  white-space:nowrap;
+}
+.rules-table tbody tr{cursor:pointer;transition:background .15s}
+.rules-table tbody tr:hover{background:rgba(255,255,255,.04)}
+.rules-table tbody tr.is-off{opacity:.5}
+.rules-table td{padding:.7rem .85rem;border-bottom:1px solid rgba(255,255,255,.05);vertical-align:middle}
+.rules-table tbody tr:last-child td{border-bottom:none}
+.rule-toggle-btn{background:none;border:none;cursor:pointer;padding:0;display:inline-flex;align-items:center}
+.rule-toggle-btn i{font-size:1.65rem;transition:color .2s}
+.rule-name-cell{font-weight:800;color:#ffffff;font-size:1rem;display:flex;flex-direction:column;gap:.25rem}
+.rule-name-cell .default-tag{
+  display:inline-flex;align-items:center;gap:.25rem;
+  background:rgba(240,165,0,.15);color:#f0a500;
+  padding:.1rem .5rem;border-radius:50px;
+  font-size:.68rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;
+  width:fit-content;
+}
+.rule-body-preview{font-size:.86rem;color:var(--muted,#8892b0);line-height:1.4;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;
+  overflow:hidden;max-width:340px}
+.rule-meta-inline{display:flex;align-items:center;gap:.35rem;flex-wrap:wrap}
+.rule-actions{display:flex;gap:.35rem;flex-wrap:nowrap;justify-content:flex-end}
+.rule-actions .btn-sm{padding:.4rem .65rem;font-size:.8rem;white-space:nowrap}
+@media (max-width:768px){
+  .rules-table{font-size:.88rem}
+  .rules-table thead th{font-size:.78rem!important;padding:.55rem .6rem!important}
+  .rules-table td{padding:.55rem .6rem}
+  .col-hide-md{display:none!important}
+}
 
 /* ────────────────────────────────────────────────────────────
    PILLS
@@ -889,77 +919,109 @@ textarea.form-control{min-height:120px;resize:vertical;line-height:1.6}
 
     <div class="rules-list anim-3">
         <?php if (!$rules): ?>
-        <div class="empty-box">
+        <div class="empty-box" style="padding:2rem 1rem">
             <div class="ei"><i class="fa-solid fa-bell-slash"></i></div>
-            <p>Δεν υπάρχουν υπενθυμίσεις ακόμα.<br>Πάτα «Νέα Υπενθύμιση» για να ξεκινήσεις.</p>
+            <p>Δεν υπάρχουν υπενθυμίσεις ακόμα.<br>Πάτα «Αυτόματες Υπενθυμίσεις» για να ξεκινήσεις.</p>
         </div>
-        <?php endif; ?>
-
-        <?php foreach ($rules as $r):
-            $isOn      = (bool)($r['active'] ?? 0);
-            $ttype     = $r['trigger_type'] ?? 'days_before';
-            $tdays     = (int)($r['trigger_days'] ?? 0);
-            $chs       = array_filter(array_map('trim', explode(',', $r['channels'] ?? 'sms')));
-            $isDefault = ((int)$r['id'] === $defaultRuleId);
-            $bodyPreview = strtr($r['body_tpl'] ?? '', [
-                '{{athlete_name}}' => '👤 Όνομα αθλητή',
-                '{{valid_until}}'  => '📅 Ημ. λήξης',
-                '{{amount}}'       => '💶 Ποσό',
-                '{{school_name}}'  => '🏛️ ' . $schoolName,
-            ]);
-        ?>
-<div class="rule-card <?= ($isOn || $isDefault) ? '' : 'is-off' ?>" onclick="openRuleDetail(<?= htmlspecialchars(json_encode($r), ENT_QUOTES) ?>)" style="cursor:pointer">
-    <div class="rule-top">
-                <?php if ($isDefault): ?>
-                <!-- Default rule: no toggle or lock icon, just a spacer -->
-                <?php else: ?>
-                <form method="POST" style="display:inline" onclick="event.stopPropagation()">
-                    <input type="hidden" name="_action" value="toggle_rule">
-                    <input type="hidden" name="csrf_token" value="<?= csrf() ?>">
-                    <input type="hidden" name="id" value="<?= (int)$r['id'] ?>">
-                    <button type="submit" class="rule-toggle-btn" title="<?= $isOn ? 'Απενεργοποίηση' : 'Ενεργοποίηση' ?>">
-                        <i class="fa-solid fa-toggle-<?= $isOn ? 'on' : 'off' ?>" style="color:<?= $isOn ? 'var(--green,#2dc653)' : 'var(--muted,#8892b0)' ?>"></i>
-                    </button>
-                </form>
-                <?php endif; ?>
-
-                <div class="rule-info">
-                    <div class="rule-name">
-                        <?= h($r['rule_name'] ?? '') ?>
-                    </div>
-                    <div class="rule-meta">
-                        <span class="pill <?= triggerPillClass($ttype) ?>">
-                            <i class="fa-solid <?= triggerIcon($ttype) ?>"></i>
-                            <?= triggerLabel($ttype, $tdays) ?>
-                        </span>
-                        <?php if (in_array('email', $chs)): ?><span class="pill pill-ch"><i class="fa-solid fa-envelope"></i> Email</span><?php endif; ?>
-                        <?php if (in_array('sms', $chs) && $hasSms): ?><span class="pill pill-ch"><i class="fa-solid fa-mobile-screen"></i> SMS</span><?php endif; ?>
-                        <?php if (!$isOn && !$isDefault): ?><span style="font-size:.78rem;color:var(--muted,#8892b0);font-style:italic">Ανενεργή</span><?php endif; ?>
-                    </div>
-                    <?php if (!empty($r['body_tpl'])): ?>
-                    <div class="rule-body-preview"><?= h($bodyPreview) ?></div>
+        <?php else: ?>
+        <div class="rules-scroll">
+          <table class="rules-table">
+            <thead>
+              <tr>
+                <th style="width:52px">Ενεργή</th>
+                <th>Όνομα</th>
+                <th class="col-hide-md">Trigger</th>
+                <th class="col-hide-md">Κανάλια</th>
+                <th class="col-hide-md">Προεπισκόπηση</th>
+                <th style="text-align:right;width:220px">Ενέργειες</th>
+              </tr>
+            </thead>
+            <tbody>
+              <?php foreach ($rules as $r):
+                  $isOn      = (bool)($r['active'] ?? 0);
+                  $ttype     = $r['trigger_type'] ?? 'days_before';
+                  $tdays     = (int)($r['trigger_days'] ?? 0);
+                  $chs       = array_filter(array_map('trim', explode(',', $r['channels'] ?? 'sms')));
+                  $isDefault = ((int)$r['id'] === $defaultRuleId);
+                  $bodyPreview = strtr($r['body_tpl'] ?? '', [
+                      '{{athlete_name}}' => 'Όνομα αθλητή',
+                      '{{valid_until}}'  => 'Ημ. λήξης',
+                      '{{amount}}'       => 'Ποσό',
+                      '{{school_name}}'  => $schoolName,
+                  ]);
+                  $rowClass = ($isOn || $isDefault) ? 'rule-row' : 'rule-row is-off';
+              ?>
+              <tr class="<?= $rowClass ?>" onclick="openRuleDetail(<?= htmlspecialchars(json_encode($r), ENT_QUOTES) ?>)">
+                <td onclick="event.stopPropagation()">
+                  <?php if ($isDefault): ?>
+                    <span title="Προεπιλεγμένη — πάντα ενεργή" style="color:#f0a500;font-size:1.4rem">
+                      <i class="fa-solid fa-star"></i>
+                    </span>
+                  <?php else: ?>
+                    <form method="POST" style="display:inline">
+                      <input type="hidden" name="_action" value="toggle_rule">
+                      <input type="hidden" name="csrf_token" value="<?= csrf() ?>">
+                      <input type="hidden" name="id" value="<?= (int)$r['id'] ?>">
+                      <button type="submit" class="rule-toggle-btn" title="<?= $isOn ? 'Απενεργοποίηση' : 'Ενεργοποίηση' ?>">
+                        <i class="fa-solid fa-toggle-<?= $isOn ? 'on' : 'off' ?>"
+                           style="color:<?= $isOn ? '#2dc653' : '#6b7494' ?>"></i>
+                      </button>
+                    </form>
+                  <?php endif; ?>
+                </td>
+                <td>
+                  <div class="rule-name-cell">
+                    <span><?= h($r['rule_name'] ?? '') ?></span>
+                    <?php if ($isDefault): ?>
+                      <span class="default-tag"><i class="fa-solid fa-shield"></i> Προεπιλογή</span>
+                    <?php elseif (!$isOn): ?>
+                      <span style="font-size:.72rem;color:var(--muted,#8892b0);font-style:italic;font-weight:600">Ανενεργή</span>
                     <?php endif; ?>
-                </div>
-
-                <div class="rule-actions" onclick="event.stopPropagation()">
+                  </div>
+                </td>
+                <td class="col-hide-md">
+                  <span class="pill <?= triggerPillClass($ttype) ?>">
+                    <i class="fa-solid <?= triggerIcon($ttype) ?>"></i>
+                    <?= triggerLabel($ttype, $tdays) ?>
+                  </span>
+                </td>
+                <td class="col-hide-md">
+                  <div class="rule-meta-inline">
+                    <?php if (in_array('email', $chs)): ?><span class="pill pill-ch"><i class="fa-solid fa-envelope"></i> Email</span><?php endif; ?>
+                    <?php if (in_array('sms', $chs) && $hasSms): ?><span class="pill pill-ch"><i class="fa-solid fa-mobile-screen"></i> SMS</span><?php endif; ?>
+                  </div>
+                </td>
+                <td class="col-hide-md">
+                  <?php if (!empty($r['body_tpl'])): ?>
+                    <div class="rule-body-preview" title="<?= h($bodyPreview) ?>"><?= h($bodyPreview) ?></div>
+                  <?php else: ?>
+                    <span style="color:var(--muted,#8892b0);font-size:.85rem">—</span>
+                  <?php endif; ?>
+                </td>
+                <td onclick="event.stopPropagation()" style="text-align:right">
+                  <div class="rule-actions">
                     <button type="button" class="btn btn-ghost btn-sm" title="Επεξεργασία"
                             onclick="openEditModal(<?= htmlspecialchars(json_encode($r), ENT_QUOTES) ?>)">
-                        <i class="fa-solid fa-pen-to-square"></i> Επεξεργασία
+                      <i class="fa-solid fa-pen-to-square"></i> Επεξεργασία
                     </button>
                     <?php if (!$isDefault): ?>
                     <form method="POST" onsubmit="return confirmDel(event,this)" style="display:inline">
-                        <input type="hidden" name="_action" value="delete_rule">
-                        <input type="hidden" name="csrf_token" value="<?= csrf() ?>">
-                        <input type="hidden" name="id" value="<?= (int)$r['id'] ?>">
-                        <button type="submit" class="btn btn-ghost btn-sm" style="color:var(--red,#e63946)" title="Διαγραφή">
-                            <i class="fa-solid fa-trash"></i> Διαγραφή
-                        </button>
+                      <input type="hidden" name="_action" value="delete_rule">
+                      <input type="hidden" name="csrf_token" value="<?= csrf() ?>">
+                      <input type="hidden" name="id" value="<?= (int)$r['id'] ?>">
+                      <button type="submit" class="btn btn-ghost btn-sm" style="color:var(--red,#e63946)" title="Διαγραφή">
+                        <i class="fa-solid fa-trash"></i>
+                      </button>
                     </form>
                     <?php endif; ?>
-                </div>
-            </div>
+                  </div>
+                </td>
+              </tr>
+              <?php endforeach; ?>
+            </tbody>
+          </table>
         </div>
-        <?php endforeach; ?>
+        <?php endif; ?>
     </div>
 </div>
 
@@ -2109,7 +2171,7 @@ document.getElementById('delConfirmBtn').onclick=function(){if(_delForm)_delForm
     }
 
     function countActiveRules() {
-        return document.querySelectorAll('.rules-list .rule-card:not(.is-off)').length;
+        return document.querySelectorAll('.rules-list .rule-row:not(.is-off)').length;
     }
 
     var warningModal = document.getElementById('ruleLimitWarningModal');
