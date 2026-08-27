@@ -267,7 +267,7 @@ HTML;
                            . "- Επέλεξε ισχυρό κωδικό με γράμματα, αριθμούς & σύμβολα\n"
                            . "- Μη χρησιμοποιείς τον ίδιο κωδικό σε άλλες υπηρεσίες\n"
                            . "- Μη μοιράζεσαι ποτέ τον κωδικό σου\n\n"
-                           . "© {$year} Panagiotis Kotsorgios · pkotsorgios6@gmail.com\n";
+                           . "© {$year} MAster\n";
 
                 // ── FIXED sendEmail() call ────────────────────────────────────
                 // Correct param order: (toEmail, subject, htmlBody, plainText, toName, ...)

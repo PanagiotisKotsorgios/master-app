@@ -252,7 +252,7 @@ body::after{content:'';position:fixed;inset:0;background-image:url("data:image/s
     <h1 class="legal-title"><?= htmlspecialchars($title) ?></h1>
     <div class="legal-meta">
       <span><i class="fas fa-clock"></i> Τελευταία ενημέρωση: <?= htmlspecialchars($lastUpdated) ?></span>
-      <span><i class="fas fa-user"></i> Panagiotis Kotsorgios</span>
+      <span><i class="fas fa-user"></i> MAster</span>
     </div>
   </div>
 </div>
@@ -280,7 +280,7 @@ body::after{content:'';position:fixed;inset:0;background-image:url("data:image/s
       Εργατικές Κατοικίες 113 Λιμάνι Μεσολόγγι, 30200 · Ελλάδα<br>
       Email: <a href="mailto:pkotsorgios654@gmail.com" style="color:var(--muted2);">pkotsorgios654@gmail.com</a><br>
       ΗΕΔ: <a href="https://ec.europa.eu/consumers/odr" target="_blank" rel="noopener" style="color:var(--muted2);">ec.europa.eu/consumers/odr</a><br>
-      <span class="foot-copy">© <?= date('Y') ?> Panagiotis Kotsorgios · Όλα τα δικαιώματα διατηρούνται</span>
+      <span class="foot-copy">© <?= date('Y') ?> MAster · Όλα τα δικαιώματα διατηρούνται</span>
     </div>
   </div>
 </footer>

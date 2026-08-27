@@ -280,7 +280,7 @@ function buildMasterWelcomeEmail(
       <tr>
         <td style="padding:18px 32px 24px;text-align:center">
           <p style="margin:0;font-size:.72rem;color:#3a4260;line-height:1.7">
-            &copy; {$year} <strong style="color:#4a5270">Panagiotis Kotsorgios</strong> &nbsp;&middot;&nbsp;
+            &copy; {$year} <strong style="color:#4a5270">MAster</strong> &nbsp;&middot;&nbsp;
             Πλατφόρμα Διαχείρισης Αθλητικών Συλλόγων<br>
             <span style="font-size:.66rem;color:#2a3248">
               Λαμβάνετε αυτό το email επειδή δημιουργήσατε λογαριασμό στο σύστημα MAster.

@@ -694,7 +694,7 @@ UNSUB;
       <tr><td style="padding:0 32px"><div style="border-top:1px solid #1e2536"></div></td></tr>
       <tr>
         <td style="padding:20px 32px;text-align:center;font-size:.74rem;color:#4a5270;line-height:1.7">
-          &copy; {$year} Παναγιώτης Κοτσόργιος &nbsp;&middot;&nbsp;
+          &copy; {$year} MAster &nbsp;&middot;&nbsp;
           <a href="mailto:{$fromEmail}" style="color:#6b7494;text-decoration:none">{$fromEmail}</a><br>
           <span style="font-size:.68rem;color:#363d52">Λαμβάνετε αυτό το email ως εγγεγραμμένος γονέας/κηδεμόνας της πλατφόρμας.</span>
         </td>
@@ -967,7 +967,7 @@ function sendNewSubscriptionEmail(array $athlete, array $sub): bool
       <!-- FOOTER -->
       <tr>
         <td style="padding:18px 32px;text-align:center;font-size:.73rem;color:#4a5270;line-height:1.7">
-          &copy; {$year} Παναγιώτης Κοτσόργιος &nbsp;&middot;&nbsp;
+          &copy; {$year} MAster &nbsp;&middot;&nbsp;
           <a href="mailto:{$fromEmail}" style="color:#6b7494;text-decoration:none">{$fromEmail}</a><br>
           <span style="font-size:.67rem;color:#363d52">Αποστολή από {$schEsc} μέσω MAster.</span>
         </td>
@@ -1088,7 +1088,7 @@ function sendParentCredentials(
       <tr><td style="padding:0 32px"><div style="border-top:1px solid #1e2536"></div></td></tr>
       <tr>
         <td style="padding:20px 32px;text-align:center;font-size:.74rem;color:#4a5270;line-height:1.7">
-          &copy; {$year} Παναγιώτης Κοτσόργιος &nbsp;&middot;&nbsp;
+          &copy; {$year} MAster &nbsp;&middot;&nbsp;
           <a href="mailto:{$fromEmail}" style="color:#6b7494;text-decoration:none">{$fromEmail}</a><br>
           <span style="font-size:.68rem;color:#363d52">Αποστολή από {$safeSchool} μέσω MAster. Η σχολή φέρει πλήρη ευθύνη για τα δεδομένα σας.</span>
         </td>
@@ -1208,7 +1208,7 @@ function sendAthleteCredentials(
       <tr><td style="padding:0 32px"><div style="border-top:1px solid #1e2536"></div></td></tr>
       <tr>
         <td style="padding:20px 32px;text-align:center;font-size:.74rem;color:#4a5270;line-height:1.7">
-          &copy; {$year} Παναγιώτης Κοτσόργιος &nbsp;&middot;&nbsp;
+          &copy; {$year} MAster &nbsp;&middot;&nbsp;
           <a href="mailto:{$fromEmail}" style="color:#6b7494;text-decoration:none">{$fromEmail}</a><br>
           <span style="font-size:.68rem;color:#363d52">Αποστολή από {$safeSchool} μέσω MAster.</span>
         </td>
@@ -1352,7 +1352,7 @@ function sendSchoolPlanActivationEmail(
       <tr><td style="padding:0 32px"><div style="border-top:1px solid #1e2536"></div></td></tr>
       <tr>
         <td style="padding:20px 32px;text-align:center;font-size:.74rem;color:#4a5270;line-height:1.7">
-          &copy; {$year} Παναγιώτης Κοτσόργιος &nbsp;&middot;&nbsp;
+          &copy; {$year} MAster &nbsp;&middot;&nbsp;
           <a href="mailto:{$fromEmail}" style="color:#6b7494;text-decoration:none">{$fromEmail}</a>
         </td>
       </tr>

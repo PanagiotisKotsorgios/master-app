@@ -851,7 +851,7 @@ body::after{content:'';position:fixed;inset:0;background-image:url("data:image/s
     <div class="foot-divider"></div>
     <div class="foot-bot">
       <div class="foot-bot-left">
-        <span class="foot-copy">© <?= date('Y') ?> <a href="https://www.pkotsorgios.gr" target="_blank" rel="noopener noreferrer"><strong>Panagiotis Kotsorgios</strong></a> · Κατασκευάστηκε με &nbsp;<i class="fas fa-heart" style="color:var(--red)"></i></span>
+        <span class="foot-copy">© <?= date('Y') ?> <strong>MAster</strong> · Κατασκευάστηκε με &nbsp;<i class="fas fa-heart" style="color:var(--red)"></i></span>
       </div>
     </div>
   </div>

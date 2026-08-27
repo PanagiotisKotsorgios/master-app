@@ -299,7 +299,7 @@ button.btn{
   </div>
 
   <div class="footer">
-    © <?= date('Y') ?> <strong>Panagiotis Kotsorgios</strong>
+    © <?= date('Y') ?> <strong>MAster</strong>
   </div>
 </div>
 
