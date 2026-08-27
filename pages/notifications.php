@@ -1090,17 +1090,36 @@ textarea.form-control{min-height:120px;resize:vertical;line-height:1.6}
         </h2>
     </div>
 
-    <!-- Toolbar: search + pagination info -->
-    <div class="hist-toolbar">
+    <!-- Toolbar: search + pagination + extra filters -->
+    <div class="hist-toolbar" style="align-items:flex-end">
         <div class="hist-search-wrap">
             <i class="fa-solid fa-magnifying-glass si"></i>
             <input type="text" class="form-control" id="histSearch"
-                   placeholder="Αναζήτηση αθλητή…"
-                   oninput="histFilter(this.value)"
+                   placeholder="Αναζήτηση αθλητή ή παραλήπτη…"
+                   oninput="histApplyFilters()"
                    onkeydown="if(event.key==='Enter'){this.blur();}"
                    inputmode="search"
                    enterkeyhint="search">
         </div>
+        <select id="histStatusFilter" onchange="histApplyFilters()"
+                style="min-height:44px;padding:.45rem .7rem;background:#0d1117;border:1.5px solid #2a3248;border-radius:8px;color:#fff;font-size:.9rem">
+            <option value="">Κατάσταση: Όλες</option>
+            <option value="sent">Εστάλησαν</option>
+            <option value="failed">Απέτυχαν</option>
+        </select>
+        <select id="histChannelFilter" onchange="histApplyFilters()"
+                style="min-height:44px;padding:.45rem .7rem;background:#0d1117;border:1.5px solid #2a3248;border-radius:8px;color:#fff;font-size:.9rem">
+            <option value="">Κανάλι: Όλα</option>
+            <option value="email">Email</option>
+            <option value="sms">SMS</option>
+        </select>
+        <select id="histDateFilter" onchange="histApplyFilters()"
+                style="min-height:44px;padding:.45rem .7rem;background:#0d1117;border:1.5px solid #2a3248;border-radius:8px;color:#fff;font-size:.9rem">
+            <option value="">Ημερομηνία: Όλες</option>
+            <option value="today">Σήμερα</option>
+            <option value="7">Τελευταίες 7 μέρες</option>
+            <option value="30">Τελευταίες 30 μέρες</option>
+        </select>
         <div class="pager" id="histPager"></div>
         <span class="pager-info" id="histInfo"></span>
     </div>
@@ -1119,7 +1138,10 @@ textarea.form-control{min-height:120px;resize:vertical;line-height:1.6}
             ?>
              <tr class="hist-row"
                  data-name="<?= h(mb_strtolower($hi['full_name'] ?? '')) ?>"
-                 data-recipient="<?= h(mb_strtolower($hi['recipient'] ?? '')) ?>">
+                 data-recipient="<?= h(mb_strtolower($hi['recipient'] ?? '')) ?>"
+                 data-status="<?= h($hi['status'] ?? '') ?>"
+                 data-channel="<?= h($hi['type'] ?? '') ?>"
+                 data-ts="<?= h($hi['sent_at'] ? strtotime($hi['sent_at']) : '0') ?>">
                  <td>
                     <span class="status-dot <?= $isSent ? 'dot-sent' : 'dot-failed' ?>"></span>
                     <span style="font-size:.85rem;font-weight:700;color:<?= $isSent ? '#2dc653' : '#e63946' ?>"><?= $isSent ? 'Εστάλη' : 'Απέτυχε' ?></span>
@@ -1149,19 +1171,46 @@ textarea.form-control{min-height:120px;resize:vertical;line-height:1.6}
         <h3><i class="fa-solid fa-bullhorn" style="color:#8b5cf6"></i> Μαζικές Ανακοινώσεις</h3>
     </div>
 
-    <!-- Broadcast toolbar -->
-    <div class="hist-toolbar">
+    <!-- Broadcast toolbar (live filters, no submit) -->
+    <div class="hist-toolbar" style="align-items:flex-end">
         <div class="hist-search-wrap">
             <i class="fa-solid fa-magnifying-glass si"></i>
             <input type="text" class="form-control" id="bcHistSearch"
-                   placeholder="Αναζήτηση θέματος…"
-                   oninput="bcHistFilter(this.value)"
+                   placeholder="Αναζήτηση θέματος ή περιεχομένου…"
+                   oninput="bcHistApplyFilters()"
                    onkeydown="if(event.key==='Enter'){this.blur();}"
                    inputmode="search"
                    enterkeyhint="search">
         </div>
+        <select id="bcStatusFilter" onchange="bcHistApplyFilters()"
+                style="min-height:44px;padding:.45rem .7rem;background:#0d1117;border:1.5px solid #2a3248;border-radius:8px;color:#fff;font-size:.9rem">
+            <option value="">Κατάσταση: Όλες</option>
+            <option value="done">Ολοκληρώθηκε</option>
+            <option value="sending">Σε εξέλιξη</option>
+            <option value="failed">Απέτυχε</option>
+        </select>
+        <select id="bcFilterFilter" onchange="bcHistApplyFilters()"
+                style="min-height:44px;padding:.45rem .7rem;background:#0d1117;border:1.5px solid #2a3248;border-radius:8px;color:#fff;font-size:.9rem">
+            <option value="">Φίλτρο: Όλα</option>
+            <option value="all">Όλοι</option>
+            <option value="active_sub">Ενεργές</option>
+            <option value="expired_sub">Ληξιπρόθ.</option>
+            <option value="custom">Επιλογή</option>
+            <option value="department">Ανά Τμήμα</option>
+        </select>
+        <select id="bcDateFilter" onchange="bcHistApplyFilters()"
+                style="min-height:44px;padding:.45rem .7rem;background:#0d1117;border:1.5px solid #2a3248;border-radius:8px;color:#fff;font-size:.9rem">
+            <option value="">Ημερομηνία: Όλες</option>
+            <option value="today">Σήμερα</option>
+            <option value="7">Τελευταίες 7 μέρες</option>
+            <option value="30">Τελευταίες 30 μέρες</option>
+        </select>
         <div class="pager" id="bcHistPager"></div>
         <span class="pager-info" id="bcHistInfo"></span>
+    </div>
+    <div style="font-size:.82rem;color:#8892b0;margin:-.4rem 0 .6rem;padding-left:.15rem">
+      <i class="fa-solid fa-hand-pointer" style="color:#8b5cf6"></i>
+      Κάνε κλικ σε μια γραμμή για να δεις όλες τις λεπτομέρειες.
     </div>
 
     <div class="history-wrap">
@@ -1174,8 +1223,33 @@ textarea.form-control{min-height:120px;resize:vertical;line-height:1.6}
                 $bcDone = ($bc['status'] === 'done');
                 $subjectSlug = mb_strtolower($bc['subject'] ?? '');
             ?>
+             <?php
+                $bcDetail = json_encode([
+                    'subject'          => $bc['subject']  ?? '',
+                    'body'             => $bc['body']     ?? '',
+                    'channels'         => $bc['channels'] ?? '',
+                    'recipient_filter' => $bc['recipient_filter'] ?? '',
+                    'recipient_filter_label' => $filterLbls[$bc['recipient_filter']] ?? $bc['recipient_filter'],
+                    'total_sent'       => (int)$bc['total_sent'],
+                    'total_failed'     => (int)$bc['total_failed'],
+                    'status'           => $bc['status'] ?? '',
+                    'status_label'     => $bcDone ? 'Ολοκληρώθηκε' : ucfirst($bc['status'] ?? '—'),
+                    'created_at'       => $bc['created_at']
+                        ? date('d/m/Y H:i', strtotime($bc['created_at'])) : '—',
+                    'sent_at'          => !empty($bc['sent_at'])
+                        ? date('d/m/Y H:i', strtotime($bc['sent_at'])) : '—',
+                ], JSON_UNESCAPED_UNICODE | JSON_HEX_APOS | JSON_HEX_QUOT);
+             ?>
              <tr class="bc-hist-row"
-                 data-subject="<?= h($subjectSlug) ?>">
+                 data-subject="<?= h($subjectSlug) ?>"
+                 data-body="<?= h(mb_strtolower(mb_substr($bc['body'] ?? '', 0, 200))) ?>"
+                 data-status="<?= h($bc['status'] ?? '') ?>"
+                 data-filter="<?= h($bc['recipient_filter'] ?? '') ?>"
+                 data-ts="<?= h($bc['created_at'] ? strtotime($bc['created_at']) : '0') ?>"
+                 data-detail='<?= h($bcDetail) ?>'
+                 style="cursor:pointer"
+                 onclick="bcOpenDetail(this)"
+                 title="Κλικ για λεπτομέρειες">
                  <td>
                     <span class="status-dot <?= $bcDone ? 'dot-sent' : 'dot-failed' ?>"></span>
                     <span style="font-size:.85rem;font-weight:700;color:<?= $bcDone ? '#2dc653' : '#e63946' ?>"><?= $bcDone ? 'Εστάλη' : ucfirst(h($bc['status'])) ?></span>
@@ -1197,6 +1271,47 @@ textarea.form-control{min-height:120px;resize:vertical;line-height:1.6}
         <p>Δεν βρέθηκαν ανακοινώσεις με αυτά τα κριτήρια.</p>
     </div>
     <?php endif; ?>
+
+    <!-- Broadcast detail modal -->
+    <div id="bcDetailModal" class="modal-backdrop" role="dialog" aria-modal="true"
+         style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.72);backdrop-filter:blur(5px);z-index:10500;align-items:center;justify-content:center;padding:1rem"
+         onclick="if(event.target===this)bcCloseDetail()">
+      <div style="background:#111520;border:1px solid #1e2536;border-radius:16px;max-width:640px;width:100%;max-height:90vh;overflow:auto;box-shadow:0 30px 80px rgba(0,0,0,.6)">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:1.1rem 1.35rem;border-bottom:1px solid #1e2536">
+          <div style="display:flex;align-items:center;gap:.7rem">
+            <div style="width:40px;height:40px;border-radius:10px;background:linear-gradient(135deg,#8b5cf6,#6366f1);display:flex;align-items:center;justify-content:center;color:#fff">
+              <i class="fa-solid fa-bullhorn"></i>
+            </div>
+            <div>
+              <h3 style="margin:0;font-size:1.05rem;color:#fff;font-weight:800">Λεπτομέρειες Ανακοίνωσης</h3>
+              <div id="bcModalStatus" style="font-size:.78rem;color:#8892b0;margin-top:.15rem"></div>
+            </div>
+          </div>
+          <button type="button" onclick="bcCloseDetail()"
+                  style="background:rgba(255,255,255,.05);border:1px solid #2a3248;color:#fff;width:36px;height:36px;border-radius:10px;cursor:pointer;font-size:1rem">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+        <div style="padding:1.1rem 1.35rem;color:#e6ebf5;font-size:.92rem;line-height:1.6">
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:.75rem;margin-bottom:1.1rem">
+            <div><div style="font-size:.68rem;color:#8892b0;letter-spacing:.08em;text-transform:uppercase;margin-bottom:.2rem">Θέμα</div>
+                 <div id="bcModalSubject" style="font-weight:800;color:#fff">—</div></div>
+            <div><div style="font-size:.68rem;color:#8892b0;letter-spacing:.08em;text-transform:uppercase;margin-bottom:.2rem">Φίλτρο παραληπτών</div>
+                 <div id="bcModalFilter" style="font-weight:800;color:#fff">—</div></div>
+            <div><div style="font-size:.68rem;color:#8892b0;letter-spacing:.08em;text-transform:uppercase;margin-bottom:.2rem">Κανάλια</div>
+                 <div id="bcModalChannels" style="font-weight:800;color:#fff">—</div></div>
+            <div><div style="font-size:.68rem;color:#8892b0;letter-spacing:.08em;text-transform:uppercase;margin-bottom:.2rem">Αποτελέσματα</div>
+                 <div id="bcModalCounts" style="font-weight:800">—</div></div>
+            <div><div style="font-size:.68rem;color:#8892b0;letter-spacing:.08em;text-transform:uppercase;margin-bottom:.2rem">Δημιουργήθηκε</div>
+                 <div id="bcModalCreated" style="color:#c9cee1">—</div></div>
+            <div><div style="font-size:.68rem;color:#8892b0;letter-spacing:.08em;text-transform:uppercase;margin-bottom:.2rem">Ολοκληρώθηκε</div>
+                 <div id="bcModalSent" style="color:#c9cee1">—</div></div>
+          </div>
+          <div style="font-size:.68rem;color:#8892b0;letter-spacing:.08em;text-transform:uppercase;margin-bottom:.35rem">Κείμενο μηνύματος</div>
+          <div id="bcModalBody" style="background:#0d1117;border:1px solid #1e2536;border-radius:10px;padding:.9rem 1.1rem;white-space:pre-wrap;color:#e6ebf5;font-size:.9rem;line-height:1.55;max-height:280px;overflow:auto"></div>
+        </div>
+      </div>
+    </div>
 </div><!-- /tab-history -->
 
 </div><!-- /page-body -->
@@ -2759,18 +2874,41 @@ window.bcApplyTpl = function(txt) { window.loadTemplate('bc_body', txt); };
             pager.appendChild(mkBtn('›', page+1, page===tp, false));
         }
 
-        window.histFilter = function(q) {
-            q = q.trim().toLowerCase();
+        function currentThreshold(range) {
+            if (!range) return 0;
+            var now = Math.floor(Date.now() / 1000);
+            if (range === 'today') { var d = new Date(); d.setHours(0,0,0,0); return Math.floor(d.getTime()/1000); }
+            var days = parseInt(range, 10);
+            if (!days) return 0;
+            return now - days * 86400;
+        }
+
+        window.histApplyFilters = function() {
+            var qEl = document.getElementById('histSearch');
+            var sEl = document.getElementById('histStatusFilter');
+            var cEl = document.getElementById('histChannelFilter');
+            var dEl = document.getElementById('histDateFilter');
+            var q   = qEl ? qEl.value.trim().toLowerCase() : '';
+            var st  = sEl ? sEl.value : '';
+            var ch  = cEl ? cEl.value : '';
+            var since = currentThreshold(dEl ? dEl.value : '');
+
             page = 1;
-            if (!q) {
-                filtered = rows.slice();
-            } else {
-                filtered = rows.filter(function(r){
-                    return (r.getAttribute('data-name')||'').includes(q) ||
-                           (r.getAttribute('data-recipient')||'').includes(q);
-                });
-            }
+            filtered = rows.filter(function(r){
+                if (q && !(r.getAttribute('data-name') || '').includes(q)
+                     && !(r.getAttribute('data-recipient') || '').includes(q)) return false;
+                if (st && r.getAttribute('data-status') !== st) return false;
+                if (ch && r.getAttribute('data-channel') !== ch) return false;
+                if (since && parseInt(r.getAttribute('data-ts') || '0', 10) < since) return false;
+                return true;
+            });
             render();
+        };
+        // Back-compat shim (any legacy caller keeps working)
+        window.histFilter = function(q) {
+            var el = document.getElementById('histSearch');
+            if (el && q !== undefined) el.value = q;
+            histApplyFilters();
         };
 
         render();
@@ -2837,21 +2975,79 @@ window.bcApplyTpl = function(txt) { window.loadTemplate('bc_body', txt); };
             pager.appendChild(mkBtn('›', page+1, page===tp, false));
         }
 
-        window.bcHistFilter = function(q) {
-            q = q.trim().toLowerCase();
+        function bcThreshold(range) {
+            if (!range) return 0;
+            var now = Math.floor(Date.now() / 1000);
+            if (range === 'today') { var d = new Date(); d.setHours(0,0,0,0); return Math.floor(d.getTime()/1000); }
+            var days = parseInt(range, 10);
+            if (!days) return 0;
+            return now - days * 86400;
+        }
+
+        window.bcHistApplyFilters = function() {
+            var qEl = document.getElementById('bcHistSearch');
+            var sEl = document.getElementById('bcStatusFilter');
+            var fEl = document.getElementById('bcFilterFilter');
+            var dEl = document.getElementById('bcDateFilter');
+            var q   = qEl ? qEl.value.trim().toLowerCase() : '';
+            var st  = sEl ? sEl.value : '';
+            var fl  = fEl ? fEl.value : '';
+            var since = bcThreshold(dEl ? dEl.value : '');
+
             page = 1;
-            if (!q) {
-                filtered = rows.slice();
-            } else {
-                filtered = rows.filter(function(r){
-                    return (r.getAttribute('data-subject')||'').includes(q);
-                });
-            }
+            filtered = rows.filter(function(r){
+                if (q && !(r.getAttribute('data-subject') || '').includes(q)
+                     && !(r.getAttribute('data-body') || '').includes(q)) return false;
+                if (st && r.getAttribute('data-status') !== st) return false;
+                if (fl && r.getAttribute('data-filter') !== fl) return false;
+                if (since && parseInt(r.getAttribute('data-ts') || '0', 10) < since) return false;
+                return true;
+            });
             render();
+        };
+        // Back-compat shim
+        window.bcHistFilter = function(q) {
+            var el = document.getElementById('bcHistSearch');
+            if (el && q !== undefined) el.value = q;
+            bcHistApplyFilters();
         };
 
         render();
     })();
+
+    // ── Broadcast detail modal ──
+    window.bcOpenDetail = function(row) {
+        var raw = row.getAttribute('data-detail');
+        if (!raw) return;
+        var d;
+        try { d = JSON.parse(raw); } catch(e){ return; }
+        var $ = function(id){ return document.getElementById(id); };
+        $('bcModalSubject').textContent  = d.subject || 'Χωρίς θέμα';
+        $('bcModalFilter').textContent   = d.recipient_filter_label || d.recipient_filter || '—';
+        $('bcModalChannels').innerHTML   = (d.channels || '').split(',').filter(Boolean).map(function(c){
+            var col = c === 'sms' ? '#2dc653' : '#3b82f6';
+            var ic  = c === 'sms' ? 'fa-mobile-screen' : 'fa-envelope';
+            return '<span style="display:inline-flex;align-items:center;gap:.3rem;color:' + col + ';margin-right:.5rem"><i class="fa-solid ' + ic + '"></i> ' + c.toUpperCase() + '</span>';
+        }).join('') || '—';
+        var sentCol   = '#2dc653', failCol = '#e63946';
+        var countsHtml = '<span style="color:' + sentCol + '">' + d.total_sent + ' εστάλησαν</span>';
+        if (d.total_failed > 0) countsHtml += ' <span style="color:#8892b0"> / </span><span style="color:' + failCol + '">' + d.total_failed + ' απέτυχαν</span>';
+        $('bcModalCounts').innerHTML     = countsHtml;
+        $('bcModalCreated').textContent  = d.created_at || '—';
+        $('bcModalSent').textContent     = d.sent_at || '—';
+        $('bcModalStatus').textContent   = d.status_label || '—';
+        $('bcModalBody').textContent     = d.body || '(κενό)';
+        var m = $('bcDetailModal'); m.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+    };
+    window.bcCloseDetail = function() {
+        var m = document.getElementById('bcDetailModal');
+        if (m) m.style.display = 'none';
+        document.body.style.overflow = '';
+    };
+    document.addEventListener('keydown', function(e){
+        if (e.key === 'Escape') window.bcCloseDetail();
+    });
 })();
 </script>
 </body>

@@ -309,13 +309,14 @@ renderHead('Διοργανώσεις');
     </div>
   </div>
 
-  <!-- Filters -->
-  <form method="GET" style="background:#111520;border:1px solid #1e2536;border-radius:14px;padding:1rem 1.1rem;margin-bottom:1rem;
-                            display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:.75rem;align-items:end">
+  <!-- Filters (live — no submit button needed) -->
+  <form method="GET" id="evPayFiltersForm"
+        style="background:#111520;border:1px solid #1e2536;border-radius:14px;padding:1rem 1.1rem;margin-bottom:1rem;
+               display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:.75rem;align-items:end">
     <input type="hidden" name="tab" value="payments">
     <div>
       <label style="display:block;font-size:.72rem;font-weight:700;color:#a9b3c9;text-transform:uppercase;letter-spacing:.08em;margin-bottom:.3rem">Διοργάνωση</label>
-      <select name="event" style="width:100%;padding:.6rem .8rem;background:#0d1117;border:1.5px solid #2a3248;border-radius:9px;color:#ffffff;font-size:.95rem;min-height:44px">
+      <select name="event" data-live style="width:100%;padding:.6rem .8rem;background:#0d1117;border:1.5px solid #2a3248;border-radius:9px;color:#ffffff;font-size:.95rem;min-height:44px">
         <option value="0">— Όλες οι διοργανώσεις —</option>
         <?php foreach ($eventOptions as $eid => $etitle): ?>
           <option value="<?= (int)$eid ?>" <?= $fEvent === (int)$eid ? 'selected' : '' ?>><?= h($etitle) ?></option>
@@ -324,7 +325,7 @@ renderHead('Διοργανώσεις');
     </div>
     <div>
       <label style="display:block;font-size:.72rem;font-weight:700;color:#a9b3c9;text-transform:uppercase;letter-spacing:.08em;margin-bottom:.3rem">Κατάσταση</label>
-      <select name="status" style="width:100%;padding:.6rem .8rem;background:#0d1117;border:1.5px solid #2a3248;border-radius:9px;color:#ffffff;font-size:.95rem;min-height:44px">
+      <select name="status" data-live style="width:100%;padding:.6rem .8rem;background:#0d1117;border:1.5px solid #2a3248;border-radius:9px;color:#ffffff;font-size:.95rem;min-height:44px">
         <?php
           $sLabels = ['' => 'Όλες', 'unpaid'=>'Εκκρεμούν', 'verified'=>'Πληρωμένοι',
                      'proof_uploaded'=>'Αποδεικτικό ανέβηκε', 'waived'=>'Απαλλαγή', 'refunded'=>'Επιστροφή'];
@@ -336,18 +337,34 @@ renderHead('Διοργανώσεις');
     </div>
     <div>
       <label style="display:block;font-size:.72rem;font-weight:700;color:#a9b3c9;text-transform:uppercase;letter-spacing:.08em;margin-bottom:.3rem">Αναζήτηση</label>
-      <input type="text" name="q" value="<?= h($fQ) ?>" placeholder="Αθλητής, σχολή…"
+      <input type="text" name="q" value="<?= h($fQ) ?>" placeholder="Αθλητής, σχολή…" data-live
              style="width:100%;padding:.6rem .8rem;background:#0d1117;border:1.5px solid #2a3248;border-radius:9px;color:#ffffff;font-size:.95rem;min-height:44px">
     </div>
-    <div style="display:flex;gap:.5rem;flex-wrap:wrap">
-      <button type="submit" class="btn btn-primary" style="background:#e63946;color:#fff;border:none;padding:.6rem 1.1rem;border-radius:9px;font-weight:800;cursor:pointer;min-height:44px">
-        <i class="fa-solid fa-filter"></i> Εφαρμογή
-      </button>
-      <a href="<?= APP_URL ?>/pages/events.php?tab=payments" style="background:rgba(255,255,255,.06);color:#ffffff;border:1px solid #2a3248;padding:.6rem 1rem;border-radius:9px;font-weight:700;text-decoration:none;min-height:44px;display:inline-flex;align-items:center">
-        <i class="fa-solid fa-rotate-left"></i>
+    <div style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:center">
+      <a href="<?= APP_URL ?>/pages/events.php?tab=payments" style="background:rgba(255,255,255,.06);color:#ffffff;border:1px solid #2a3248;padding:.6rem 1rem;border-radius:9px;font-weight:700;text-decoration:none;min-height:44px;display:inline-flex;align-items:center;gap:.4rem">
+        <i class="fa-solid fa-rotate-left"></i> Καθαρισμός
       </a>
+      <span id="evPayBusy" style="color:#8892b0;font-size:.82rem;display:none;align-items:center;gap:.35rem">
+        <i class="fa-solid fa-spinner fa-spin"></i> Ενημέρωση…
+      </span>
     </div>
   </form>
+  <script>
+    (function(){
+      var form = document.getElementById('evPayFiltersForm');
+      if (!form) return;
+      var busy = document.getElementById('evPayBusy');
+      var t = null;
+      function submit(){ if (busy) busy.style.display = 'inline-flex'; form.submit(); }
+      form.querySelectorAll('[data-live]').forEach(function(el){
+        if (el.tagName === 'INPUT' && (el.type === 'text' || el.type === 'search')) {
+          el.addEventListener('input', function(){ clearTimeout(t); t = setTimeout(submit, 400); });
+        } else {
+          el.addEventListener('change', function(){ clearTimeout(t); t = setTimeout(submit, 100); });
+        }
+      });
+    })();
+  </script>
 
   <!-- Table -->
   <div style="background:#111520;border:1px solid #1e2536;border-radius:14px;overflow:hidden">

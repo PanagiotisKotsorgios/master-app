@@ -383,18 +383,18 @@ renderHead('Αναλυτικά Πληρωμών' . ($isPrint ? ' — Εκτύπ�
     </div>
   </div>
 
-  <form method="get" class="pa-filters no-print">
+  <form method="get" class="pa-filters no-print" id="paFiltersForm">
     <div>
       <label>Από (μήνας)</label>
-      <input type="month" name="from" value="<?= h($from) ?>">
+      <input type="month" name="from" value="<?= h($from) ?>" data-live>
     </div>
     <div>
       <label>Έως (μήνας)</label>
-      <input type="month" name="to" value="<?= h($to) ?>">
+      <input type="month" name="to" value="<?= h($to) ?>" data-live>
     </div>
     <div>
       <label>Τμήμα</label>
-      <select name="dept">
+      <select name="dept" data-live>
         <option value="0">— Όλα τα τμήματα —</option>
         <?php foreach ($deptOptions as $d): ?>
           <option value="<?= (int)$d['id'] ?>" <?= $deptFilter === (int)$d['id'] ? 'selected' : '' ?>><?= h($d['name']) ?></option>
@@ -403,7 +403,7 @@ renderHead('Αναλυτικά Πληρωμών' . ($isPrint ? ' — Εκτύπ�
     </div>
     <div>
       <label>Κατάσταση κελιού</label>
-      <select name="status">
+      <select name="status" data-live>
         <?php
           $sOpts = ['all'=>'Όλα','paid'=>'Πληρωμένα','partial'=>'Μερικώς','pending'=>'Τρέχων μήνας','overdue'=>'Ληξιπρόθεσμα'];
           foreach ($sOpts as $k=>$lbl):
@@ -414,17 +414,37 @@ renderHead('Αναλυτικά Πληρωμών' . ($isPrint ? ' — Εκτύπ�
     </div>
     <div>
       <label>Αναζήτηση αθλητή</label>
-      <input type="text" name="q" value="<?= h($q) ?>" placeholder="π.χ. Γιάννης">
+      <input type="text" name="q" value="<?= h($q) ?>" placeholder="π.χ. Γιάννης" data-live>
     </div>
     <div class="actions">
-      <button type="submit" class="btn btn-primary" style="background:#e63946;color:#fff;border:none;padding:.55rem 1rem;border-radius:8px;font-weight:700;cursor:pointer">
-        <i class="fa-solid fa-magnifying-glass"></i> Εφαρμογή
-      </button>
-      <a href="<?= APP_URL ?>/pages/payment_analytics.php" style="background:rgba(255,255,255,.06);color:#f0f2ff;border:1px solid #1e2536;padding:.55rem 1rem;border-radius:8px;font-weight:700;text-decoration:none">
+      <a href="<?= APP_URL ?>/pages/payment_analytics.php" style="background:rgba(255,255,255,.06);color:#f0f2ff;border:1px solid #1e2536;padding:.55rem 1rem;border-radius:8px;font-weight:700;text-decoration:none;display:inline-flex;align-items:center;gap:.4rem">
         <i class="fa-solid fa-rotate-left"></i> Καθαρισμός
       </a>
+      <span id="paBusy" style="color:#8892b0;font-size:.8rem;display:none;align-items:center;gap:.35rem">
+        <i class="fa-solid fa-spinner fa-spin"></i> Ενημέρωση…
+      </span>
     </div>
   </form>
+  <script>
+    /* Live filters: debounce text input, submit-on-change everywhere else */
+    (function(){
+      var form = document.getElementById('paFiltersForm');
+      if (!form) return;
+      var busy = document.getElementById('paBusy');
+      var t = null;
+      function submit() {
+        if (busy) busy.style.display = 'inline-flex';
+        form.submit();
+      }
+      form.querySelectorAll('[data-live]').forEach(function(el){
+        if (el.tagName === 'INPUT' && (el.type === 'text' || el.type === 'search')) {
+          el.addEventListener('input', function(){ clearTimeout(t); t = setTimeout(submit, 400); });
+        } else {
+          el.addEventListener('change', function(){ clearTimeout(t); t = setTimeout(submit, 100); });
+        }
+      });
+    })();
+  </script>
 
   <div class="pa-kpis">
     <div class="pa-kpi g">
