@@ -296,8 +296,8 @@ ON DUPLICATE KEY UPDATE amount = VALUES(amount), paid_at = VALUES(paid_at);
 INSERT INTO reminder_logs (school_id, athlete_id, type, trigger_type, recipient, subject, body, status, sent_at)
 SELECT @demo_sid, a.id, 'email', 'days_before',
        COALESCE(a.parent_email, a.email, 'pkotsorgios654@gmail.com'),
-       'Υπενθύμιση εκκρεμούς οφειλής',
-       CONCAT('Αγαπητέ/ή κηδεμόνα του/της ', a.full_name, ', υπάρχει εκκρεμότητα στη μηνιαία συνδρομή. — Demo Σύλλογος MAster'),
+       'Φιλική υπενθύμιση συνδρομής',
+       CONCAT('Αγαπητέ/ή κηδεμόνα, θα θέλαμε φιλικά να σας υπενθυμίσουμε τη συνδρομή του/της ', a.full_name, '. Όποτε σας εξυπηρετεί, είμαστε στη διάθεσή σας. Ευχαριστούμε πολύ, Demo Σύλλογος MAster'),
        'sent',
        DATE_SUB(NOW(), INTERVAL FLOOR(RAND()*20) DAY)
   FROM athletes a
@@ -309,7 +309,7 @@ INSERT INTO reminder_logs (school_id, athlete_id, type, trigger_type, recipient,
 SELECT @demo_sid, a.id, 'sms', 'on_due',
        COALESCE(a.parent_phone, a.phone, '698678178'),
        'SMS υπενθύμιση',
-       CONCAT('Υπενθύμιση: υπάρχει ανοιχτή συνδρομή για ', a.full_name, '. Demo Σύλλογος MAster.'),
+       CONCAT('Φιλική υπενθύμιση για τη συνδρομή του/της ', a.full_name, ' — Demo Σύλλογος MAster. Ευχαριστούμε!'),
        'sent',
        DATE_SUB(NOW(), INTERVAL FLOOR(RAND()*10) DAY)
   FROM athletes a

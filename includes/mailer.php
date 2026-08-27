@@ -539,16 +539,16 @@ function buildDefaultPlainBody(string $triggerType, array $ph, bool $isAdult = f
 
     return match(true) {
         in_array($triggerType, ['3days_before', 'days_before']) =>
-            "{$greeting}\n\nΗ συνδρομή του/της {$name} λήγει σε {$days} ημέρες ({$until}).\nΠοσό: {$amount}€\n\nΠαρακαλούμε φροντίστε για την έγκαιρη ανανέωσή της.\n\nΜε εκτίμηση,\n{$school}",
+            "{$greeting}\n\nΜια φιλική υπενθύμιση ότι η συνδρομή του/της {$name} λήγει σε {$days} ημέρες ({$until}).\nΠοσό: {$amount}€\n\nΌποτε σας εξυπηρετεί, μπορούμε να την ανανεώσουμε.\n\nΕυχαριστούμε πολύ,\n{$school}",
 
         in_array($triggerType, ['on_expiry', 'on_due']) =>
-            "{$greeting}\n\nΗ συνδρομή του/της {$name} λήγει ΣΗΜΕΡΑ ({$until}).\nΠοσό: {$amount}€\n\nΠαρακαλούμε ανανεώστε άμεσα για να αποφύγετε τη διακοπή.\n\nΜε εκτίμηση,\n{$school}",
+            "{$greeting}\n\nΜια φιλική υπενθύμιση: η συνδρομή του/της {$name} λήγει σήμερα ({$until}).\nΠοσό: {$amount}€\n\nΌποτε σας εξυπηρετεί, ας την ανανεώσουμε για να συνεχίσει απρόσκοπτα.\n\nΕυχαριστούμε πολύ,\n{$school}",
 
         in_array($triggerType, ['5days_after', 'days_after']) =>
-            "{$greeting}\n\nΗ συνδρομή του/της {$name} έχει λήξει εδώ και {$days} ημέρες ({$until}).\nΕκκρεμές ποσό: {$amount}€\n\nΠαρακαλούμε τακτοποιήστε την πληρωμή το συντομότερο δυνατό.\n\nΜε εκτίμηση,\n{$school}",
+            "{$greeting}\n\nΘα θέλαμε φιλικά να σας υπενθυμίσουμε ότι η συνδρομή του/της {$name} έχει λήξει από τις {$until} ({$days} ημέρες).\nΠοσό: {$amount}€\n\nΌποτε σας εξυπηρετεί, μπορούμε να την τακτοποιήσουμε. Αν χρειάζεστε κάτι ή θέλετε να το συζητήσουμε, είμαστε στη διάθεσή σας.\n\nΕυχαριστούμε πολύ,\n{$school}",
 
         $triggerType === 'after_payment' =>
-            "{$greeting}\n\nΛάβαμε την πληρωμή σας {$amount}€ για τον/την {$name}.\nΗ συνδρομή ισχύει έως {$until}.\n\nΣας ευχαριστούμε!\n\n{$school}",
+            "{$greeting}\n\nΛάβαμε την πληρωμή σας {$amount}€ για τον/την {$name}.\nΗ συνδρομή ισχύει έως {$until}.\n\nΣας ευχαριστούμε πολύ!\n\n{$school}",
 
         // ── manual: χρήση debt_months × monthly_amount ──
         default => buildManualReminderBody($greeting, $name, $months, $monthly, $amount, $closing),
@@ -597,16 +597,16 @@ function buildDefaultSmsBody(string $triggerType, array $ph, bool $isAdult = fal
 
     $msg = match(true) {
         in_array($triggerType, ['3days_before', 'days_before'])
-            => "{$school}: Η συνδρομή {$name} λήγει σε {$days} ημέρες ({$until}). Ποσό: {$amount}€.{$stopNote}",
+            => "{$school}: Φιλική υπενθύμιση — η συνδρομή του/της {$name} λήγει σε {$days} ημέρες ({$until}). Ποσό: {$amount}€. Ευχαριστούμε!{$stopNote}",
 
         in_array($triggerType, ['on_expiry', 'on_due'])
-            => "{$school}: Η συνδρομή {$name} λήγει ΣΗΜΕΡΑ ({$until}). Ποσό: {$amount}€. Ανανεώστε άμεσα.{$stopNote}",
+            => "{$school}: Φιλική υπενθύμιση — η συνδρομή του/της {$name} λήγει σήμερα ({$until}). Ποσό: {$amount}€. Ευχαριστούμε!{$stopNote}",
 
         in_array($triggerType, ['5days_after', 'days_after'])
-            => "{$school}: Εκκρεμής πληρωμή {$name} ({$amount}€). Λήξη: {$until}. Παρακαλούμε τακτοποιήστε.{$stopNote}",
+            => "{$school}: Φιλική υπενθύμιση για τη συνδρομή του/της {$name} — ποσό {$amount}€. Όποτε σας εξυπηρετεί. Ευχαριστούμε!{$stopNote}",
 
         $triggerType === 'after_payment'
-            => "{$school}: Λάβαμε {$amount}€ για {$name}. Ισχύει έως {$until}. Ευχαριστούμε!",
+            => "{$school}: Λάβαμε {$amount}€ για {$name}. Ισχύει έως {$until}. Σας ευχαριστούμε πολύ!",
 
         // ── manual: ηλικία-aware + debt months + σωστό ποσό ──
         default => buildManualSmsBody($name, $months, $monthly, $amount, $school, $isAdult, $stopNote),

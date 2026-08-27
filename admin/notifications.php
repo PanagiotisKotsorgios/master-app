@@ -92,9 +92,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['_action'] ?? '') === 'rese
                 redirect(APP_URL.'/admin/notifications.php');
             }
             $subject = "Υπενθύμιση Συνδρομής — {$schoolName}";
-            $plainBody = "Αγαπητέ/ή κηδεμόνα,\n\nΑυτή είναι μια υπενθύμιση σχετικά με τη συνδρομή του/της {$athleteName}." .
-                ($amount > 0 ? "\nΟφειλόμενο ποσό: {$amountFmt}" : '') .
-                "\n\nΠαρακαλούμε επικοινωνήστε με τη σχολή σας για τακτοποίηση.\n\nΜε εκτίμηση,\n{$schoolName}";
+            $plainBody = "Αγαπητέ/ή κηδεμόνα,\n\nΘα θέλαμε φιλικά να σας υπενθυμίσουμε τη συνδρομή του/της {$athleteName}." .
+                ($amount > 0 ? "\nΠοσό: {$amountFmt}" : '') .
+                "\n\nΌποτε σας εξυπηρετεί, επικοινωνήστε με τη σχολή σας για τη διευθέτησή της. Είμαστε στη διάθεσή σας.\n\nΕυχαριστούμε πολύ,\n{$schoolName}";
             $html = function_exists('buildEmailHtml')
                 ? buildEmailHtml($plainBody, $schoolName, $subject)
                 : nl2br(htmlspecialchars($plainBody, ENT_QUOTES, 'UTF-8'));
