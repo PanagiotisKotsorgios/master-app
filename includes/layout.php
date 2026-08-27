@@ -369,6 +369,13 @@ function renderSidebar(string $active = ''): void {
                 'key'   => 'economics',
                 'pro'   => true,
             ];
+            $mainItems[] = [
+                'href'  => APP_URL.'/pages/payment_analytics.php',
+                'icon'  => 'fa-solid fa-chart-line',
+                'label' => 'Αναλυτικά Πληρωμών',
+                'key'   => 'payment_analytics',
+                'pro'   => true,
+            ];
         }
 
         $navItems = [
