@@ -50,7 +50,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             flash('Η εγγραφή ακυρώθηκε.');
         }
         if ($action === 'pay_start') {
-            $method = $_POST['method'] ?? 'bank';
+            $method = in_array($_POST['method'] ?? '', ['bank','iris','cash'], true) ? $_POST['method'] : 'bank';
             $payId  = eventPaymentCreate($id, $sid, $method, $userId);
             flash('Δημιουργήθηκε πληρωμή. Ανεβάστε την απόδειξη παρακάτω.');
             redirect(APP_URL . '/pages/event_participate.php?id=' . $id . '#pay-' . $payId);
@@ -73,10 +73,20 @@ $myRegs     = eventRegistrationsForParticipant($id, $sid);
 $myPays     = eventPaymentsForSchool($id, $sid);
 $fields     = eventCustomFields($id);
 
-// Athletes of this school
-$athStmt = getDB()->prepare("SELECT id, full_name, birthdate, gender, belt, sport FROM athletes WHERE school_id = ? AND active = 1 ORDER BY full_name");
+// Athletes of this school.
+// NOTE: gender / belt / sport aren't guaranteed columns on the athletes
+// table (the base schema doesn't have them). We select the columns we
+// KNOW exist, then fill the optional ones so the downstream markup
+// never trips on a missing key.
+$athStmt = getDB()->prepare("SELECT id, full_name, birthdate FROM athletes WHERE school_id = ? AND active = 1 ORDER BY full_name");
 $athStmt->execute([$sid]);
 $myAthletes = $athStmt->fetchAll();
+foreach ($myAthletes as &$__a) {
+    $__a['gender'] = $__a['gender'] ?? '';
+    $__a['belt']   = $__a['belt']   ?? '';
+    $__a['sport']  = $__a['sport']  ?? '';
+}
+unset($__a);
 
 renderHead('Συμμετοχή: ' . $ev['title']);
 $flash = getFlash();

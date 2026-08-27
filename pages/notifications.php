@@ -314,6 +314,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $totalSent = 0;
         $totalFailed = 0;
+        // Track WHY each send failed so the user sees a truthful summary
+        // instead of a vague "ελλιπή στοιχεία επικοινωνίας" catch-all.
+        $failReasons = ['missing' => 0, 'limit' => 0, 'provider' => 0];
+        $failSamples = [];   // Up to 5 rows for the user-facing hint
 
         foreach ($bcAthletes as $ath) {
             $isAdult = true;
@@ -327,42 +331,61 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $personalSubject = str_replace(['{{athlete_name}}', '{{school_name}}'], [$ath['full_name'], $schoolName], $bcSubject);
 
             foreach ($bcChs as $ch) {
+                $sent      = false;
+                $reasonKey = null;
+                $reasonMsg = null;
+
                 if ($ch === 'email') {
                     $toEmail = $isAdult
                         ? (trim($ath['email'] ?? '') ?: trim($ath['parent_email'] ?? ''))
                         : (trim($ath['parent_email'] ?? '') ?: trim($ath['email'] ?? ''));
 
                     if (!$toEmail || !filter_var($toEmail, FILTER_VALIDATE_EMAIL)) {
-                        $totalFailed++;
-                        continue;
+                        $reasonKey = 'missing';
+                        $reasonMsg = 'χωρίς έγκυρο email';
+                    } else {
+                        $htmlBody = function_exists('buildEmailHtml')
+                            ? buildEmailHtml($personalBody, $schoolName, $personalSubject ?: 'Ανακοίνωση — ' . $schoolName)
+                            : nl2br(htmlspecialchars($personalBody, ENT_QUOTES, 'UTF-8'));
+                        $emailDbg = null;
+                        $sent = sendEmail($toEmail, $personalSubject ?: 'Ανακοίνωση — ' . $schoolName, $htmlBody, $personalBody, $ath['full_name'], $emailDbg, null, $schoolName);
+                        if (!$sent) {
+                            $reasonKey = 'provider';
+                            $reasonMsg = 'σφάλμα αποστολής email' . ($emailDbg ? ' (' . mb_substr($emailDbg, 0, 60) . ')' : '');
+                            error_log('[notifications.php] Email failed to ' . $toEmail . ': ' . ($emailDbg ?? 'unknown'));
+                        }
                     }
-
-                    $htmlBody = function_exists('buildEmailHtml')
-                        ? buildEmailHtml($personalBody, $schoolName, $personalSubject ?: 'Ανακοίνωση — ' . $schoolName)
-                        : nl2br(htmlspecialchars($personalBody, ENT_QUOTES, 'UTF-8'));
-                    $emailDbg = null;
-                    $sent = sendEmail($toEmail, $personalSubject ?: 'Ανακοίνωση — ' . $schoolName, $htmlBody, $personalBody, $ath['full_name'], $emailDbg, null, $schoolName);
                 } else {
                     $phone = $isAdult
                         ? (trim($ath['phone'] ?? '') ?: trim($ath['parent_phone'] ?? ''))
                         : (trim($ath['parent_phone'] ?? '') ?: trim($ath['phone'] ?? ''));
 
                     if (!$phone) {
-                        $totalFailed++;
-                        continue;
+                        $reasonKey = 'missing';
+                        $reasonMsg = 'χωρίς τηλέφωνο';
+                    } elseif (!checkMonthlyUsageLimit($sid, 'sms')) {
+                        $reasonKey = 'limit';
+                        $reasonMsg = 'εξαντλήθηκε το μηνιαίο όριο SMS';
+                    } else {
+                        $smsErr = null;
+                        $sent = sendSms($phone, strip_tags($personalBody), $smsErr);
+                        if (!$sent) {
+                            $reasonKey = 'provider';
+                            $reasonMsg = 'σφάλμα αποστολής SMS' . ($smsErr ? ' (' . mb_substr($smsErr, 0, 60) . ')' : '');
+                            error_log('[notifications.php] SMS failed to ' . $phone . ': ' . ($smsErr ?? 'unknown'));
+                        }
                     }
-
-                    // Hard block: re-check monthly limit per-send (limit may be hit mid-batch)
-                    if (!checkMonthlyUsageLimit($sid, 'sms')) {
-                        $totalFailed++;
-                        continue;
-                    }
-                    $smsErr = null;
-                    $sent = sendSms($phone, strip_tags($personalBody), $smsErr);
-                    if (!$sent) { error_log('[notifications.php] SMS failed to ' . $phone . ': ' . $smsErr); }
                 }
 
-                $sent ? $totalSent++ : $totalFailed++;
+                if ($sent) {
+                    $totalSent++;
+                } else {
+                    $totalFailed++;
+                    if ($reasonKey) $failReasons[$reasonKey]++;
+                    if (count($failSamples) < 5 && $reasonMsg) {
+                        $failSamples[] = h($ath['full_name']) . ' — ' . h($reasonMsg);
+                    }
+                }
             }
         }
 
@@ -371,7 +394,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $msg = "Η ανακοίνωση εστάλη σε <strong>{$totalSent}</strong> παραλήπτες!";
         if ($totalFailed > 0) {
-            $msg .= " ({$totalFailed} απέτυχαν — ελλιπή στοιχεία επικοινωνίας)";
+            // Build a truthful reason breakdown
+            $parts = [];
+            if ($failReasons['missing']  > 0) $parts[] = $failReasons['missing']  . ' χωρίς στοιχεία επικοινωνίας';
+            if ($failReasons['limit']    > 0) $parts[] = $failReasons['limit']    . ' εκτός ορίου SMS';
+            if ($failReasons['provider'] > 0) $parts[] = $failReasons['provider'] . ' αποτυχία αποστολής παρόχου';
+            $reasonSummary = $parts ? implode(' · ', $parts) : 'άγνωστη αιτία';
+            $msg .= " (<strong>{$totalFailed}</strong> απέτυχαν — {$reasonSummary})";
+            if ($failSamples) {
+                $msg .= '<br><small style="display:block;margin-top:.35rem;opacity:.85">Παραδείγματα: ' . implode(' · ', $failSamples) . '</small>';
+            }
         }
         flash($msg, $totalFailed > 0 && $totalSent === 0 ? 'danger' : 'success');
     }
@@ -914,7 +946,23 @@ textarea.form-control{min-height:120px;resize:vertical;line-height:1.6}
 <button type="button" id="openAddModal" class="btn btn-primary">
     <i class="fa-solid fa-plus"></i> Αυτόματες Υπενθυμίσεις
 </button>
+
+<form method="POST" action="<?= APP_URL ?>/pages/run_reminders_now.php" style="display:inline"
+      onsubmit="return confirm('Θα εκτελεστεί τώρα το nightly cron των υπενθυμίσεων για τη σχολή σας. Συνέχεια;')">
+  <input type="hidden" name="csrf_token" value="<?= csrf() ?>">
+  <button type="submit" class="btn"
+          style="background:linear-gradient(135deg,rgba(45,198,83,.15),rgba(34,197,94,.06));
+                 border:1.5px solid rgba(45,198,83,.4);color:#2dc653"
+          title="Εκτελεί άμεσα το cron για να δεις τα αποτελέσματα χωρίς να περιμένεις τη νύχτα">
+    <i class="fa-solid fa-play"></i> Δοκιμαστική Εκτέλεση
+  </button>
+</form>
         </div>
+    </div>
+
+    <div style="background:rgba(59,130,246,.08);border:1px solid rgba(59,130,246,.2);border-radius:12px;padding:.85rem 1.1rem;margin-bottom:1rem;color:#c8dbff;font-size:.9rem;line-height:1.6">
+      <strong style="color:#ffffff"><i class="fa-solid fa-clock" style="color:#3b82f6;margin-right:.3rem"></i>Πότε τρέχει το cron;</strong>
+      Οι αυτόματες υπενθυμίσεις πρέπει να καλούνται από εξωτερικό scheduler (Coolify scheduled task ή external cron). Ο ενδεικτικός χρόνος είναι <strong style="color:#ffffff">κάθε πρωί στις 09:00</strong>. Για άμεση δοκιμή, πάτησε <em>Δοκιμαστική Εκτέλεση</em>. Οι αποστολές θα εμφανιστούν στο tab <em>Ιστορικό</em>.
     </div>
 
     <div class="rules-list anim-3">
