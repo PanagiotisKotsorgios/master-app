@@ -20,26 +20,34 @@ $sid = schoolId();
 
 // ── Handle organiser action on a registration payment ───────────
 $flashMsg = '';
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['_action'] ?? '') === 'update_reg_payment') {
+$act = $_POST['_action'] ?? '';
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($act === 'update_reg_payment' || $act === 'delete_reg')) {
     try {
         verifyCsrf();
         $regId    = (int)($_POST['reg_id']     ?? 0);
         $eventId  = (int)($_POST['event_id']   ?? 0);
-        $newState = (string)($_POST['payment_status'] ?? '');
 
         // Guard: I can only touch registrations of events I organise
         $chk = getDB()->prepare("SELECT 1 FROM event_registrations r
                                  JOIN events e ON e.id = r.event_id
                                  WHERE r.id = ? AND e.id = ? AND e.organiser_school_id = ?");
         $chk->execute([$regId, $eventId, $sid]);
-        if ($chk->fetchColumn()) {
+        if (!$chk->fetchColumn()) {
+            $flashMsg = 'Δεν βρέθηκε η συμμετοχή.';
+        } elseif ($act === 'delete_reg') {
+            // Hard delete: also drops the payment_registrations link if any
+            $db2 = getDB();
+            $db2->prepare("DELETE FROM event_payment_registrations WHERE registration_id = ?")->execute([$regId]);
+            $db2->prepare("DELETE FROM event_registrations WHERE id = ?")->execute([$regId]);
+            if (function_exists('auditLog')) auditLog('event_reg_delete', 'event_registration', $regId);
+            $flashMsg = 'Η εγγραφή διαγράφηκε.';
+        } else {
+            $newState = (string)($_POST['payment_status'] ?? '');
             eventRegistrationUpdatePayment($regId, $eventId, $newState, userId() ?: null);
             $flashMsg = 'Η κατάσταση πληρωμής ενημερώθηκε.';
-        } else {
-            $flashMsg = 'Δεν βρέθηκε η συμμετοχή.';
         }
     } catch (\Throwable $e) {
-        error_log('[events.php update_reg_payment] ' . $e->getMessage());
+        error_log('[events.php reg action] ' . $e->getMessage());
         $flashMsg = 'Σφάλμα ενημέρωσης.';
     }
     redirect(APP_URL . '/pages/events.php?tab=payments&ok=1');
@@ -482,6 +490,34 @@ renderHead('Διοργανώσεις');
                       </button>
                     </form>
                     <?php endif; ?>
+                    <?php if ($r['payment_status'] === 'verified' || $r['payment_status'] === 'refunded'): ?>
+                      <?php if ($r['payment_status'] !== 'refunded'): ?>
+                      <form method="POST" style="display:inline"
+                            onsubmit="return confirm('Σήμανση ως Επιστροφή χρημάτων;')">
+                        <input type="hidden" name="csrf_token" value="<?= csrf() ?>">
+                        <input type="hidden" name="_action" value="update_reg_payment">
+                        <input type="hidden" name="reg_id" value="<?= (int)$r['id'] ?>">
+                        <input type="hidden" name="event_id" value="<?= (int)$r['event_id'] ?>">
+                        <input type="hidden" name="payment_status" value="refunded">
+                        <button type="submit" title="Επιστροφή χρημάτων"
+                                style="background:rgba(155,110,255,.14);color:#e6d5ff;border:1px solid rgba(155,110,255,.35);padding:.42rem .7rem;border-radius:8px;font-weight:700;font-size:.78rem;cursor:pointer;min-height:36px">
+                          <i class="fa-solid fa-arrow-rotate-left"></i>
+                        </button>
+                      </form>
+                      <?php endif; ?>
+                    <?php endif; ?>
+                    <!-- Delete registration entirely — for wrong entries -->
+                    <form method="POST" style="display:inline"
+                          onsubmit="return confirm('Διαγραφή ΟΛΗΣ της εγγραφής του/της <?= h($displayName) ?>; Δεν αναιρείται.');">
+                      <input type="hidden" name="csrf_token" value="<?= csrf() ?>">
+                      <input type="hidden" name="_action" value="delete_reg">
+                      <input type="hidden" name="reg_id" value="<?= (int)$r['id'] ?>">
+                      <input type="hidden" name="event_id" value="<?= (int)$r['event_id'] ?>">
+                      <button type="submit" title="Διαγραφή εγγραφής (μόνιμο)"
+                              style="background:rgba(230,57,70,.12);color:#ff8891;border:1px solid rgba(230,57,70,.35);padding:.42rem .7rem;border-radius:8px;font-weight:700;font-size:.78rem;cursor:pointer;min-height:36px">
+                        <i class="fa-solid fa-trash"></i>
+                      </button>
+                    </form>
                   </div>
                 </td>
               </tr>

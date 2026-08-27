@@ -28,16 +28,40 @@ renderHead('Αναζήτηση events');
 <?php renderTopbar('Διοργανώσεις άλλων συλλόγων'); ?>
 <div class="page-body">
 
-  <form method="GET" style="background:#111520;border:1px solid #1e2536;border-radius:14px;padding:1rem 1.25rem;margin-bottom:1rem;display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:.65rem">
-    <input type="text" name="q" value="<?= h($q) ?>" placeholder="Αναζήτηση τίτλου, τοποθεσίας…" style="padding:.7rem;background:#0d1017;border:1px solid #2a3248;border-radius:8px;color:#f0f2ff">
-    <select name="type" style="padding:.7rem;background:#0d1017;border:1px solid #2a3248;border-radius:8px;color:#f0f2ff">
-      <option value="">Όλοι οι τύποι</option>
-      <?php foreach (['championship','friendly','camp','seminar','meeting','exam'] as $t): ?>
-        <option value="<?= $t ?>" <?= $type===$t?'selected':'' ?>><?= h(eventTypeLabel($t)) ?></option>
-      <?php endforeach; ?>
-    </select>
-    <input type="text" name="sport" value="<?= h($sport) ?>" placeholder="Άθλημα" style="padding:.7rem;background:#0d1017;border:1px solid #2a3248;border-radius:8px;color:#f0f2ff">
-    <button type="submit" class="btn btn-primary"><i class="fa-solid fa-magnifying-glass"></i></button>
+  <form method="GET" class="events-browse-filters"
+        style="background:#111520;border:1px solid #1e2536;border-radius:14px;padding:1rem 1.1rem;margin-bottom:1rem;
+               display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:.65rem;align-items:end">
+    <div style="grid-column:1/-1">
+      <label style="display:block;font-size:.7rem;font-weight:700;color:#a9b3c9;text-transform:uppercase;letter-spacing:.08em;margin-bottom:.3rem">Αναζήτηση</label>
+      <input type="text" name="q" value="<?= h($q) ?>" placeholder="Τίτλος, τοποθεσία…" autocomplete="off" inputmode="search"
+             style="width:100%;padding:.85rem 1rem;background:#0d1017;border:1.5px solid #2a3248;border-radius:10px;color:#fff;font-size:1rem;min-height:48px">
+    </div>
+    <div>
+      <label style="display:block;font-size:.7rem;font-weight:700;color:#a9b3c9;text-transform:uppercase;letter-spacing:.08em;margin-bottom:.3rem">Τύπος</label>
+      <select name="type" style="width:100%;padding:.75rem 1rem;background:#0d1017;border:1.5px solid #2a3248;border-radius:10px;color:#fff;font-size:.95rem;min-height:48px">
+        <option value="">— Όλοι —</option>
+        <?php foreach (['championship','friendly','camp','seminar','meeting','exam'] as $t): ?>
+          <option value="<?= $t ?>" <?= $type===$t?'selected':'' ?>><?= h(eventTypeLabel($t)) ?></option>
+        <?php endforeach; ?>
+      </select>
+    </div>
+    <div>
+      <label style="display:block;font-size:.7rem;font-weight:700;color:#a9b3c9;text-transform:uppercase;letter-spacing:.08em;margin-bottom:.3rem">Άθλημα</label>
+      <input type="text" name="sport" value="<?= h($sport) ?>" placeholder="π.χ. Taekwondo"
+             style="width:100%;padding:.75rem 1rem;background:#0d1017;border:1.5px solid #2a3248;border-radius:10px;color:#fff;font-size:.95rem;min-height:48px">
+    </div>
+    <div style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:flex-end">
+      <button type="submit" class="btn btn-primary"
+              style="min-height:48px;padding:.75rem 1.3rem;font-size:.98rem;font-weight:800;flex:1">
+        <i class="fa-solid fa-magnifying-glass"></i> Αναζήτηση
+      </button>
+      <?php if ($q || $type || $sport): ?>
+      <a href="<?= APP_URL ?>/pages/events_browse.php" class="btn btn-ghost"
+         style="min-height:48px;padding:.75rem 1rem;font-weight:700;text-decoration:none;display:inline-flex;align-items:center;gap:.35rem">
+        <i class="fa-solid fa-rotate-left"></i>
+      </a>
+      <?php endif; ?>
+    </div>
   </form>
 
   <?php if (!$events): ?>
@@ -46,7 +70,12 @@ renderHead('Αναζήτηση events');
     </div>
   <?php else: ?>
     <style>
-      .browse-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:1.15rem}
+      .browse-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1rem}
+      @media (max-width:520px){
+        .browse-grid{grid-template-columns:1fr;gap:.85rem}
+        .b-body h3{font-size:1rem}
+        .b-body p.b-sub{font-size:.85rem}
+      }
       .b-card{background:#111520;border:1px solid #1e2536;border-radius:16px;overflow:hidden;
         display:flex;flex-direction:column;transition:transform .22s cubic-bezier(.2,.9,.3,1.1),border-color .22s ease,box-shadow .22s ease}
       .b-card:hover{transform:translateY(-6px);border-color:#e63946;

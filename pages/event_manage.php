@@ -307,8 +307,8 @@ $flash = getFlash();
               <td style="padding:.7rem 1rem"><?= h(eventFormatLabel($c['format'] ?? '')) ?></td>
               <td style="padding:.7rem 1rem"><?= $c['fee_override']!==null ? number_format((float)$c['fee_override'],2,',','.').'€' : '<i style="color:#6b7494">default</i>' ?></td>
               <td style="padding:.7rem 1rem;text-align:right;white-space:nowrap">
-                <a href="<?= APP_URL ?>/pages/event_bracket.php?id=<?= $id ?>&cat=<?= (int)$c['id'] ?>" class="btn btn-ghost btn-sm" title="Bracket">
-                  <i class="fa-solid fa-diagram-project"></i> Bracket
+                <a href="<?= APP_URL ?>/pages/event_bracket.php?id=<?= $id ?>&cat=<?= (int)$c['id'] ?>" class="btn btn-ghost btn-sm" title="Κληρώσεις κατηγορίας">
+                  <i class="fa-solid fa-diagram-project"></i> Κληρώσεις
                 </a>
                 <form method="POST" style="display:inline" onsubmit="return confirm('Διαγραφή κατηγορίας;')">
                   <input type="hidden" name="csrf_token" value="<?= csrf() ?>">
@@ -327,7 +327,79 @@ $flash = getFlash();
   <?php elseif ($tab === 'registrations'): ?>
     <?php if (!$registrations): ?>
       <p style="color:#6b7494">Δεν υπάρχουν εγγραφές ακόμα. Μόλις μοιραστείς τον δημόσιο σύνδεσμο, θα εμφανίζονται εδώ.</p>
-    <?php else: ?>
+    <?php else:
+      // Unique school + category lists for the filter dropdowns
+      $regSchoolOpts = [];
+      $regCatOpts    = [];
+      foreach ($registrations as $r) {
+          if (!empty($r['school_name'])) $regSchoolOpts[$r['school_name']] = true;
+          if (!empty($r['cat_name']))    $regCatOpts[$r['cat_name']]      = true;
+      }
+      ksort($regSchoolOpts); ksort($regCatOpts);
+    ?>
+      <!-- Filters + live search -->
+      <div style="background:#111520;border:1px solid #1e2536;border-radius:14px;padding:1rem 1.1rem;margin-bottom:1rem;
+                  display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:.65rem;align-items:end">
+        <div>
+          <label style="display:block;font-size:.7rem;font-weight:700;color:#a9b3c9;text-transform:uppercase;letter-spacing:.08em;margin-bottom:.3rem">Σύλλογος</label>
+          <select id="regFilterSchool" onchange="regApplyFilters()"
+                  style="width:100%;padding:.55rem .7rem;background:#0d1017;border:1.5px solid #2a3248;border-radius:8px;color:#fff;font-size:.9rem;min-height:44px">
+            <option value="">— Όλοι —</option>
+            <?php foreach (array_keys($regSchoolOpts) as $sn): ?>
+              <option value="<?= h(mb_strtolower($sn, 'UTF-8')) ?>"><?= h($sn) ?></option>
+            <?php endforeach; ?>
+          </select>
+        </div>
+        <div>
+          <label style="display:block;font-size:.7rem;font-weight:700;color:#a9b3c9;text-transform:uppercase;letter-spacing:.08em;margin-bottom:.3rem">Κατηγορία</label>
+          <select id="regFilterCat" onchange="regApplyFilters()"
+                  style="width:100%;padding:.55rem .7rem;background:#0d1017;border:1.5px solid #2a3248;border-radius:8px;color:#fff;font-size:.9rem;min-height:44px">
+            <option value="">— Όλες —</option>
+            <?php foreach (array_keys($regCatOpts) as $cn): ?>
+              <option value="<?= h(mb_strtolower($cn, 'UTF-8')) ?>"><?= h($cn) ?></option>
+            <?php endforeach; ?>
+          </select>
+        </div>
+        <div>
+          <label style="display:block;font-size:.7rem;font-weight:700;color:#a9b3c9;text-transform:uppercase;letter-spacing:.08em;margin-bottom:.3rem">Κατάσταση</label>
+          <select id="regFilterStatus" onchange="regApplyFilters()"
+                  style="width:100%;padding:.55rem .7rem;background:#0d1017;border:1.5px solid #2a3248;border-radius:8px;color:#fff;font-size:.9rem;min-height:44px">
+            <option value="">— Όλες —</option>
+            <option value="pending">Εκκρεμούν</option>
+            <option value="approved">Εγκρίθηκαν</option>
+            <option value="checked_in">Παρόντες</option>
+            <option value="rejected">Απορρίφθηκαν</option>
+            <option value="withdrawn">Ακυρώθηκαν</option>
+          </select>
+        </div>
+        <div>
+          <label style="display:block;font-size:.7rem;font-weight:700;color:#a9b3c9;text-transform:uppercase;letter-spacing:.08em;margin-bottom:.3rem">Πληρωμή</label>
+          <select id="regFilterPay" onchange="regApplyFilters()"
+                  style="width:100%;padding:.55rem .7rem;background:#0d1017;border:1.5px solid #2a3248;border-radius:8px;color:#fff;font-size:.9rem;min-height:44px">
+            <option value="">— Όλες —</option>
+            <option value="unpaid">Εκκρεμούν</option>
+            <option value="verified">Πληρωμένοι</option>
+            <option value="proof_uploaded">Αποδεικτικό ανέβηκε</option>
+            <option value="waived">Απαλλαγή</option>
+            <option value="refunded">Επιστροφή</option>
+          </select>
+        </div>
+        <div>
+          <label style="display:block;font-size:.7rem;font-weight:700;color:#a9b3c9;text-transform:uppercase;letter-spacing:.08em;margin-bottom:.3rem">Αναζήτηση</label>
+          <input type="text" id="regFilterQ" placeholder="Όνομα αθλητή…" oninput="regApplyFilters()"
+                 style="width:100%;padding:.55rem .7rem;background:#0d1017;border:1.5px solid #2a3248;border-radius:8px;color:#fff;font-size:.9rem;min-height:44px">
+        </div>
+        <div style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:center">
+          <button type="button" onclick="regClearFilters()"
+                  style="background:rgba(255,255,255,.06);color:#fff;border:1px solid #2a3248;padding:.55rem 1rem;border-radius:8px;font-weight:700;cursor:pointer;min-height:44px">
+            <i class="fa-solid fa-rotate-left"></i> Καθαρισμός
+          </button>
+          <span id="regFilterCount" style="color:#8892b0;font-size:.85rem">
+            <?= count($registrations) ?> / <?= count($registrations) ?>
+          </span>
+        </div>
+      </div>
+
       <div style="background:#111520;border:1px solid #1e2536;border-radius:14px;overflow:auto">
         <table style="width:100%;border-collapse:collapse;min-width:800px">
           <thead style="background:#0d1017">
@@ -340,9 +412,15 @@ $flash = getFlash();
               <th style="padding:.7rem 1rem">Ενέργειες</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody id="regTbody">
           <?php foreach ($registrations as $r): ?>
-            <tr style="border-top:1px solid #1e2536;color:#f0f2ff">
+            <tr class="reg-row"
+                data-name="<?= h(mb_strtolower($r['athlete_name'] ?? '', 'UTF-8')) ?>"
+                data-school="<?= h(mb_strtolower($r['school_name'] ?? '', 'UTF-8')) ?>"
+                data-cat="<?= h(mb_strtolower($r['cat_name'] ?? '', 'UTF-8')) ?>"
+                data-status="<?= h($r['status'] ?? '') ?>"
+                data-pay="<?= h($r['payment_status'] ?? '') ?>"
+                style="border-top:1px solid #1e2536;color:#f0f2ff">
               <td style="padding:.7rem 1rem;font-weight:700"><?= h($r['athlete_name'] ?? '—') ?></td>
               <td style="padding:.7rem 1rem"><?= h($r['school_name'] ?? '—') ?></td>
               <td style="padding:.7rem 1rem"><?= h($r['cat_name'] ?? '—') ?></td>
@@ -369,8 +447,47 @@ $flash = getFlash();
             </tr>
           <?php endforeach; ?>
           </tbody>
+          <tbody id="regEmptyBody" style="display:none">
+            <tr><td colspan="6" style="padding:2rem;text-align:center;color:#8892b0">
+              <i class="fa-solid fa-magnifying-glass" style="font-size:1.5rem;display:block;margin-bottom:.5rem;opacity:.5"></i>
+              Δεν βρέθηκαν εγγραφές με τα φίλτρα.
+            </td></tr>
+          </tbody>
         </table>
       </div>
+
+      <script>
+      (function(){
+        var rows = document.querySelectorAll('#regTbody .reg-row');
+        var totalCount = rows.length;
+        window.regApplyFilters = function() {
+          var sc = (document.getElementById('regFilterSchool').value || '').toLowerCase();
+          var cat= (document.getElementById('regFilterCat').value    || '').toLowerCase();
+          var st = document.getElementById('regFilterStatus').value  || '';
+          var py = document.getElementById('regFilterPay').value     || '';
+          var q  = (document.getElementById('regFilterQ').value      || '').toLowerCase().trim();
+          var shown = 0;
+          rows.forEach(function(r){
+            var ok = true;
+            if (sc  && r.getAttribute('data-school') !== sc)  ok = false;
+            if (cat && r.getAttribute('data-cat')    !== cat) ok = false;
+            if (st  && r.getAttribute('data-status') !== st)  ok = false;
+            if (py  && r.getAttribute('data-pay')    !== py)  ok = false;
+            if (q   && (r.getAttribute('data-name') || '').indexOf(q) === -1) ok = false;
+            r.style.display = ok ? '' : 'none';
+            if (ok) shown++;
+          });
+          var cnt = document.getElementById('regFilterCount');
+          if (cnt) cnt.textContent = shown + ' / ' + totalCount;
+          document.getElementById('regEmptyBody').style.display = shown === 0 ? '' : 'none';
+        };
+        window.regClearFilters = function() {
+          ['regFilterSchool','regFilterCat','regFilterStatus','regFilterPay','regFilterQ']
+            .forEach(function(id){ var el = document.getElementById(id); if (el) el.value = ''; });
+          regApplyFilters();
+        };
+      })();
+      </script>
     <?php endif; ?>
 
   <?php elseif ($tab === 'payments'): ?>
