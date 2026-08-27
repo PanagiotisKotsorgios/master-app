@@ -26,6 +26,12 @@ function renderHead(string $title): void {
     $__pl_ver  = @filemtime($__pl_file) ?: time();
   ?>
   <link rel="stylesheet" href="<?= APP_URL ?>/assets/css/postlogin-portal-theme.css?v=<?= $__pl_ver ?>">
+  <?php
+    $__pr_file = __DIR__ . '/../assets/css/print-clean.css';
+    $__pr_ver  = @filemtime($__pr_file) ?: time();
+  ?>
+  <!-- Xlsx-style print reset. Screen unaffected; @media print takes over. -->
+  <link rel="stylesheet" href="<?= APP_URL ?>/assets/css/print-clean.css?v=<?= $__pr_ver ?>" media="all">
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
   <link rel="shortcut icon" href="../assets/img/favicon.png" type="image/png">

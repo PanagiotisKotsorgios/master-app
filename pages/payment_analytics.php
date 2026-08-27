@@ -362,7 +362,18 @@ renderHead('Αναλυτικά Πληρωμών' . ($isPrint ? ' — Εκτύπ�
 <?php renderTopbar('Αναλυτικά Πληρωμών'); ?>
 <div class="page-body">
 
-  <div style="display:flex;justify-content:space-between;align-items:center;gap:.75rem;flex-wrap:wrap;margin-bottom:.75rem">
+  <!-- Print-only clean header (screen version is below, styled) -->
+  <div class="print-header print-only">
+    <h1>Αναλυτικά Στατιστικά Πληρωμών</h1>
+    <div class="sub">
+      Σχολή: <?= h($_SESSION['school_name'] ?? 'MAster') ?>
+      &nbsp;·&nbsp; Περίοδος: <?= h($from) ?> → <?= h($to) ?>
+      &nbsp;·&nbsp; Αθλητές: <?= count($athletes) ?>
+      &nbsp;·&nbsp; Εκτύπωση: <?= date('d/m/Y H:i') ?>
+    </div>
+  </div>
+
+  <div class="no-print" style="display:flex;justify-content:space-between;align-items:center;gap:.75rem;flex-wrap:wrap;margin-bottom:.75rem">
     <div>
       <h2 style="margin:0;font-size:1.35rem">Αναλυτικά Στατιστικά Πληρωμών</h2>
       <div style="color:#8892b0;font-size:.88rem;margin-top:.15rem">
