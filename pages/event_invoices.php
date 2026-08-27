@@ -8,4 +8,4 @@
  */
 
 require_once __DIR__ . '/../includes/config.php';
-redirect(APP_URL . '/pages/events.php?tab=invoices');
+redirect(APP_URL . '/pages/events.php?tab=payments');

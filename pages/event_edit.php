@@ -48,7 +48,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'late_fee_amount'        => $_POST['late_fee_amount'] ?? 0,
             'late_fee_starts_at'     => $_POST['late_fee_starts_at'] ?? null,
             'refund_policy'          => $_POST['refund_policy'] ?? '',
-            'payment_methods'        => $_POST['payment_methods'] ?? ['bank','iris','cash'],
+            'payment_methods'        => array_values(array_intersect(
+                                          (array)($_POST['payment_methods'] ?? ['bank','iris','cash']),
+                                          ['bank','iris','cash']  // whitelist — viva/stripe removed
+                                        )) ?: ['bank','iris','cash'],
             'bank_iban'              => $_POST['bank_iban'] ?? '',
             'bank_beneficiary'       => $_POST['bank_beneficiary'] ?? '',
             'bank_name'              => $_POST['bank_name'] ?? '',
@@ -274,37 +277,71 @@ $flash = getFlash();
       </div>
 
       <!-- Payment -->
-      <div style="grid-column:1/-1;background:#111520;border:1px solid #1e2536;border-radius:14px;padding:1.25rem 1.35rem">
-        <h3 style="margin:0 0 1rem;font-size:1rem;color:#e63946;text-transform:uppercase;letter-spacing:.08em">Τρόποι πληρωμής</h3>
-        <?php $currentPM = explode(',', $ev['payment_methods'] ?? 'bank,iris,cash'); ?>
-        <div style="display:flex;flex-wrap:wrap;gap:1.25rem;margin-bottom:1rem">
-          <?php foreach (['bank'=>'Τραπεζικό έμβασμα','iris'=>'IRIS','viva'=>'Viva','stripe'=>'Stripe','cash'=>'Μετρητά (on-site)'] as $v => $lbl): ?>
-            <label style="display:flex;align-items:center;gap:.4rem;cursor:pointer">
-              <input type="checkbox" name="payment_methods[]" value="<?= $v ?>" <?= in_array($v, $currentPM, true)?'checked':'' ?>>
-              <span style="color:#f0f2ff;font-size:.9rem"><?= h($lbl) ?></span>
+      <div style="grid-column:1/-1;background:#111520;border:1px solid #1e2536;border-radius:14px;padding:1.35rem 1.4rem">
+        <h3 style="margin:0 0 1.1rem;font-size:1.05rem;color:#e63946;text-transform:uppercase;letter-spacing:.08em">Τρόποι πληρωμής</h3>
+
+        <?php $currentPM = array_filter(explode(',', $ev['payment_methods'] ?? 'bank,iris,cash'), fn($m) => in_array(trim($m), ['bank','iris','cash'], true)); ?>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:.75rem;margin-bottom:1.25rem">
+          <?php foreach (['bank'=>['Τραπεζικό έμβασμα','fa-building-columns','#3b82f6'],
+                          'iris'=>['IRIS','fa-bolt','#f0a500'],
+                          'cash'=>['Μετρητά (on-site)','fa-money-bill-wave','#2dc653']] as $v => $meta):
+              [$lbl, $ic, $col] = $meta;
+              $checked = in_array($v, $currentPM, true);
+          ?>
+            <label class="pm-opt <?= $checked ? 'is-on' : '' ?>"
+                   style="display:flex;align-items:center;gap:.75rem;cursor:pointer;
+                          padding:.95rem 1.1rem;border-radius:12px;
+                          background:<?= $checked ? 'rgba(230,57,70,.08)' : 'rgba(255,255,255,.03)' ?>;
+                          border:2px solid <?= $checked ? 'rgba(230,57,70,.4)' : '#2a3248' ?>;
+                          transition:all .15s;min-height:56px">
+              <input type="checkbox" name="payment_methods[]" value="<?= $v ?>" <?= $checked?'checked':'' ?>
+                     style="width:22px;height:22px;accent-color:#e63946;flex-shrink:0;cursor:pointer">
+              <i class="fa-solid <?= $ic ?>" style="color:<?= $col ?>;font-size:1.25rem;width:24px;text-align:center"></i>
+              <span style="color:#ffffff;font-size:1rem;font-weight:700"><?= h($lbl) ?></span>
             </label>
           <?php endforeach; ?>
         </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:.85rem">
+
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1rem">
           <label>
-            <div style="font-size:.85rem;font-weight:700;color:#f0f2ff;margin-bottom:.35rem">Δικαιούχος</div>
-            <input type="text" name="bank_beneficiary" value="<?= h($ev['bank_beneficiary'] ?? '') ?>" style="width:100%;padding:.7rem .85rem;background:#0d1017;border:1px solid #2a3248;border-radius:9px;color:#f0f2ff">
+            <div style="font-size:.95rem;font-weight:700;color:#ffffff;margin-bottom:.45rem">Δικαιούχος</div>
+            <input type="text" name="bank_beneficiary" value="<?= h($ev['bank_beneficiary'] ?? '') ?>"
+                   autocomplete="off" inputmode="text"
+                   placeholder="π.χ. Αθλητικός Όμιλος ΝΙΚΗ"
+                   style="width:100%;padding:.95rem 1rem;background:#0d1017;border:2px solid #2a3248;border-radius:10px;color:#ffffff;font-size:1rem;min-height:52px">
           </label>
           <label>
-            <div style="font-size:.85rem;font-weight:700;color:#f0f2ff;margin-bottom:.35rem">Τράπεζα</div>
-            <input type="text" name="bank_name" value="<?= h($ev['bank_name'] ?? '') ?>" style="width:100%;padding:.7rem .85rem;background:#0d1017;border:1px solid #2a3248;border-radius:9px;color:#f0f2ff">
+            <div style="font-size:.95rem;font-weight:700;color:#ffffff;margin-bottom:.45rem">Τράπεζα</div>
+            <input type="text" name="bank_name" value="<?= h($ev['bank_name'] ?? '') ?>"
+                   autocomplete="off"
+                   placeholder="π.χ. Πειραιώς / Alpha / Eurobank"
+                   style="width:100%;padding:.95rem 1rem;background:#0d1017;border:2px solid #2a3248;border-radius:10px;color:#ffffff;font-size:1rem;min-height:52px">
           </label>
           <label style="grid-column:1/-1">
-            <div style="font-size:.85rem;font-weight:700;color:#f0f2ff;margin-bottom:.35rem">IBAN</div>
-            <input type="text" name="bank_iban" value="<?= h($ev['bank_iban'] ?? '') ?>" style="width:100%;padding:.7rem .85rem;background:#0d1017;border:1px solid #2a3248;border-radius:9px;color:#f0f2ff;font-family:monospace">
+            <div style="font-size:.95rem;font-weight:700;color:#ffffff;margin-bottom:.45rem">IBAN</div>
+            <input type="text" name="bank_iban" value="<?= h($ev['bank_iban'] ?? '') ?>"
+                   autocomplete="off" inputmode="text"
+                   placeholder="GR16 0110 1250 0000 0001 2345 678"
+                   style="width:100%;padding:.95rem 1rem;background:#0d1017;border:2px solid #2a3248;border-radius:10px;color:#ffffff;font-family:monospace;font-size:1.05rem;letter-spacing:.05em;min-height:52px">
           </label>
           <label style="grid-column:1/-1">
-            <div style="font-size:.85rem;font-weight:700;color:#f0f2ff;margin-bottom:.35rem">Πρότυπο αριθμού αναφοράς</div>
-            <input type="text" name="bank_reference_template" value="<?= h($ev['bank_reference_template'] ?? 'MASTER-EV{event_id}-CL{school_id}') ?>" style="width:100%;padding:.7rem .85rem;background:#0d1017;border:1px solid #2a3248;border-radius:9px;color:#f0f2ff;font-family:monospace">
-            <small style="color:#6b7494">Placeholders: <code>{event_id}</code>, <code>{school_id}</code>.</small>
+            <div style="font-size:.95rem;font-weight:700;color:#ffffff;margin-bottom:.45rem">Πρότυπο αριθμού αναφοράς</div>
+            <input type="text" name="bank_reference_template" value="<?= h($ev['bank_reference_template'] ?? 'MASTER-EV{event_id}-CL{school_id}') ?>"
+                   autocomplete="off"
+                   style="width:100%;padding:.95rem 1rem;background:#0d1017;border:2px solid #2a3248;border-radius:10px;color:#ffffff;font-family:monospace;font-size:1rem;min-height:52px">
+            <small style="color:#8892b0;display:block;margin-top:.4rem;font-size:.82rem">
+              Ο κωδικός που θα εμφανίζεται στην απόδειξη κάθε συλλόγου. Placeholders: <code>{event_id}</code>, <code>{school_id}</code>.
+            </small>
           </label>
         </div>
       </div>
+      <style>
+        .pm-opt:hover { background:rgba(255,255,255,.06) !important; border-color:rgba(230,57,70,.6) !important; }
+        @media (max-width:480px){
+          .pm-opt { padding:.85rem .95rem !important; min-height:60px !important; font-size:1.05rem !important; }
+          .pm-opt i { font-size:1.35rem !important }
+        }
+      </style>
 
       <!-- Contact -->
       <div style="grid-column:1/-1;background:#111520;border:1px solid #1e2536;border-radius:14px;padding:1.25rem 1.35rem">

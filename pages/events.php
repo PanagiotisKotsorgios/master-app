@@ -4,9 +4,10 @@
  * ============================================================
  * Unified page with two tabs:
  *   • ?tab=mine      → «Οι Διοργανώσεις μου» (list of events I've created)
- *   • ?tab=invoices  → «Τιμολόγια» (event_payment rows + invoice download)
+ *   • ?tab=payments  → «Πληρωμές Συμμετεχόντων» (participants × my events;
+ *                       organiser marks paid / unpaid / waived / refunded)
  *
- * Old URL /pages/event_invoices.php now redirects to ?tab=invoices.
+ * Old URL /pages/event_invoices.php now redirects to ?tab=payments.
  */
 
 require_once __DIR__ . '/../includes/config.php';
@@ -15,10 +16,64 @@ require_once __DIR__ . '/../includes/events.php';
 
 requireLogin();
 
-$sid    = schoolId();
-$tab    = ($_GET['tab'] ?? 'mine') === 'invoices' ? 'invoices' : 'mine';
-$events = $tab === 'mine'     ? eventsMineForSchool($sid)      : [];
-$payments = $tab === 'invoices' ? eventPaymentsAllForSchool($sid) : [];
+$sid = schoolId();
+
+// ── Handle organiser action on a registration payment ───────────
+$flashMsg = '';
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['_action'] ?? '') === 'update_reg_payment') {
+    try {
+        verifyCsrf();
+        $regId    = (int)($_POST['reg_id']     ?? 0);
+        $eventId  = (int)($_POST['event_id']   ?? 0);
+        $newState = (string)($_POST['payment_status'] ?? '');
+
+        // Guard: I can only touch registrations of events I organise
+        $chk = getDB()->prepare("SELECT 1 FROM event_registrations r
+                                 JOIN events e ON e.id = r.event_id
+                                 WHERE r.id = ? AND e.id = ? AND e.organiser_school_id = ?");
+        $chk->execute([$regId, $eventId, $sid]);
+        if ($chk->fetchColumn()) {
+            eventRegistrationUpdatePayment($regId, $eventId, $newState, userId() ?: null);
+            $flashMsg = 'Η κατάσταση πληρωμής ενημερώθηκε.';
+        } else {
+            $flashMsg = 'Δεν βρέθηκε η συμμετοχή.';
+        }
+    } catch (\Throwable $e) {
+        error_log('[events.php update_reg_payment] ' . $e->getMessage());
+        $flashMsg = 'Σφάλμα ενημέρωσης.';
+    }
+    redirect(APP_URL . '/pages/events.php?tab=payments&ok=1');
+}
+
+$tab      = ($_GET['tab'] ?? 'mine') === 'payments' ? 'payments' : 'mine';
+$events   = $tab === 'mine' ? eventsMineForSchool($sid) : [];
+$regsAll  = eventRegistrationsAcrossOrganiserSchool($sid);   // for the tab count
+$regs     = $tab === 'payments' ? $regsAll : [];
+
+// Filters (payments tab)
+$fEvent  = isset($_GET['event'])  ? (int)$_GET['event'] : 0;
+$fStatus = in_array($_GET['status'] ?? '', ['unpaid','verified','proof_uploaded','waived','refunded'], true)
+         ? $_GET['status'] : '';
+$fQ      = trim((string)($_GET['q'] ?? ''));
+
+if ($tab === 'payments' && $regs) {
+    // Client-side would be fine but with big lists PHP filter is cheaper
+    $regs = array_values(array_filter($regs, function($r) use ($fEvent, $fStatus, $fQ) {
+        if ($fEvent && (int)$r['event_id'] !== $fEvent) return false;
+        if ($fStatus !== '' && $r['payment_status'] !== $fStatus) return false;
+        if ($fQ !== '') {
+            $needle = mb_strtolower($fQ, 'UTF-8');
+            $hay = mb_strtolower(
+                ($r['athlete_name']      ?? '') . ' ' .
+                ($r['athlete_snap_name'] ?? '') . ' ' .
+                ($r['school_name']       ?? '') . ' ' .
+                ($r['event_title']       ?? '')
+            , 'UTF-8');
+            if (mb_strpos($hay, $needle) === false) return false;
+        }
+        return true;
+    }));
+}
 
 renderHead('Διοργανώσεις');
 ?>
@@ -141,13 +196,12 @@ renderHead('Διοργανώσεις');
       <?php $c = $tab === 'mine' ? count($events) : count(eventsMineForSchool($sid)); ?>
       <span class="count"><?= $c ?></span>
     </a>
-    <a class="ev-tab <?= $tab === 'invoices' ? 'active' : '' ?>"
-       href="<?= APP_URL ?>/pages/events.php?tab=invoices"
-       role="tab" aria-selected="<?= $tab === 'invoices' ? 'true' : 'false' ?>">
-      <i class="fa-regular fa-file-lines"></i>
-      <span>Τιμολόγια</span>
-      <?php $cI = $tab === 'invoices' ? count($payments) : count(eventPaymentsAllForSchool($sid)); ?>
-      <span class="count"><?= $cI ?></span>
+    <a class="ev-tab <?= $tab === 'payments' ? 'active' : '' ?>"
+       href="<?= APP_URL ?>/pages/events.php?tab=payments"
+       role="tab" aria-selected="<?= $tab === 'payments' ? 'true' : 'false' ?>">
+      <i class="fa-solid fa-money-check-dollar"></i>
+      <span>Πληρωμές Συμμετεχόντων</span>
+      <span class="count"><?= count($regsAll) ?></span>
     </a>
   </div>
 
@@ -199,94 +253,219 @@ renderHead('Διοργανώσεις');
     </div>
   <?php endif; ?>
 
-<?php else: /* tab === invoices */ ?>
-  <!-- ═══ TAB: Τιμολόγια ═══ -->
+<?php else: /* tab === payments — Participants payment management */
+  // Group events for filter dropdown
+  $eventOptions = [];
+  foreach ($regsAll as $r) $eventOptions[$r['event_id']] = $r['event_title'];
+  asort($eventOptions);
+  // Totals for KPIs
+  $totCount   = count($regsAll);
+  $totAmount  = array_sum(array_map(fn($r) => (float)$r['amount'], $regsAll));
+  $paidRows   = array_filter($regsAll, fn($r) => in_array($r['payment_status'], ['verified','waived'], true));
+  $paidCount  = count($paidRows);
+  $paidAmount = array_sum(array_map(fn($r) => (float)$r['amount'], $paidRows));
+  $unpaidRows   = array_filter($regsAll, fn($r) => $r['payment_status'] === 'unpaid');
+  $unpaidCount  = count($unpaidRows);
+  $unpaidAmount = array_sum(array_map(fn($r) => (float)$r['amount'], $unpaidRows));
+?>
+  <!-- ═══ TAB: Πληρωμές Συμμετεχόντων ═══ -->
+  <?php if (!empty($_GET['ok'])): ?>
+    <div style="background:rgba(45,198,83,.1);border:1px solid rgba(45,198,83,.35);color:#8fe6a1;padding:.7rem 1rem;border-radius:10px;margin-bottom:1rem;font-weight:700">
+      <i class="fa-solid fa-circle-check"></i> Η κατάσταση πληρωμής ενημερώθηκε.
+    </div>
+  <?php endif; ?>
+
   <div style="background:#111520;border:1px solid #1e2536;border-radius:14px;padding:1.1rem 1.35rem;margin-bottom:1rem">
-    <div style="display:flex;align-items:center;gap:.7rem">
-      <div style="width:44px;height:44px;border-radius:10px;background:linear-gradient(135deg,#e63946,#c72832);display:flex;align-items:center;justify-content:center;color:#fff;font-size:1.2rem">
-        <i class="fa-solid fa-file-invoice"></i>
+    <div style="display:flex;align-items:center;gap:.75rem;flex-wrap:wrap">
+      <div style="width:46px;height:46px;border-radius:11px;background:linear-gradient(135deg,#e63946,#c72832);display:flex;align-items:center;justify-content:center;color:#fff;font-size:1.25rem;flex-shrink:0">
+        <i class="fa-solid fa-money-check-dollar"></i>
       </div>
-      <div>
-        <h3 style="margin:0;font-size:1.15rem;color:#f0f2ff">Τιμολόγια Διοργανώσεων</h3>
-        <div style="color:#8892b0;font-size:.85rem">Τα τιμολόγια για τις πληρωμές events εμφανίζονται εδώ μόλις τα ανεβάσει ο administrator.</div>
+      <div style="flex:1;min-width:220px">
+        <h3 style="margin:0;font-size:1.2rem;color:#ffffff;font-weight:800">Διαχείριση Πληρωμών Συμμετεχόντων</h3>
+        <div style="color:#a9b3c9;font-size:.9rem;margin-top:.2rem">Ποιοι έχουν εγγραφεί στις διοργανώσεις σας, ποιοι έχουν πληρώσει, τρόπος πληρωμής και ενέργειες.</div>
       </div>
     </div>
   </div>
 
+  <!-- KPIs -->
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:.85rem;margin-bottom:1.15rem">
+    <div style="background:#111520;border:1px solid #1e2536;border-radius:14px;padding:.95rem 1.1rem">
+      <div style="color:#8892b0;font-size:.72rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase">Συμμετέχοντες</div>
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:2.1rem;color:#ffffff;line-height:1"><?= $totCount ?></div>
+    </div>
+    <div style="background:#111520;border:1px solid rgba(45,198,83,.25);border-radius:14px;padding:.95rem 1.1rem">
+      <div style="color:#8892b0;font-size:.72rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase">Πληρωμένοι</div>
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:2.1rem;color:#2dc653;line-height:1"><?= $paidCount ?></div>
+      <div style="color:#8fe6a1;font-size:.85rem;margin-top:.2rem;font-weight:700"><?= number_format($paidAmount, 2, ',', '.') ?> €</div>
+    </div>
+    <div style="background:#111520;border:1px solid rgba(230,57,70,.25);border-radius:14px;padding:.95rem 1.1rem">
+      <div style="color:#8892b0;font-size:.72rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase">Εκκρεμούν</div>
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:2.1rem;color:#e63946;line-height:1"><?= $unpaidCount ?></div>
+      <div style="color:#ff8891;font-size:.85rem;margin-top:.2rem;font-weight:700"><?= number_format($unpaidAmount, 2, ',', '.') ?> €</div>
+    </div>
+    <div style="background:#111520;border:1px solid rgba(240,165,0,.25);border-radius:14px;padding:.95rem 1.1rem">
+      <div style="color:#8892b0;font-size:.72rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase">Σύνολο τζίρου</div>
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:1.8rem;color:#f0a500;line-height:1"><?= number_format($totAmount, 2, ',', '.') ?> €</div>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <form method="GET" style="background:#111520;border:1px solid #1e2536;border-radius:14px;padding:1rem 1.1rem;margin-bottom:1rem;
+                            display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:.75rem;align-items:end">
+    <input type="hidden" name="tab" value="payments">
+    <div>
+      <label style="display:block;font-size:.72rem;font-weight:700;color:#a9b3c9;text-transform:uppercase;letter-spacing:.08em;margin-bottom:.3rem">Διοργάνωση</label>
+      <select name="event" style="width:100%;padding:.6rem .8rem;background:#0d1117;border:1.5px solid #2a3248;border-radius:9px;color:#ffffff;font-size:.95rem;min-height:44px">
+        <option value="0">— Όλες οι διοργανώσεις —</option>
+        <?php foreach ($eventOptions as $eid => $etitle): ?>
+          <option value="<?= (int)$eid ?>" <?= $fEvent === (int)$eid ? 'selected' : '' ?>><?= h($etitle) ?></option>
+        <?php endforeach; ?>
+      </select>
+    </div>
+    <div>
+      <label style="display:block;font-size:.72rem;font-weight:700;color:#a9b3c9;text-transform:uppercase;letter-spacing:.08em;margin-bottom:.3rem">Κατάσταση</label>
+      <select name="status" style="width:100%;padding:.6rem .8rem;background:#0d1117;border:1.5px solid #2a3248;border-radius:9px;color:#ffffff;font-size:.95rem;min-height:44px">
+        <?php
+          $sLabels = ['' => 'Όλες', 'unpaid'=>'Εκκρεμούν', 'verified'=>'Πληρωμένοι',
+                     'proof_uploaded'=>'Αποδεικτικό ανέβηκε', 'waived'=>'Απαλλαγή', 'refunded'=>'Επιστροφή'];
+          foreach ($sLabels as $v => $lbl):
+        ?>
+          <option value="<?= h($v) ?>" <?= $fStatus === $v ? 'selected' : '' ?>><?= h($lbl) ?></option>
+        <?php endforeach; ?>
+      </select>
+    </div>
+    <div>
+      <label style="display:block;font-size:.72rem;font-weight:700;color:#a9b3c9;text-transform:uppercase;letter-spacing:.08em;margin-bottom:.3rem">Αναζήτηση</label>
+      <input type="text" name="q" value="<?= h($fQ) ?>" placeholder="Αθλητής, σχολή…"
+             style="width:100%;padding:.6rem .8rem;background:#0d1117;border:1.5px solid #2a3248;border-radius:9px;color:#ffffff;font-size:.95rem;min-height:44px">
+    </div>
+    <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+      <button type="submit" class="btn btn-primary" style="background:#e63946;color:#fff;border:none;padding:.6rem 1.1rem;border-radius:9px;font-weight:800;cursor:pointer;min-height:44px">
+        <i class="fa-solid fa-filter"></i> Εφαρμογή
+      </button>
+      <a href="<?= APP_URL ?>/pages/events.php?tab=payments" style="background:rgba(255,255,255,.06);color:#ffffff;border:1px solid #2a3248;padding:.6rem 1rem;border-radius:9px;font-weight:700;text-decoration:none;min-height:44px;display:inline-flex;align-items:center">
+        <i class="fa-solid fa-rotate-left"></i>
+      </a>
+    </div>
+  </form>
+
+  <!-- Table -->
   <div style="background:#111520;border:1px solid #1e2536;border-radius:14px;overflow:hidden">
-    <?php if (!$payments): ?>
-      <div style="padding:3rem 1.5rem;text-align:center;color:#6b7494">
-        <div style="font-size:2.6rem;color:#4a5270;margin-bottom:.5rem"><i class="fa-regular fa-folder-open"></i></div>
-        <strong style="color:#c9cee1">Δεν υπάρχουν πληρωμές events για τη σχολή σας ακόμα.</strong>
-        <div style="margin-top:.35rem;font-size:.88rem">Όταν συμμετάσχετε σε ένα event και ολοκληρώσετε την πληρωμή, θα δείτε εδώ το αντίστοιχο τιμολόγιο.</div>
+    <?php if (!$regsAll): ?>
+      <div style="padding:3rem 1.5rem;text-align:center;color:#a9b3c9">
+        <div style="font-size:2.8rem;color:#4a5270;margin-bottom:.6rem"><i class="fa-solid fa-users-slash"></i></div>
+        <strong style="color:#ffffff;font-size:1.05rem">Δεν έχετε συμμετέχοντες σε καμία από τις διοργανώσεις σας.</strong>
+        <div style="margin-top:.5rem;font-size:.9rem">Όταν άλλοι σύλλογοι εγγράψουν αθλητές τους, θα εμφανιστούν εδώ για διαχείριση πληρωμών.</div>
+      </div>
+    <?php elseif (!$regs): ?>
+      <div style="padding:2.5rem 1.5rem;text-align:center;color:#a9b3c9">
+        <div style="font-size:2.4rem;color:#4a5270;margin-bottom:.5rem"><i class="fa-solid fa-magnifying-glass"></i></div>
+        <strong style="color:#ffffff">Δεν βρέθηκαν συμμετέχοντες με τα φίλτρα.</strong>
       </div>
     <?php else: ?>
-      <div style="overflow:auto">
-        <table style="width:100%;border-collapse:collapse;min-width:760px">
+      <div style="overflow-x:auto">
+        <table style="width:100%;border-collapse:collapse;min-width:900px;font-size:.94rem">
           <thead>
-            <tr style="background:rgba(255,255,255,.03);color:#8892b0;font-size:.72rem;text-transform:uppercase;letter-spacing:.1em">
-              <th style="padding:.85rem 1rem;text-align:left">Event</th>
-              <th style="padding:.85rem 1rem;text-align:left">Ημ/νία</th>
-              <th style="padding:.85rem 1rem;text-align:left">Ποσό</th>
-              <th style="padding:.85rem 1rem;text-align:left">Κατάσταση Πληρωμής</th>
-              <th style="padding:.85rem 1rem;text-align:left;min-width:200px">Τιμολόγιο</th>
+            <tr>
+              <th style="padding:.85rem 1rem;text-align:left">Διοργάνωση / Κατηγορία</th>
+              <th style="padding:.85rem 1rem;text-align:left">Αθλητής / Σχολή</th>
+              <th style="padding:.85rem 1rem;text-align:right">Ποσό</th>
+              <th style="padding:.85rem 1rem;text-align:left">Κατάσταση</th>
+              <th style="padding:.85rem 1rem;text-align:left">Ημ. Πληρωμής</th>
+              <th style="padding:.85rem 1rem;text-align:right;min-width:280px">Ενέργειες</th>
             </tr>
           </thead>
           <tbody>
-            <?php foreach ($payments as $p):
-              $hasInvoice = !empty($p['invoice_file_path']);
-              $statusColors = [
-                'pending'         => ['#ffd870','rgba(240,165,0,.15)','rgba(240,165,0,.3)'],
-                'proof_uploaded'  => ['#a9c1ff','rgba(78,132,255,.15)','rgba(78,132,255,.3)'],
-                'verified'        => ['#7bffb4','rgba(45,198,83,.15)','rgba(45,198,83,.3)'],
-                'rejected'        => ['#ffb0b8','rgba(230,57,70,.15)','rgba(230,57,70,.3)'],
-                'refunded'        => ['#e6d5ff','rgba(155,110,255,.15)','rgba(155,110,255,.3)'],
+            <?php
+              $psColors = [
+                'unpaid'          => ['#ff8891','rgba(230,57,70,.14)','rgba(230,57,70,.35)'],
+                'proof_uploaded'  => ['#a9c1ff','rgba(78,132,255,.15)','rgba(78,132,255,.35)'],
+                'verified'        => ['#8fe6a1','rgba(45,198,83,.14)','rgba(45,198,83,.35)'],
+                'refunded'        => ['#e6d5ff','rgba(155,110,255,.15)','rgba(155,110,255,.35)'],
+                'waived'          => ['#c9cee1','rgba(255,255,255,.08)','rgba(255,255,255,.18)'],
               ];
-              $statusLabels = [
-                'pending'         => 'Εκκρεμής',
-                'proof_uploaded'  => 'Αποδεικτικό ανέβηκε',
-                'verified'        => 'Επιβεβαιωμένη',
-                'rejected'        => 'Απορρίφθηκε',
-                'refunded'        => 'Επεστράφη',
+              $psLabels = [
+                'unpaid'         => 'Εκκρεμεί',
+                'proof_uploaded' => 'Αποδ. ανέβηκε',
+                'verified'       => 'Πληρώθηκε',
+                'refunded'       => 'Επιστροφή',
+                'waived'         => 'Απαλλαγή',
               ];
-              [$c, $bg, $bd] = $statusColors[$p['status']] ?? ['#c9cee1','rgba(255,255,255,.08)','rgba(255,255,255,.15)'];
-              $lbl = $statusLabels[$p['status']] ?? $p['status'];
+              foreach ($regs as $r):
+                [$col,$bg,$bd] = $psColors[$r['payment_status']] ?? ['#c9cee1','rgba(255,255,255,.06)','rgba(255,255,255,.15)'];
+                $lbl = $psLabels[$r['payment_status']] ?? $r['payment_status'];
+                $displayName = $r['athlete_name'] ?: ($r['athlete_snap_name'] ?: '— Αθλητής —');
             ?>
               <tr style="border-top:1px solid rgba(255,255,255,.05)">
                 <td style="padding:.85rem 1rem">
-                  <div style="font-weight:700;color:#f0f2ff"><?= h($p['event_title']) ?></div>
-                  <a style="color:#8892b0;font-size:.78rem" href="<?= APP_URL ?>/events/<?= h($p['event_slug']) ?>" target="_blank" rel="noopener">
-                    <i class="fa-solid fa-arrow-up-right-from-square"></i> Άνοιγμα
-                  </a>
-                </td>
-                <td style="padding:.85rem 1rem;color:#c9cee1;font-size:.86rem">
-                  <?= h($p['event_starts_at'] ? date('d/m/Y', strtotime($p['event_starts_at'])) : '—') ?>
-                </td>
-                <td style="padding:.85rem 1rem;font-weight:800;font-variant-numeric:tabular-nums;color:#f0f2ff">
-                  <?= number_format((float)$p['amount'], 2, ',', '.') ?> €
+                  <div style="font-weight:800;color:#ffffff"><?= h($r['event_title']) ?></div>
+                  <div style="font-size:.8rem;color:#8892b0;margin-top:.2rem">
+                    <?php if ($r['starts_at']): ?><i class="fa-regular fa-calendar"></i> <?= h(date('d/m/Y', strtotime($r['starts_at']))) ?><?php endif; ?>
+                    <?php if (!empty($r['cat_name'])): ?>
+                      · <i class="fa-solid fa-layer-group"></i> <?= h($r['cat_name']) ?>
+                    <?php endif; ?>
+                  </div>
                 </td>
                 <td style="padding:.85rem 1rem">
-                  <span style="padding:.25rem .6rem;border-radius:99px;font-size:.72rem;font-weight:700;color:<?= $c ?>;background:<?= $bg ?>;border:1px solid <?= $bd ?>">
+                  <div style="font-weight:800;color:#ffffff"><?= h($displayName) ?></div>
+                  <div style="font-size:.8rem;color:#8892b0;margin-top:.2rem">
+                    <i class="fa-solid fa-building"></i> <?= h($r['school_name'] ?? '—') ?>
+                  </div>
+                </td>
+                <td style="padding:.85rem 1rem;text-align:right;font-weight:800;color:#ffffff;font-variant-numeric:tabular-nums;white-space:nowrap">
+                  <?= number_format((float)$r['amount'], 2, ',', '.') ?> €
+                </td>
+                <td style="padding:.85rem 1rem">
+                  <span style="padding:.28rem .7rem;border-radius:99px;font-size:.78rem;font-weight:800;color:<?= $col ?>;background:<?= $bg ?>;border:1px solid <?= $bd ?>;white-space:nowrap">
                     <?= h($lbl) ?>
                   </span>
                 </td>
-                <td style="padding:.85rem 1rem">
-                  <?php if ($hasInvoice): ?>
-                    <a href="<?= APP_URL ?>/<?= h($p['invoice_file_path']) ?>"
-                       target="_blank" rel="noopener"
-                       style="display:inline-flex;align-items:center;gap:.45rem;padding:.5rem .85rem;border-radius:8px;background:linear-gradient(135deg,#e63946,#c72832);color:#fff;font-weight:700;font-size:.82rem;text-decoration:none">
-                      <i class="fa-regular fa-file-pdf"></i> Λήψη
-                    </a>
-                    <div style="color:#6b7494;font-size:.72rem;margin-top:.3rem">
-                      Ανέβηκε: <?= h(date('d/m/Y', strtotime($p['invoice_uploaded_at']))) ?>
-                    </div>
-                  <?php elseif ($p['status'] === 'verified'): ?>
-                    <span style="color:#ffd870;font-size:.82rem;display:inline-flex;align-items:center;gap:.4rem">
-                      <i class="fa-regular fa-clock"></i> Αναμονή τιμολογίου
-                    </span>
-                  <?php else: ?>
-                    <span style="color:#6b7494;font-size:.82rem">—</span>
-                  <?php endif; ?>
+                <td style="padding:.85rem 1rem;color:#c9cee1;font-size:.86rem;white-space:nowrap">
+                  <?= $r['paid_at'] ? h(date('d/m/Y', strtotime($r['paid_at']))) : '—' ?>
+                </td>
+                <td style="padding:.85rem 1rem;text-align:right">
+                  <div style="display:inline-flex;gap:.35rem;flex-wrap:wrap;justify-content:flex-end">
+                    <?php if ($r['payment_status'] !== 'verified'): ?>
+                    <form method="POST" style="display:inline">
+                      <input type="hidden" name="csrf_token" value="<?= csrf() ?>">
+                      <input type="hidden" name="_action" value="update_reg_payment">
+                      <input type="hidden" name="reg_id" value="<?= (int)$r['id'] ?>">
+                      <input type="hidden" name="event_id" value="<?= (int)$r['event_id'] ?>">
+                      <input type="hidden" name="payment_status" value="verified">
+                      <button type="submit" title="Επιβεβαίωση πληρωμής"
+                              style="background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;border:none;padding:.42rem .7rem;border-radius:8px;font-weight:800;font-size:.78rem;cursor:pointer;min-height:36px">
+                        <i class="fa-solid fa-check"></i> Πληρώθηκε
+                      </button>
+                    </form>
+                    <?php endif; ?>
+                    <?php if ($r['payment_status'] !== 'unpaid'): ?>
+                    <form method="POST" style="display:inline">
+                      <input type="hidden" name="csrf_token" value="<?= csrf() ?>">
+                      <input type="hidden" name="_action" value="update_reg_payment">
+                      <input type="hidden" name="reg_id" value="<?= (int)$r['id'] ?>">
+                      <input type="hidden" name="event_id" value="<?= (int)$r['event_id'] ?>">
+                      <input type="hidden" name="payment_status" value="unpaid">
+                      <button type="submit" title="Επαναφορά σε εκκρεμότητα"
+                              style="background:rgba(255,255,255,.06);color:#c9cee1;border:1px solid #2a3248;padding:.42rem .7rem;border-radius:8px;font-weight:700;font-size:.78rem;cursor:pointer;min-height:36px">
+                        <i class="fa-solid fa-rotate-left"></i>
+                      </button>
+                    </form>
+                    <?php endif; ?>
+                    <?php if ($r['payment_status'] !== 'waived'): ?>
+                    <form method="POST" style="display:inline"
+                          onsubmit="return confirm('Απαλλαγή από πληρωμή;')">
+                      <input type="hidden" name="csrf_token" value="<?= csrf() ?>">
+                      <input type="hidden" name="_action" value="update_reg_payment">
+                      <input type="hidden" name="reg_id" value="<?= (int)$r['id'] ?>">
+                      <input type="hidden" name="event_id" value="<?= (int)$r['event_id'] ?>">
+                      <input type="hidden" name="payment_status" value="waived">
+                      <button type="submit" title="Απαλλαγή πληρωμής"
+                              style="background:rgba(240,165,0,.14);color:#fcd34d;border:1px solid rgba(240,165,0,.35);padding:.42rem .7rem;border-radius:8px;font-weight:700;font-size:.78rem;cursor:pointer;min-height:36px">
+                        <i class="fa-solid fa-hand"></i>
+                      </button>
+                    </form>
+                    <?php endif; ?>
+                  </div>
                 </td>
               </tr>
             <?php endforeach; ?>

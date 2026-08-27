@@ -672,6 +672,53 @@ function eventRegistrationUpdateStatus(int $regId, int $eventId, string $status,
     auditLog('event_reg_status', 'event_registration', $regId, "→ $status");
 }
 
+/**
+ * Update a registration's payment_status. The organiser calls this to
+ * mark a participant as paid (verified) / unpaid / waived / refunded.
+ * verifiedBy: the organiser user (nullable).
+ */
+function eventRegistrationUpdatePayment(int $regId, int $eventId, string $paymentStatus, ?int $verifiedBy = null): void {
+    if (!in_array($paymentStatus, ['unpaid','proof_uploaded','verified','refunded','waived'], true)) return;
+    $paidAt     = ($paymentStatus === 'verified' || $paymentStatus === 'waived') ? 'NOW()' : 'NULL';
+    $verifiedAt = ($paymentStatus === 'verified') ? 'NOW()' : 'NULL';
+    $sql = "UPDATE event_registrations
+               SET payment_status = ?,
+                   paid_at        = $paidAt,
+                   verified_at    = $verifiedAt,
+                   verified_by    = COALESCE(?, verified_by)
+             WHERE id = ? AND event_id = ?";
+    $st = getDB()->prepare($sql);
+    $st->execute([$paymentStatus, $verifiedBy, $regId, $eventId]);
+    auditLog('event_reg_payment', 'event_registration', $regId, "→ $paymentStatus");
+}
+
+/**
+ * Every registration across every event this school organises,
+ * with athlete + school + category names + the event basics for
+ * the organiser-side payments panel.
+ */
+function eventRegistrationsAcrossOrganiserSchool(int $organiserSid): array {
+    $sql = "SELECT r.id, r.event_id, r.athlete_id, r.category_id, r.registering_school_id,
+                   r.status, r.payment_status, r.amount, r.paid_at, r.verified_at,
+                   r.created_at,
+                   e.title AS event_title, e.slug AS event_slug, e.starts_at, e.type AS event_type,
+                   c.name AS cat_name,
+                   s.name AS school_name,
+                   a.full_name AS athlete_name,
+                   JSON_UNQUOTE(JSON_EXTRACT(r.athlete_snapshot, '$.full_name')) AS athlete_snap_name
+              FROM event_registrations r
+              JOIN events e             ON e.id = r.event_id
+              LEFT JOIN event_categories c ON c.id = r.category_id
+              LEFT JOIN schools s       ON s.id = r.registering_school_id
+              LEFT JOIN athletes a      ON a.id = r.athlete_id
+             WHERE e.organiser_school_id = ?
+               AND r.status NOT IN ('rejected','withdrawn')
+             ORDER BY e.starts_at ASC, e.id ASC, r.created_at ASC";
+    $st = getDB()->prepare($sql);
+    $st->execute([$organiserSid]);
+    return $st->fetchAll();
+}
+
 function eventRegistrationWithdraw(int $regId, int $registeringSchoolId, string $reason = ''): void {
     $st = getDB()->prepare("UPDATE event_registrations
         SET status = 'withdrawn', withdrew_at = NOW(), withdraw_reason = ?
