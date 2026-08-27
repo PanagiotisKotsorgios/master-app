@@ -358,7 +358,6 @@ function renderSidebar(string $active = ''): void {
             ['href' => APP_URL.'/pages/departments.php',   'icon' => 'fa-solid fa-folder-open',     'label' => 'Τμήματα',           'key' => 'departments'],
             ['href' => APP_URL.'/pages/notifications.php', 'icon' => 'fa-solid fa-paper-plane',     'label' => 'Ειδοποιήσεις',      'key' => 'notifications'],
             ['href' => APP_URL.'/pages/events.php',        'icon' => 'fa-solid fa-trophy',          'label' => 'Διοργανώσεις',      'key' => 'events'],
-            ['href' => APP_URL.'/pages/event_invoices.php','icon' => 'fa-regular fa-file-lines',    'label' => 'Τιμολόγια Διοργανώσεων', 'key' => 'event_invoices'],
         ];
 
         if (!$privacyMode && $planSlug === 'pro') {
@@ -408,8 +407,9 @@ function renderSidebar(string $active = ''): void {
           $locked = $isPro && !planHas('competitions_enabled') && !$isSA;
 
           $isActive = ($active === $item['key'])
-                   || ($active === 'reports'   && $item['key'] === 'economics')
-                   || ($active === 'economics' && $item['key'] === 'economics');
+                   || ($active === 'reports'        && $item['key'] === 'economics')
+                   || ($active === 'economics'      && $item['key'] === 'economics')
+                   || ($active === 'event_invoices' && $item['key'] === 'events');
 
           $cls = $isActive ? 'active' : '';
           if ($locked) $cls .= ' text-muted';
