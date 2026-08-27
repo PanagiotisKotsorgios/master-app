@@ -550,9 +550,42 @@ renderHead('Αυτόματες Ειδοποιήσεις');
 /* ────────────────────────────────────────────────────────────
    TABS
 ──────────────────────────────────────────────────────────── */
-.tabs-bar{display:flex;gap:.35rem;margin-bottom:1rem;flex-wrap:wrap}
-.tab-btn{min-height:38px;padding:.4rem .95rem;border-radius:10px;border:1.5px solid var(--border,#1e2536);background:none;color:var(--muted,#8892b0);font-size:.95rem!important;font-weight:700;cursor:pointer;transition:all .18s;display:inline-flex;align-items:center;gap:.4rem}
-.tab-btn.active{border-color:var(--red,#e63946);background:rgba(230,57,70,.1);color:var(--red,#e63946)}
+/* Tabs — enlarged & white for accessibility (matches events.php) */
+.tabs-bar{
+  display:flex;gap:.5rem;margin-bottom:1.4rem;flex-wrap:wrap;
+  background:#0d1117;border:1px solid #1e2536;border-radius:14px;padding:.45rem;
+  width:fit-content;max-width:100%
+}
+.tab-btn{
+  min-height:48px;padding:.85rem 1.5rem;border-radius:11px;
+  border:none;background:transparent;
+  color:#ffffff !important;
+  font-size:1.08rem !important;font-weight:800;letter-spacing:.01em;
+  cursor:pointer;transition:all .18s;font-family:inherit;
+  display:inline-flex;align-items:center;gap:.6rem;line-height:1.2
+}
+.tab-btn i{ color:#ffffff !important;font-size:1.1rem }
+.tab-btn:hover{ background:rgba(255,255,255,.06);transform:translateY(-1px) }
+.tab-btn.active{
+  background:linear-gradient(135deg,#e63946 0%,#c72832 100%) !important;
+  color:#ffffff !important;
+  box-shadow:0 6px 18px -6px rgba(230,57,70,.65), inset 0 0 0 1px rgba(255,255,255,.15)
+}
+.tab-btn.active i{ color:#ffffff !important }
+/* Count pills inside tabs — inherit visibility so numbers read cleanly */
+.tab-btn > span{
+  background:rgba(255,255,255,.16) !important;
+  color:#ffffff !important;
+  border-radius:50px !important;
+  padding:.2rem .65rem !important;
+  font-size:.85rem !important;font-weight:900 !important;
+  min-width:26px;text-align:center
+}
+.tab-btn.active > span{ background:rgba(0,0,0,.28) !important }
+@media (max-width:520px){
+  .tab-btn{padding:.7rem 1rem;font-size:1rem !important}
+  .tab-btn > span{font-size:.78rem !important}
+}
 .tab-panel{display:none}
 .tab-panel.active{display:block}
 
