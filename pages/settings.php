@@ -910,9 +910,6 @@ renderHead('Ρυθμίσεις');
         <?php endif; ?>
     </button>
     <?php endif; ?>
-    <button class="tab-btn" data-tab="opt_out" onclick="switchTab(this.dataset.tab,this)">
-        <i class="fa-solid fa-bell-slash"></i> <span class="tab-label">Opt-out SMS/Email</span>
-    </button>
 </div>
 
 <!-- ══ TAB: SCHOOL ══ -->
@@ -1580,8 +1577,12 @@ var planSlug = '<?= addslashes($planSlug) ?>';
 </style>
 <?php endif; ?>
 
-<!-- ══ TAB: OPT-OUT ΕΙΔΟΠΟΙΗΣΕΩΝ ══ -->
-<div id="tab-opt_out" style="display:none" class="anim-2">
+<!-- ══ TAB: OPT-OUT ΕΙΔΟΠΟΙΗΣΕΩΝ ══
+     Moved to the admin panel (pages/opt-out-manual.php). Only the
+     platform admin processes STOP requests — the club shouldn't have
+     to think about it.
+-->
+<div id="tab-opt_out" style="display:none" class="anim-2" hidden>
 
 <?php if ($optOutMigrationNeeded): ?>
 <div class="alert alert-warning" style="margin-bottom:1rem">
@@ -1884,7 +1885,7 @@ function togglePw(id, btn) {
 }
 
 function switchTab(tabName, el) {
-    var panels = ['school', 'account', 'security', 'subscription', 'opt_out'];
+    var panels = ['school', 'account', 'security', 'subscription'];
     if (document.getElementById('tab-privacy')) {
         panels.push('privacy');
     }

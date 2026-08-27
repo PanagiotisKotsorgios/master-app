@@ -320,35 +320,73 @@ function renderSidebar(string $active = ''): void {
     $privacyMode = (bool)($_SESSION['privacy_mode_' . $sid2] ?? false);
 
     if ($isSA) {
+        // ── Admin sidebar organised into collapsible categories ──
+        // Each section has its own label + icon so grouping is obvious;
+        // sections are collapsible (state in localStorage, see JS below).
         $navItems = [
-            'main' => [
-                ['href' => APP_URL.'/admin/',                    'icon' => 'fa-solid fa-sliders',           'label' => 'Κεντρική',          'key' => 'admin_dash'],
-                ['href' => APP_URL.'/admin/schools.php',         'icon' => 'fa-solid fa-school',            'label' => 'Σχολές',            'key' => 'admin_schools'],
-                ['href' => APP_URL.'/admin/users.php',           'icon' => 'fa-solid fa-users',             'label' => 'Χρήστες',           'key' => 'admin_users'],
-                ['href' => APP_URL.'/admin/plans.php',           'icon' => 'fa-solid fa-boxes-stacked',     'label' => 'Πλάνα',             'key' => 'admin_plans'],
-                ['href' => APP_URL.'/admin/payments.php',        'icon' => 'fa-solid fa-credit-card',       'label' => 'Πληρωμές',          'key' => 'admin_payments'],
-                ['href' => APP_URL.'/admin/federations.php',     'icon' => 'fa-solid fa-handshake',         'label' => 'Ομοσπονδίες',       'key' => 'admin_federations'],
-                ['href' => APP_URL.'/admin/coupons.php',         'icon' => 'fa-solid fa-ticket',            'label' => 'Κουπόνια',          'key' => 'admin_coupons'],
-                ['href' => APP_URL.'/admin/notifications.php',   'icon' => 'fa-solid fa-paper-plane',       'label' => 'Αποστολές',         'key' => 'admin_notif'],
-                ['href' => APP_URL.'/admin/broadcast.php',       'icon' => 'fa-solid fa-bullhorn',          'label' => 'Broadcast',         'key' => 'admin_broadcast'],
-                ['href' => APP_URL.'/admin/marketing-popup.php', 'icon' => 'fa-solid fa-lightbulb',         'label' => 'Popup Καμπάνιας',   'key' => 'admin_marketing_popup'],
-                ['href' => APP_URL.'/admin/email-logs.php',      'icon' => 'fa-solid fa-envelope-open-text','label' => 'Email & SMS Logs',  'key' => 'admin_email_logs'],
-                ['href' => APP_URL.'/admin/sms-calculator.php',  'icon' => 'fa-solid fa-calculator',        'label' => 'SMS Κοστολόγηση',   'key' => 'admin_sms_calc'],
-                ['href' => APP_URL.'/admin/activity.php',        'icon' => 'fa-solid fa-wave-square',       'label' => 'Activity Feed',     'key' => 'admin_activity'],
-                ['href' => APP_URL.'/admin/stats.php',           'icon' => 'fa-solid fa-chart-line',        'label' => 'Στατιστικά',        'key' => 'admin_stats'],
-                ['href' => APP_URL.'/admin/reports.php',         'icon' => 'fa-solid fa-chart-pie',         'label' => 'Αναφορές',          'key' => 'admin_reports'],
-                ['href' => APP_URL.'/admin/churn.php',           'icon' => 'fa-solid fa-user-slash',        'label' => 'Churn & MRR',       'key' => 'admin_churn'],
-                ['href' => APP_URL.'/admin/audit.php',           'icon' => 'fa-solid fa-clipboard-list',    'label' => 'Audit Log',         'key' => 'admin_audit'],
-                ['href' => APP_URL.'/admin/consent-logs.php',    'icon' => 'fa-solid fa-file-shield',       'label' => 'Consent Log',       'key' => 'admin_consent_logs'],
-                ['href' => APP_URL.'/admin/event_moderation.php','icon' => 'fa-solid fa-flag',              'label' => 'Έλεγχος Διοργανώσεων','key' => 'admin_event_mod'],
-                ['href' => APP_URL.'/admin/event_invoices.php',  'icon' => 'fa-solid fa-file-invoice',      'label' => 'Τιμολόγια Διοργανώσεων', 'key' => 'admin_event_invoices'],
-                ['href' => APP_URL.'/admin/school_approvals.php','icon' => 'fa-solid fa-user-check',        'label' => 'Έγκριση Σχολών',    'key' => 'admin_school_approvals'],
-                ['href' => APP_URL.'/admin/health.php',          'icon' => 'fa-solid fa-heart-pulse',       'label' => 'System Health',     'key' => 'admin_health'],
-                ['href' => APP_URL.'/admin/backups.php',         'icon' => 'fa-solid fa-database',          'label' => 'Backups',           'key' => 'admin_backups'],
-                ['href' => APP_URL.'/admin/system-settings.php', 'icon' => 'fa-solid fa-gears',             'label' => 'System Settings',   'key' => 'admin_sys_settings'],
-                ['href' => APP_URL.'/admin/parent-accounts.php',  'icon' => 'fa-solid fa-people-roof',       'label' => 'Portal Γονέων',     'key' => 'admin_parent_accounts'],
-                ['href' => APP_URL.'/admin/privileges.php',      'icon' => 'fa-solid fa-shield-halved',     'label' => 'Privileges',        'key' => 'admin_privileges'],
-            ]
+            'overview' => [
+                '_label' => 'Επισκόπηση',
+                '_icon'  => 'fa-solid fa-gauge',
+                'items'  => [
+                    ['href' => APP_URL.'/admin/',                    'icon' => 'fa-solid fa-sliders',        'label' => 'Κεντρική',        'key' => 'admin_dash'],
+                    ['href' => APP_URL.'/admin/stats.php',           'icon' => 'fa-solid fa-chart-line',     'label' => 'Στατιστικά',      'key' => 'admin_stats'],
+                    ['href' => APP_URL.'/admin/reports.php',         'icon' => 'fa-solid fa-chart-pie',      'label' => 'Αναφορές',        'key' => 'admin_reports'],
+                    ['href' => APP_URL.'/admin/churn.php',           'icon' => 'fa-solid fa-user-slash',     'label' => 'Churn & MRR',     'key' => 'admin_churn'],
+                    ['href' => APP_URL.'/admin/activity.php',        'icon' => 'fa-solid fa-wave-square',    'label' => 'Activity Feed',   'key' => 'admin_activity'],
+                ],
+            ],
+            'accounts' => [
+                '_label' => 'Σύλλογοι & Χρήστες',
+                '_icon'  => 'fa-solid fa-people-group',
+                'items'  => [
+                    ['href' => APP_URL.'/admin/schools.php',         'icon' => 'fa-solid fa-school',         'label' => 'Σχολές',            'key' => 'admin_schools'],
+                    ['href' => APP_URL.'/admin/school_approvals.php','icon' => 'fa-solid fa-user-check',     'label' => 'Έγκριση Σχολών',    'key' => 'admin_school_approvals'],
+                    ['href' => APP_URL.'/admin/users.php',           'icon' => 'fa-solid fa-users',          'label' => 'Χρήστες',           'key' => 'admin_users'],
+                    ['href' => APP_URL.'/admin/parent-accounts.php', 'icon' => 'fa-solid fa-people-roof',    'label' => 'Portal Γονέων',     'key' => 'admin_parent_accounts'],
+                    ['href' => APP_URL.'/admin/privileges.php',      'icon' => 'fa-solid fa-shield-halved',  'label' => 'Privileges',        'key' => 'admin_privileges'],
+                ],
+            ],
+            'finance' => [
+                '_label' => 'Οικονομικά',
+                '_icon'  => 'fa-solid fa-euro-sign',
+                'items'  => [
+                    ['href' => APP_URL.'/admin/plans.php',           'icon' => 'fa-solid fa-boxes-stacked',  'label' => 'Πλάνα',                    'key' => 'admin_plans'],
+                    ['href' => APP_URL.'/admin/payments.php',        'icon' => 'fa-solid fa-credit-card',    'label' => 'Πληρωμές',                 'key' => 'admin_payments'],
+                    ['href' => APP_URL.'/admin/coupons.php',         'icon' => 'fa-solid fa-ticket',         'label' => 'Κουπόνια',                 'key' => 'admin_coupons'],
+                    ['href' => APP_URL.'/admin/event_invoices.php',  'icon' => 'fa-solid fa-file-invoice',   'label' => 'Τιμολόγια Διοργανώσεων',   'key' => 'admin_event_invoices'],
+                ],
+            ],
+            'comms' => [
+                '_label' => 'Επικοινωνία',
+                '_icon'  => 'fa-solid fa-paper-plane',
+                'items'  => [
+                    ['href' => APP_URL.'/admin/notifications.php',   'icon' => 'fa-solid fa-paper-plane',       'label' => 'Αποστολές',        'key' => 'admin_notif'],
+                    ['href' => APP_URL.'/admin/broadcast.php',       'icon' => 'fa-solid fa-bullhorn',          'label' => 'Broadcast',        'key' => 'admin_broadcast'],
+                    ['href' => APP_URL.'/admin/marketing-popup.php', 'icon' => 'fa-solid fa-lightbulb',         'label' => 'Popup Καμπάνιας',  'key' => 'admin_marketing_popup'],
+                    ['href' => APP_URL.'/admin/email-logs.php',      'icon' => 'fa-solid fa-envelope-open-text','label' => 'Email & SMS Logs', 'key' => 'admin_email_logs'],
+                    ['href' => APP_URL.'/admin/sms-calculator.php',  'icon' => 'fa-solid fa-calculator',        'label' => 'SMS Κοστολόγηση',  'key' => 'admin_sms_calc'],
+                    ['href' => APP_URL.'/pages/opt-out-manual.php',  'icon' => 'fa-solid fa-bell-slash',        'label' => 'Opt-out Χειροκίνητα', 'key' => 'admin_opt_out'],
+                ],
+            ],
+            'events' => [
+                '_label' => 'Διοργανώσεις',
+                '_icon'  => 'fa-solid fa-trophy',
+                'items'  => [
+                    ['href' => APP_URL.'/admin/event_moderation.php','icon' => 'fa-solid fa-flag',              'label' => 'Έλεγχος Διοργανώσεων','key' => 'admin_event_mod'],
+                    ['href' => APP_URL.'/admin/federations.php',     'icon' => 'fa-solid fa-handshake',         'label' => 'Ομοσπονδίες',       'key' => 'admin_federations'],
+                ],
+            ],
+            'system' => [
+                '_label' => 'Σύστημα',
+                '_icon'  => 'fa-solid fa-server',
+                'items'  => [
+                    ['href' => APP_URL.'/admin/system-settings.php', 'icon' => 'fa-solid fa-gears',             'label' => 'System Settings',  'key' => 'admin_sys_settings'],
+                    ['href' => APP_URL.'/admin/health.php',          'icon' => 'fa-solid fa-heart-pulse',       'label' => 'System Health',    'key' => 'admin_health'],
+                    ['href' => APP_URL.'/admin/backups.php',         'icon' => 'fa-solid fa-database',          'label' => 'Backups',          'key' => 'admin_backups'],
+                    ['href' => APP_URL.'/admin/audit.php',           'icon' => 'fa-solid fa-clipboard-list',    'label' => 'Audit Log',        'key' => 'admin_audit'],
+                    ['href' => APP_URL.'/admin/consent-logs.php',    'icon' => 'fa-solid fa-file-shield',       'label' => 'Consent Log',      'key' => 'admin_consent_logs'],
+                ],
+            ],
         ];
     } else {
         $mainItems = [
@@ -394,14 +432,37 @@ function renderSidebar(string $active = ''): void {
     </div>
   </div>
 
-  <?php foreach ($navItems as $section => $items): ?>
-    <div class="nav-section">
-      <?php if ($isSA): ?>
-        <div class="nav-label"><i class="fa-solid fa-user-shield"></i> Super Admin</div>
+  <?php foreach ($navItems as $section => $entry):
+      // Admin sections carry _label/_icon + nested `items`; non-admin
+      // legacy sections are a flat item list under 'main' / 'settings'.
+      $sectionLabel = null; $sectionIcon = null;
+      if ($isSA && isset($entry['items'])) {
+          $sectionLabel = $entry['_label'] ?? null;
+          $sectionIcon  = $entry['_icon']  ?? 'fa-solid fa-folder';
+          $items        = $entry['items'];
+      } else {
+          $items        = is_array($entry) ? $entry : [];
+      }
+      // Auto-open a section if any item in it is active
+      $sectionActive = false;
+      foreach ($items as $it) {
+          if (($it['key'] ?? '') === $active) { $sectionActive = true; break; }
+      }
+      $sectionSlug = preg_replace('/[^a-z0-9]/', '', strtolower((string)$section));
+  ?>
+    <div class="nav-section<?= $isSA && $sectionLabel ? ' has-toggle' : '' ?><?= $sectionActive ? ' section-open' : '' ?>"
+         data-section="<?= h($sectionSlug) ?>">
+      <?php if ($isSA && $sectionLabel): ?>
+        <button type="button" class="nav-label nav-label-toggle" onclick="toggleNavSection(this)">
+          <i class="<?= h($sectionIcon) ?>"></i>
+          <span><?= h($sectionLabel) ?></span>
+          <i class="fa-solid fa-chevron-down chev"></i>
+        </button>
       <?php elseif (!$isSA && $section === 'settings'): ?>
         <div class="nav-label"><i class="fa-solid fa-gear"></i> Διαχείριση</div>
       <?php endif; ?>
 
+      <div class="nav-section-body">
       <?php foreach ($items as $item):
           $isPro  = !empty($item['pro']);
           $locked = $isPro && !planHas('competitions_enabled') && !$isSA;
@@ -426,6 +487,7 @@ function renderSidebar(string $active = ''): void {
           <?php endif; ?>
         </a>
       <?php endforeach; ?>
+      </div>
     </div>
   <?php endforeach; ?>
 
@@ -450,6 +512,59 @@ function renderSidebar(string $active = ''): void {
     </a>
   </div>
 </div>
+
+<style>
+/* Collapsible sidebar categories (admin) */
+.sidebar .nav-label-toggle{
+  width:100%;background:none;border:none;cursor:pointer;
+  display:flex;align-items:center;gap:.6rem;
+  color:#a9b3c9;font-weight:800;font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;
+  padding:.85rem 1rem .5rem;margin:0;font-family:inherit;text-align:left;
+  transition:color .15s;
+}
+.sidebar .nav-label-toggle:hover{ color:#ffffff; }
+.sidebar .nav-label-toggle > span{ flex:1; }
+.sidebar .nav-label-toggle i:first-child{ color:#e63946;font-size:.9rem;width:16px;text-align:center; }
+.sidebar .nav-label-toggle .chev{
+  font-size:.7rem;color:#8892b0;transition:transform .2s;margin-left:auto;
+}
+.sidebar .nav-section.has-toggle:not(.section-open) .chev{ transform:rotate(-90deg); }
+.sidebar .nav-section.has-toggle .nav-section-body{
+  max-height:0;overflow:hidden;transition:max-height .25s ease;
+}
+.sidebar .nav-section.has-toggle.section-open .nav-section-body{
+  max-height:1200px;
+}
+</style>
+
+<script>
+(function(){
+  var KEY = 'ms_admin_sidebar_sections_v1';
+  var stored = {};
+  try { stored = JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch(e){}
+
+  // Restore stored open/closed state on load (respects auto-open on active row)
+  document.querySelectorAll('.sidebar .nav-section.has-toggle').forEach(function(sec){
+    var slug = sec.dataset.section;
+    if (stored[slug] === false && !sec.classList.contains('section-open')) {
+      sec.classList.remove('section-open');
+    } else if (stored[slug] === true) {
+      sec.classList.add('section-open');
+    }
+  });
+
+  window.toggleNavSection = function(btn){
+    var sec = btn.closest('.nav-section');
+    if (!sec) return;
+    var open = sec.classList.toggle('section-open');
+    var slug = sec.dataset.section;
+    try {
+      stored[slug] = open;
+      localStorage.setItem(KEY, JSON.stringify(stored));
+    } catch(e){}
+  };
+})();
+</script>
 <?php
 }
 
