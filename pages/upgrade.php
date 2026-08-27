@@ -287,7 +287,7 @@ h1 { font-size: clamp(1.6rem,5vw,2.2rem); font-weight: 800; text-align: center; 
       <div class="toggle-knob"></div>
     </button>
     <span class="toggle-lbl <?= $isAnnual ? 'on' : '' ?>" id="lbl-a">Ετήσια</span>
-    <span class="save-badge"><i class="fas fa-tag" style="font-size:.65rem"></i> Γλιτώστε €72/έτος</span>
+    <span class="save-badge"><i class="fas fa-tag" style="font-size:.65rem"></i> Γλιτώστε €60/έτος</span>
   </div>
 
   <!-- Pro card -->
@@ -300,11 +300,12 @@ h1 { font-size: clamp(1.6rem,5vw,2.2rem); font-weight: 800; text-align: center; 
 
     <div class="price-wrap">
       <span class="price-currency">€</span>
-      <span class="price-amount" id="price-amount"><?= $isAnnual ? '24' : '30' ?></span>
+      <span class="price-amount" id="price-amount"><?= $isAnnual ? '20' : '25' ?></span>
       <span class="price-period">/μήνα</span>
     </div>
+    <div style="font-size:.78rem;color:var(--muted);letter-spacing:.04em;margin-top:-.15rem;margin-bottom:.55rem">συμπ. ΦΠΑ</div>
     <div class="price-annual-note" id="annual-note">
-      <?= $isAnnual ? '€288/έτος — γλιτώστε €72 σε σχέση με μηνιαία' : '&nbsp;' ?>
+      <?= $isAnnual ? '€240/έτος — γλιτώστε €60 σε σχέση με μηνιαία' : '&nbsp;' ?>
     </div>
 
     <!-- Features -->
@@ -390,11 +391,11 @@ h1 { font-size: clamp(1.6rem,5vw,2.2rem); font-weight: 800; text-align: center; 
         </div>
 
         <div class="bank-row">
-          <label>Ποσό <span id="bank-amount-label"><?= $isAnnual ? '(€288 ετήσια)' : '(€30 μηνιαία)' ?></span></label>
+          <label>Ποσό <span id="bank-amount-label"><?= $isAnnual ? '(€240 ετήσια)' : '(€25 μηνιαία)' ?></span></label>
           <div class="bank-value">
-            <span id="bank-amount-val"><?= $isAnnual ? '288,00 €' : '30,00 €' ?></span>
+            <span id="bank-amount-val"><?= $isAnnual ? '240,00 €' : '25,00 €' ?></span>
             <button class="copy-btn" onclick="copyText(document.getElementById('bank-amount-raw').value,this)" title="Αντιγραφή"><i class="fas fa-copy"></i></button>
-            <input type="hidden" id="bank-amount-raw" value="<?= $isAnnual ? '288' : '30' ?>">
+            <input type="hidden" id="bank-amount-raw" value="<?= $isAnnual ? '240' : '25' ?>">
           </div>
         </div>
 
@@ -450,8 +451,8 @@ h1 { font-size: clamp(1.6rem,5vw,2.2rem); font-weight: 800; text-align: center; 
 var isAnnual = <?= $isAnnual ? 'true' : 'false' ?>;
 
 var PRICES = {
-  monthly: { amount: '30', display: '30,00 €', raw: '30', note: '&nbsp;',                                        label: '(€30 μηνιαία)' },
-  annual:  { amount: '24', display: '288,00 €', raw: '288', note: '€288/έτος — γλιτώστε €72 σε σχέση με μηνιαία', label: '(€288 ετήσια)' }
+  monthly: { amount: '25', display: '25,00 €', raw: '25', note: '&nbsp;',                                        label: '(€25 μηνιαία)' },
+  annual:  { amount: '20', display: '240,00 €', raw: '240', note: '€240/έτος — γλιτώστε €60 σε σχέση με μηνιαία', label: '(€240 ετήσια)' }
 };
 
 function toggleBilling() {

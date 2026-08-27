@@ -113,7 +113,7 @@ legalHeader('Πληρωμές & Χρεώσεις', '4 Απριλίου 2026');
     <tbody>
       <tr><td><strong>Δωρεάν Δοκιμή</strong></td><td>€0 (14 ημέρες)</td><td>—</td><td>—</td></tr>
       <tr><td><strong>Basic</strong></td><td>€15,00/μήνα</td><td>€150,00/έτος (€12,50/μήνα)</td><td>€30/έτος</td></tr>
-      <tr><td><strong>Pro</strong></td><td>€30,00/μήνα</td><td>€288,00/έτος (€24,00/μήνα)</td><td>€72/έτος</td></tr>
+      <tr><td><strong>Pro</strong></td><td>€25,00/μήνα</td><td>€240,00/έτος (€20,00/μήνα)</td><td>€60/έτος</td></tr>
     </tbody>
   </table>
 </div>

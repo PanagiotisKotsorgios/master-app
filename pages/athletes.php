@@ -791,7 +791,7 @@ $nearLimit    = ($athleteLimit < 9999 && $athleteCount >= ($athleteLimit - 5));
 // Στοιχεία Pro πλάνου για το upgrade popup
 $_proStmt = $db->prepare("SELECT price_monthly, price_annual, features FROM plans WHERE slug='pro' LIMIT 1");
 $_proStmt->execute();
-$_proPlan = $_proStmt->fetch() ?: ['price_monthly'=>30.00,'price_annual'=>288.00,'features'=>''];
+$_proPlan = $_proStmt->fetch() ?: ['price_monthly'=>25.00,'price_annual'=>240.00,'features'=>''];
 $_proMonthly = number_format((float)$_proPlan['price_monthly'], 2);
 $_proAnnual  = number_format((float)$_proPlan['price_annual'], 2);
 $_bankName   = getSetting('bank_name','');

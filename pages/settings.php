@@ -1348,9 +1348,9 @@ if ($isPastDue) {
     $basicAnnualMonthlyEquivalent = 12.50;
     $basicAnnualTotal = 150.00;
 
-    $proMonthly = 30.00;
-    $proAnnualMonthlyEquivalent = 24.00;
-    $proAnnualTotal = 288.00;
+    $proMonthly = 25.00;
+    $proAnnualMonthlyEquivalent = 20.00;
+    $proAnnualTotal = 240.00;
     ?>
 
     <div class="simple-modal-body" style="padding:1.2rem;font-size:.93rem;color:#d0d8f0;line-height:1.6">
@@ -1364,6 +1364,7 @@ if ($isPastDue) {
                 <div style="color:#b0bcd4;font-size:.88rem;line-height:1.8">
                     <div><strong style="color:#fff">Μηνιαίο:</strong> <?= number_format($basicMonthly, 2, ',', '.') ?>€ / μήνα</div>
                     <div><strong style="color:#fff">Ετήσιο:</strong> <?= number_format($basicAnnualTotal, 2, ',', '.') ?>€ / έτος <span style="color:#2dc653">(<?= number_format($basicAnnualMonthlyEquivalent, 2, ',', '.') ?>€ / μήνα)</span></div>
+                    <div style="color:#8892b0;font-size:.75rem;letter-spacing:.04em;margin-top:.15rem">συμπ. ΦΠΑ</div>
                 </div>
             </div>
 
@@ -1374,6 +1375,7 @@ if ($isPastDue) {
                 <div style="color:#d7c39a;font-size:.88rem;line-height:1.8">
                     <div><strong style="color:#fff">Μηνιαίο:</strong> <?= number_format($proMonthly, 2, ',', '.') ?>€ / μήνα</div>
                     <div><strong style="color:#fff">Ετήσιο:</strong> <?= number_format($proAnnualTotal, 2, ',', '.') ?>€ / έτος <span style="color:#2dc653">(<?= number_format($proAnnualMonthlyEquivalent, 2, ',', '.') ?>€ / μήνα)</span></div>
+                    <div style="color:#8892b0;font-size:.75rem;letter-spacing:.04em;margin-top:.15rem">συμπ. ΦΠΑ</div>
                 </div>
             </div>
         </div>

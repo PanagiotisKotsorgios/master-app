@@ -1016,6 +1016,7 @@ function renderPaymentWall(): void {
             <div class="pn">Basic</div>
             <div class="pp">€15<span style="font-size:0.8rem;">/μήνα</span></div>
             <div class="yearly-price">€150/έτος (€12,50/μήνα)</div>
+            <div style="font-size:.62rem;color:#8892b0;letter-spacing:.05em;margin-top:.15rem">συμπ. ΦΠΑ</div>
             <ul>
                 <li><i class="fas fa-users"></i> Έως 50 αθλητές</li>
                 <li><i class="fas fa-envelope"></i> Email υπενθυμίσεις</li>
@@ -1024,8 +1025,9 @@ function renderPaymentWall(): void {
         </div>
         <div class="plan-c hot">
             <div class="pn">Pro <span class="badge"><i class="fas fa-star"></i></span></div>
-            <div class="pp">€30<span style="font-size:0.8rem;">/μήνα</span></div>
-            <div class="yearly-price">€288/έτος (€24/μήνα)</div>
+            <div class="pp">€25<span style="font-size:0.8rem;">/μήνα</span></div>
+            <div class="yearly-price">€240/έτος (€20/μήνα)</div>
+            <div style="font-size:.62rem;color:#8892b0;letter-spacing:.05em;margin-top:.15rem">συμπ. ΦΠΑ</div>
             <ul>
                 <li><i class="fas fa-infinity"></i> Απεριόριστοι αθλητές</li>
                 <li><i class="fas fa-sms"></i> SMS & Viber</li>

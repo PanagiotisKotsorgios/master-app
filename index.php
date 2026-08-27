@@ -82,15 +82,15 @@ body::after{content:'';position:fixed;inset:0;background-image:url("data:image/s
 }
 
 .nav-links{display:flex;align-items:center;gap:2rem;list-style:none;flex:1;justify-content:center}
-.nav-links a{font-size:.88rem;font-weight:500;color:var(--muted);transition:color .2s;letter-spacing:.02em;white-space:nowrap}
-.nav-links a:hover{color:var(--white)}
+.nav-links a{font-size:.88rem;font-weight:600;color:#ffffff;transition:color .2s;letter-spacing:.02em;white-space:nowrap;opacity:.92}
+.nav-links a:hover{color:#ffffff;opacity:1}
 .nav-ctas{display:flex;align-items:center;gap:.75rem;flex-shrink:0}
 
 /* ── PARENT PORTAL BUTTON - Red Border Only ── */
 .btn-parent-portal {
     font-size: 0.9rem;
-    font-weight: 500;
-    color: var(--red);
+    font-weight: 600;
+    color: #ffffff;
     padding: .45rem .95rem;
     border: 1.5px solid var(--red);
     border-radius: 8px;
@@ -100,6 +100,7 @@ body::after{content:'';position:fixed;inset:0;background-image:url("data:image/s
     gap: 0.5rem;
     white-space: nowrap;
 }
+.btn-parent-portal i { color: var(--red); }
 .btn-parent-portal:hover {
     background: rgba(230, 57, 70, 0.08);
     color: #fff;
@@ -107,8 +108,8 @@ body::after{content:'';position:fixed;inset:0;background-image:url("data:image/s
     transform: translateY(-1px);
 }
 
-.btn-nav-login{font-size:.9rem;font-weight:500;color:var(--muted);padding:.45rem .875rem;border-radius:8px;transition:all .2s}
-.btn-nav-login:hover{color:var(--white);background:rgba(255,255,255,.06)}
+.btn-nav-login{font-size:.9rem;font-weight:600;color:#ffffff;padding:.45rem .875rem;border-radius:8px;transition:all .2s}
+.btn-nav-login:hover{color:#ffffff;background:rgba(255,255,255,.08)}
 .btn-nav-cta{font-size:.9rem;font-weight:700;background:linear-gradient(135deg,var(--red),var(--red2));color:#fff;padding:.5rem 1.25rem;border-radius:8px;transition:all .2s;box-shadow:0 0 18px rgba(230,57,70,.4);letter-spacing:.01em}
 .btn-nav-cta:hover{background:linear-gradient(135deg,var(--red2),#b32430);box-shadow:0 0 28px rgba(230,57,70,.6);transform:translateY(-1px)}
 
@@ -732,6 +733,7 @@ body::after{content:'';position:fixed;inset:0;background-image:url("data:image/s
         <div class="p-price">
           <span class="p-curr">€</span><span id="pb">15</span><span id="pb-dec" style="font-size:1.5rem">,00</span><span class="p-per" id="pb-per">/μήνα</span>
         </div>
+        <div class="p-vat" style="font-size:.72rem;color:var(--muted);letter-spacing:.04em;margin-top:-.4rem;margin-bottom:.5rem">συμπ. ΦΠΑ</div>
         <div class="p-annual" id="ab">&nbsp;</div>
         <a href="<?= APP_URL ?>/register.php?plan=basic" class="btn-plan btn-plan-s" id="basic-plan-link">Ξεκινήστε με Βασικό &nbsp;<i class="fa-solid fa-arrow-right-to-bracket"></i></a>
         <div class="p-div"></div>
@@ -753,8 +755,9 @@ body::after{content:'';position:fixed;inset:0;background-image:url("data:image/s
         <div class="p-name" style="color:var(--gold)">Pro</div>
         <div class="p-sub">Για πλήρη αυτοματοποίηση</div>
         <div class="p-price" style="color:var(--gold)">
-          <span class="p-curr" style="color:var(--gold)">€</span><span id="pp">30</span><span id="pp-dec" style="font-size:1.5rem">,00</span><span class="p-per" id="pp-per">/μήνα</span>
+          <span class="p-curr" style="color:var(--gold)">€</span><span id="pp">25</span><span id="pp-dec" style="font-size:1.5rem">,00</span><span class="p-per" id="pp-per">/μήνα</span>
         </div>
+        <div class="p-vat" style="font-size:.72rem;color:var(--muted);letter-spacing:.04em;margin-top:-.4rem;margin-bottom:.5rem">συμπ. ΦΠΑ</div>
         <div class="p-annual" id="ap">&nbsp;</div>
         <a href="<?= APP_URL ?>/register.php?plan=pro" class="btn-plan btn-plan-r" id="pro-plan-link">Ξεκινήστε με Pro &nbsp;<i class="fa-solid fa-arrow-right-to-bracket"></i></a>
         <div class="p-div"></div>
@@ -1004,16 +1007,16 @@ function toggleP() {
     document.getElementById('pb').textContent = '12';
     document.getElementById('pb-dec').textContent = ',50';
     document.getElementById('pb-per').textContent = '/μήνα';
-    document.getElementById('pp').textContent = '24';
+    document.getElementById('pp').textContent = '20';
     document.getElementById('pp-dec').textContent = ',00';
     document.getElementById('pp-per').textContent = '/μήνα';
     document.getElementById('ab').innerHTML = '<span style="color:#2dc653;font-weight:600">€150/έτος — γλιτώστε €30</span>';
-    document.getElementById('ap').innerHTML = '<span style="color:#2dc653;font-weight:600">€288/έτος — γλιτώστε €72</span>';
+    document.getElementById('ap').innerHTML = '<span style="color:#2dc653;font-weight:600">€240/έτος — γλιτώστε €60</span>';
   } else {
     document.getElementById('pb').textContent = '15';
     document.getElementById('pb-dec').textContent = ',00';
     document.getElementById('pb-per').textContent = '/μήνα';
-    document.getElementById('pp').textContent = '30';
+    document.getElementById('pp').textContent = '25';
     document.getElementById('pp-dec').textContent = ',00';
     document.getElementById('pp-per').textContent = '/μήνα';
     document.getElementById('ab').innerHTML = '&nbsp;';

@@ -16,7 +16,7 @@ WHERE NOT EXISTS (SELECT 1 FROM plans WHERE slug = 'basic');
 INSERT INTO plans (name, slug, price_monthly, price_annual, max_athletes,
                    sms_enabled, email_enabled, competitions_enabled,
                    economics_enabled, reports_enabled, elot_export, active)
-SELECT 'Pro', 'pro', 30, 300, 9999, 1, 1, 1, 1, 1, 1, 1
+SELECT 'Pro', 'pro', 25, 240, 9999, 1, 1, 1, 1, 1, 1, 1
 WHERE NOT EXISTS (SELECT 1 FROM plans WHERE slug = 'pro');
 
 -- ── System settings essentials ───────────────────────────
