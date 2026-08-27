@@ -195,8 +195,8 @@ $flash = getFlash();
         <div style="font-size:.72rem;text-transform:uppercase;color:#e63946;font-weight:700;letter-spacing:.1em"><?= h($ev['title']) ?></div>
         <h1 style="margin:.25rem 0 .3rem;font-size:1.35rem;color:#f0f2ff"><?= h($cat['name']) ?></h1>
         <div style="color:#8892b0;font-size:.9rem">
-          Format: <strong style="color:#f0f2ff"><?= h($cat['format']) ?></strong> ·
-          Pool size: <strong style="color:#f0f2ff"><?= (int)$cat['pool_size'] ?></strong> ·
+          Μορφή: <strong style="color:#f0f2ff"><?= h(eventFormatLabel($cat['format'] ?? '')) ?></strong> ·
+          Όμιλος: <strong style="color:#f0f2ff"><?= (int)$cat['pool_size'] ?></strong> αθλητές ·
           Συμμετέχοντες: <strong style="color:#f0f2ff"><?= count($regs) ?></strong>
         </div>
       </div>

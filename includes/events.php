@@ -1390,6 +1390,26 @@ function eventVisibilityLabel(string $v): string {
     return ['public' => 'Δημόσιο', 'unlisted' => 'Μη καταχωρημένο', 'invite_only' => 'Με πρόσκληση'][$v] ?? $v;
 }
 
+/** Greek label for tournament format enum. */
+function eventFormatLabel(string $f): string {
+    return [
+        'single_elim' => 'Απευθείας αποκλεισμός',
+        'double_elim' => 'Διπλός αποκλεισμός',
+        'round_robin' => 'Πάντες με πάντες',
+        'pool_ko'     => 'Όμιλοι + Νοκ-άουτ',
+        'pool_only'   => 'Μόνο όμιλοι',
+        'exhibition'  => 'Επίδειξη',
+    ][$f] ?? $f;
+}
+
+/** Greek label for style/discipline strings we store as codes. */
+function eventStyleLabel(string $s): string {
+    return [
+        'kumite' => 'Αγώνων',
+        'kata'   => 'Φόρμας (Kata)',
+    ][$s] ?? $s;
+}
+
 function eventStatusLabel(string $s): string {
     return [
         'draft'       => 'Πρόχειρο',

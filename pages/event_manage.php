@@ -221,12 +221,9 @@ $flash = getFlash();
               <label>
                 <div style="font-size:.82rem;font-weight:700;color:#c9cee1;margin-bottom:.3rem">Format αγώνων</div>
                 <select name="format" style="width:100%;padding:.75rem 1rem;background:#0d1017;border:1.5px solid #2a3248;border-radius:10px;color:#fff;font-size:.95rem;min-height:48px">
-                  <option value="single_elim">Single elimination</option>
-                  <option value="double_elim">Double elimination</option>
-                  <option value="round_robin">Round robin</option>
-                  <option value="pool_ko">Pool + KO</option>
-                  <option value="pool_only">Μόνο pool</option>
-                  <option value="exhibition">Επίδειξη</option>
+                  <?php foreach (['single_elim','double_elim','round_robin','pool_ko','pool_only','exhibition'] as $__f): ?>
+                    <option value="<?= $__f ?>"><?= h(eventFormatLabel($__f)) ?></option>
+                  <?php endforeach; ?>
                 </select>
               </label>
               <label>
@@ -255,7 +252,11 @@ $flash = getFlash();
               </label>
               <label>
                 <div style="font-size:.82rem;font-weight:700;color:#c9cee1;margin-bottom:.3rem">Στυλ</div>
-                <input type="text" name="style" placeholder="kata / kumite" style="width:100%;padding:.75rem 1rem;background:#0d1017;border:1.5px solid #2a3248;border-radius:10px;color:#fff;font-size:.95rem;min-height:48px">
+                <select name="style" style="width:100%;padding:.75rem 1rem;background:#0d1017;border:1.5px solid #2a3248;border-radius:10px;color:#fff;font-size:.95rem;min-height:48px">
+                  <option value="">— Επιλογή —</option>
+                  <option value="kumite">Αγώνων (Kumite)</option>
+                  <option value="kata">Φόρμας (Kata)</option>
+                </select>
               </label>
               <label>
                 <div style="font-size:.82rem;font-weight:700;color:#c9cee1;margin-bottom:.3rem">Max θέσεις</div>
@@ -303,7 +304,7 @@ $flash = getFlash();
               <td style="padding:.7rem 1rem"><?= ['M'=>'Α','F'=>'Γ','MX'=>'Μικτό'][$c['gender']] ?></td>
               <td style="padding:.7rem 1rem"><?= h(($c['min_age']??'—') . '-' . ($c['max_age']??'—')) ?></td>
               <td style="padding:.7rem 1rem"><?= h(($c['min_weight']??'—') . '-' . ($c['max_weight']??'—')) ?></td>
-              <td style="padding:.7rem 1rem"><?= h($c['format']) ?></td>
+              <td style="padding:.7rem 1rem"><?= h(eventFormatLabel($c['format'] ?? '')) ?></td>
               <td style="padding:.7rem 1rem"><?= $c['fee_override']!==null ? number_format((float)$c['fee_override'],2,',','.').'€' : '<i style="color:#6b7494">default</i>' ?></td>
               <td style="padding:.7rem 1rem;text-align:right;white-space:nowrap">
                 <a href="<?= APP_URL ?>/pages/event_bracket.php?id=<?= $id ?>&cat=<?= (int)$c['id'] ?>" class="btn btn-ghost btn-sm" title="Bracket">

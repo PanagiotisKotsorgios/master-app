@@ -153,7 +153,7 @@ $flash = getFlash();
           </label>
           <label>
             <div style="font-size:.85rem;font-weight:700;color:#f0f2ff;margin-bottom:.35rem">Στυλ / Ειδικότητα</div>
-            <input type="text" name="sport_style" placeholder="π.χ. kata, kumite, WTF, ITF" value="<?= h($ev['sport_style'] ?? '') ?>" style="width:100%;padding:.7rem .85rem;background:#0d1017;border:1px solid #2a3248;border-radius:9px;color:#f0f2ff">
+            <input type="text" name="sport_style" placeholder="π.χ. Αγώνων / Φόρμας / WTF / ITF" value="<?= h($ev['sport_style'] ?? '') ?>" style="width:100%;padding:.7rem .85rem;background:#0d1017;border:1px solid #2a3248;border-radius:9px;color:#f0f2ff">
           </label>
 
           <?php if ($ev): ?>
