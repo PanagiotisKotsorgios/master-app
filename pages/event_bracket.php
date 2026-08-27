@@ -223,10 +223,8 @@ $flash = getFlash();
             <tbody>
               <?php foreach ($matches as $m): ?>
                 <tr style="border-top:1px solid #1e2536">
-                  <td style="padding:.5rem 0">
-                    <a href="<?= APP_URL ?>/pages/event_referee.php?id=<?= $id ?>&match=<?= (int)$m['id'] ?>" style="color:#f0f2ff;text-decoration:none">
-                      <?= h($m['red_name'] ?? '—') ?> <span style="color:#6b7494">vs</span> <?= h($m['blue_name'] ?? '—') ?>
-                    </a>
+                  <td style="padding:.5rem 0;color:#f0f2ff">
+                    <?= h($m['red_name'] ?? '—') ?> <span style="color:#6b7494">vs</span> <?= h($m['blue_name'] ?? '—') ?>
                   </td>
                   <td style="color:<?= $m['status']==='completed'?'#2dc653':'#6b7494' ?>"><?= $m['status']==='completed' ? $m['red_score'].'-'.$m['blue_score'] : '—' ?></td>
                   <td style="text-align:right;color:#8892b0">R<?= (int)$m['ring_number'] ?></td>
@@ -269,7 +267,7 @@ $flash = getFlash();
               $redW  = $done && $winId === (int)$m['red_registration_id'];
               $blueW = $done && $winId === (int)$m['blue_registration_id'];
             ?>
-              <a href="<?= APP_URL ?>/pages/event_referee.php?id=<?= $id ?>&match=<?= (int)$m['id'] ?>" style="display:block;background:#0d1017;border:1px solid #1e2536;border-radius:8px;padding:.55rem .75rem;margin-bottom:.6rem;text-decoration:none;transition:border-color .15s" onmouseover="this.style.borderColor='#e63946'" onmouseout="this.style.borderColor='#1e2536'">
+              <div style="display:block;background:#0d1017;border:1px solid #1e2536;border-radius:8px;padding:.55rem .75rem;margin-bottom:.6rem">
                 <div style="display:flex;justify-content:space-between;color:<?= $redW?'#2dc653':($m['red_name']?'#f0f2ff':'#4a5270') ?>;font-weight:<?= $redW?800:600 ?>;font-size:.85rem">
                   <span><?= h($m['red_name'] ?? '(αναμονή)') ?></span>
                   <span><?= $done ? (int)$m['red_score'] : '' ?></span>
@@ -281,7 +279,7 @@ $flash = getFlash();
                 <?php if ($m['scheduled_at']): ?>
                   <div style="color:#6b7494;font-size:.7rem;margin-top:.35rem"><i class="fa-regular fa-clock"></i> <?= h(date('H:i', strtotime($m['scheduled_at']))) ?> · R<?= (int)$m['ring_number'] ?></div>
                 <?php endif; ?>
-              </a>
+              </div>
             <?php endforeach; ?>
           </div>
         <?php endforeach; ?>

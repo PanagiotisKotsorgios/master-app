@@ -217,9 +217,6 @@ $canonical = eventPublicUrl($ev);
         <a href="<?= APP_URL ?>/events/results.php?slug=<?= h($ev['slug']) ?>" class="btn btn-ghost">
           <i class="fa-solid fa-medal"></i> Αποτελέσματα
         </a>
-        <a href="<?= APP_URL ?>/events/display.php?slug=<?= h($ev['slug']) ?>" target="_blank" class="btn btn-ghost">
-          <i class="fa-solid fa-tv"></i> Live board
-        </a>
       <?php endif; ?>
       <?php if ($ev['venue_url']): ?>
         <a href="<?= h($ev['venue_url']) ?>" target="_blank" rel="noopener" class="btn btn-ghost">

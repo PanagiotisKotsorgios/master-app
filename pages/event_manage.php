@@ -124,8 +124,7 @@ $flash = getFlash();
       </div>
       <div style="display:flex;gap:.5rem;flex-wrap:wrap">
         <a href="<?= h(eventPublicUrl($ev)) ?>" target="_blank" class="btn btn-ghost btn-sm"><i class="fa-solid fa-eye"></i> Δημόσια</a>
-        <a href="<?= APP_URL ?>/pages/event_referee.php?id=<?= (int)$ev['id'] ?>" class="btn btn-ghost btn-sm"><i class="fa-solid fa-gavel"></i> Referee</a>
-        <a href="<?= APP_URL ?>/events/display.php?slug=<?= h($ev['slug']) ?>" target="_blank" class="btn btn-ghost btn-sm"><i class="fa-solid fa-tv"></i> Venue</a>
+        <a href="<?= APP_URL ?>/pages/event_bracket.php?id=<?= (int)$ev['id'] ?>" class="btn btn-ghost btn-sm"><i class="fa-solid fa-sitemap"></i> Λίστες / Pools</a>
         <a href="<?= APP_URL ?>/events/results.php?slug=<?= h($ev['slug']) ?>" target="_blank" class="btn btn-ghost btn-sm"><i class="fa-solid fa-medal"></i> Αποτελέσματα</a>
         <a href="<?= APP_URL ?>/pages/event_edit.php?id=<?= (int)$ev['id'] ?>" class="btn btn-ghost btn-sm"><i class="fa-solid fa-pen"></i> Επεξεργασία</a>
       </div>
@@ -139,7 +138,7 @@ $flash = getFlash();
         'categories' => 'Κατηγορίες (' . count($categories) . ')',
         'registrations' => 'Εγγραφές (' . count($registrations) . ')',
         'payments' => 'Πληρωμές (' . count($payments) . ')',
-        'fields' => 'Custom πεδία (' . count($customFields) . ')',
+        'fields' => 'Ειδικά πεδία (' . count($customFields) . ')',
         'updates' => 'Ενημερώσεις',
         'share' => 'Κοινοποίηση',
     ] as $k => $lbl):
@@ -177,38 +176,108 @@ $flash = getFlash();
     </div>
 
   <?php elseif ($tab === 'categories'): ?>
-    <!-- ADD CATEGORY -->
-    <form method="POST" style="background:#111520;border:1px solid #1e2536;border-radius:14px;padding:1.25rem;margin-bottom:1rem">
-      <input type="hidden" name="csrf_token" value="<?= csrf() ?>">
-      <input type="hidden" name="_action" value="cat_create">
-      <h3 style="margin:0 0 1rem;color:#e63946;font-size:.95rem;text-transform:uppercase;letter-spacing:.08em">+ Προσθήκη κατηγορίας</h3>
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:.75rem">
-        <input type="text" name="name" placeholder="Όνομα (π.χ. -60kg U18 Άνδρες)" required style="padding:.6rem;background:#0d1017;border:1px solid #2a3248;border-radius:8px;color:#f0f2ff">
-        <select name="gender" style="padding:.6rem;background:#0d1017;border:1px solid #2a3248;border-radius:8px;color:#f0f2ff">
-          <option value="MX">Μικτό</option>
-          <option value="M">Άνδρες</option>
-          <option value="F">Γυναίκες</option>
-        </select>
-        <input type="number" name="min_age" placeholder="Ηλικία από" style="padding:.6rem;background:#0d1017;border:1px solid #2a3248;border-radius:8px;color:#f0f2ff">
-        <input type="number" name="max_age" placeholder="Ηλικία έως" style="padding:.6rem;background:#0d1017;border:1px solid #2a3248;border-radius:8px;color:#f0f2ff">
-        <input type="number" step="0.1" name="min_weight" placeholder="Βάρος από (kg)" style="padding:.6rem;background:#0d1017;border:1px solid #2a3248;border-radius:8px;color:#f0f2ff">
-        <input type="number" step="0.1" name="max_weight" placeholder="Βάρος έως (kg)" style="padding:.6rem;background:#0d1017;border:1px solid #2a3248;border-radius:8px;color:#f0f2ff">
-        <input type="text" name="belt_from" placeholder="Ζώνη από" style="padding:.6rem;background:#0d1017;border:1px solid #2a3248;border-radius:8px;color:#f0f2ff">
-        <input type="text" name="belt_to" placeholder="Ζώνη έως" style="padding:.6rem;background:#0d1017;border:1px solid #2a3248;border-radius:8px;color:#f0f2ff">
-        <input type="text" name="style" placeholder="Στυλ (kata/kumite)" style="padding:.6rem;background:#0d1017;border:1px solid #2a3248;border-radius:8px;color:#f0f2ff">
-        <input type="number" name="max_slots" placeholder="Max θέσεις" style="padding:.6rem;background:#0d1017;border:1px solid #2a3248;border-radius:8px;color:#f0f2ff">
-        <input type="number" step="0.01" name="fee_override" placeholder="Χρέωση κατηγορίας (€)" style="padding:.6rem;background:#0d1017;border:1px solid #2a3248;border-radius:8px;color:#f0f2ff">
-        <select name="format" style="padding:.6rem;background:#0d1017;border:1px solid #2a3248;border-radius:8px;color:#f0f2ff">
-          <option value="single_elim">Single elimination</option>
-          <option value="double_elim">Double elimination</option>
-          <option value="round_robin">Round robin</option>
-          <option value="pool_ko">Pool + KO</option>
-          <option value="pool_only">Μόνο pool</option>
-          <option value="exhibition">Επίδειξη</option>
-        </select>
+    <!-- ADD CATEGORY (button opens modal) -->
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:.75rem;flex-wrap:wrap;margin-bottom:1rem">
+      <div style="color:#a9b3c9;font-size:.92rem">
+        <?= count($categories) ?> κατηγορίες · Ορίζονται από τον διοργανωτή για κάθε πρωτάθλημα.
       </div>
-      <button type="submit" class="btn btn-primary" style="margin-top:.85rem"><i class="fa-solid fa-plus"></i> Προσθήκη</button>
-    </form>
+      <button type="button" class="btn btn-primary" onclick="openModal('modalAddCategory')" style="min-height:44px;font-size:.98rem">
+        <i class="fa-solid fa-plus"></i> Προσθήκη Κατηγορίας
+      </button>
+    </div>
+
+    <!-- Modal -->
+    <div id="modalAddCategory" class="ev-modal-backdrop" role="dialog" aria-modal="true"
+         style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.72);backdrop-filter:blur(5px);z-index:10500;align-items:center;justify-content:center;padding:1rem"
+         onclick="if(event.target===this)closeModal('modalAddCategory')">
+      <div style="background:#111520;border:1px solid #1e2536;border-radius:16px;max-width:600px;width:100%;max-height:90vh;overflow:auto;box-shadow:0 30px 80px rgba(0,0,0,.6)">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:1.1rem 1.35rem;border-bottom:1px solid #1e2536">
+          <h3 style="margin:0;font-size:1.05rem;color:#fff;font-weight:800">
+            <i class="fa-solid fa-plus" style="color:#e63946"></i> Νέα Κατηγορία
+          </h3>
+          <button type="button" onclick="closeModal('modalAddCategory')"
+                  style="background:rgba(255,255,255,.05);border:1px solid #2a3248;color:#fff;width:36px;height:36px;border-radius:10px;cursor:pointer">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+        <form method="POST" style="padding:1.1rem 1.35rem">
+          <input type="hidden" name="csrf_token" value="<?= csrf() ?>">
+          <input type="hidden" name="_action" value="cat_create">
+          <div style="display:grid;grid-template-columns:1fr;gap:.85rem">
+            <label>
+              <div style="font-size:.82rem;font-weight:700;color:#c9cee1;margin-bottom:.3rem">Όνομα κατηγορίας *</div>
+              <input type="text" name="name" placeholder="π.χ. -60kg U18 Άνδρες" required
+                     style="width:100%;padding:.9rem 1rem;background:#0d1017;border:1.5px solid #2a3248;border-radius:10px;color:#fff;font-size:1rem;min-height:48px">
+            </label>
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:.75rem">
+              <label>
+                <div style="font-size:.82rem;font-weight:700;color:#c9cee1;margin-bottom:.3rem">Φύλο</div>
+                <select name="gender" style="width:100%;padding:.75rem 1rem;background:#0d1017;border:1.5px solid #2a3248;border-radius:10px;color:#fff;font-size:.95rem;min-height:48px">
+                  <option value="MX">Μικτό</option>
+                  <option value="M">Άνδρες</option>
+                  <option value="F">Γυναίκες</option>
+                </select>
+              </label>
+              <label>
+                <div style="font-size:.82rem;font-weight:700;color:#c9cee1;margin-bottom:.3rem">Format αγώνων</div>
+                <select name="format" style="width:100%;padding:.75rem 1rem;background:#0d1017;border:1.5px solid #2a3248;border-radius:10px;color:#fff;font-size:.95rem;min-height:48px">
+                  <option value="single_elim">Single elimination</option>
+                  <option value="double_elim">Double elimination</option>
+                  <option value="round_robin">Round robin</option>
+                  <option value="pool_ko">Pool + KO</option>
+                  <option value="pool_only">Μόνο pool</option>
+                  <option value="exhibition">Επίδειξη</option>
+                </select>
+              </label>
+              <label>
+                <div style="font-size:.82rem;font-weight:700;color:#c9cee1;margin-bottom:.3rem">Ηλικία από</div>
+                <input type="number" name="min_age" min="1" max="99" placeholder="π.χ. 14" style="width:100%;padding:.75rem 1rem;background:#0d1017;border:1.5px solid #2a3248;border-radius:10px;color:#fff;font-size:.95rem;min-height:48px">
+              </label>
+              <label>
+                <div style="font-size:.82rem;font-weight:700;color:#c9cee1;margin-bottom:.3rem">Ηλικία έως</div>
+                <input type="number" name="max_age" min="1" max="99" placeholder="π.χ. 17" style="width:100%;padding:.75rem 1rem;background:#0d1017;border:1.5px solid #2a3248;border-radius:10px;color:#fff;font-size:.95rem;min-height:48px">
+              </label>
+              <label>
+                <div style="font-size:.82rem;font-weight:700;color:#c9cee1;margin-bottom:.3rem">Βάρος από (kg)</div>
+                <input type="number" step="0.1" name="min_weight" placeholder="π.χ. 55" style="width:100%;padding:.75rem 1rem;background:#0d1017;border:1.5px solid #2a3248;border-radius:10px;color:#fff;font-size:.95rem;min-height:48px">
+              </label>
+              <label>
+                <div style="font-size:.82rem;font-weight:700;color:#c9cee1;margin-bottom:.3rem">Βάρος έως (kg)</div>
+                <input type="number" step="0.1" name="max_weight" placeholder="π.χ. 60" style="width:100%;padding:.75rem 1rem;background:#0d1017;border:1.5px solid #2a3248;border-radius:10px;color:#fff;font-size:.95rem;min-height:48px">
+              </label>
+              <label>
+                <div style="font-size:.82rem;font-weight:700;color:#c9cee1;margin-bottom:.3rem">Ζώνη από</div>
+                <input type="text" name="belt_from" placeholder="π.χ. Πράσινη" style="width:100%;padding:.75rem 1rem;background:#0d1017;border:1.5px solid #2a3248;border-radius:10px;color:#fff;font-size:.95rem;min-height:48px">
+              </label>
+              <label>
+                <div style="font-size:.82rem;font-weight:700;color:#c9cee1;margin-bottom:.3rem">Ζώνη έως</div>
+                <input type="text" name="belt_to" placeholder="π.χ. Μαύρη 1st Dan" style="width:100%;padding:.75rem 1rem;background:#0d1017;border:1.5px solid #2a3248;border-radius:10px;color:#fff;font-size:.95rem;min-height:48px">
+              </label>
+              <label>
+                <div style="font-size:.82rem;font-weight:700;color:#c9cee1;margin-bottom:.3rem">Στυλ</div>
+                <input type="text" name="style" placeholder="kata / kumite" style="width:100%;padding:.75rem 1rem;background:#0d1017;border:1.5px solid #2a3248;border-radius:10px;color:#fff;font-size:.95rem;min-height:48px">
+              </label>
+              <label>
+                <div style="font-size:.82rem;font-weight:700;color:#c9cee1;margin-bottom:.3rem">Max θέσεις</div>
+                <input type="number" name="max_slots" min="0" placeholder="άπειρες" style="width:100%;padding:.75rem 1rem;background:#0d1017;border:1.5px solid #2a3248;border-radius:10px;color:#fff;font-size:.95rem;min-height:48px">
+              </label>
+              <label style="grid-column:1/-1">
+                <div style="font-size:.82rem;font-weight:700;color:#c9cee1;margin-bottom:.3rem">Χρέωση κατηγορίας (€) — αν διαφέρει από την προεπιλεγμένη</div>
+                <input type="number" step="0.01" name="fee_override" placeholder="κενό = default του event" style="width:100%;padding:.75rem 1rem;background:#0d1017;border:1.5px solid #2a3248;border-radius:10px;color:#fff;font-size:.95rem;min-height:48px">
+              </label>
+            </div>
+          </div>
+          <div style="display:flex;gap:.5rem;justify-content:flex-end;flex-wrap:wrap;margin-top:1.2rem;padding-top:1rem;border-top:1px solid #1e2536">
+            <button type="button" onclick="closeModal('modalAddCategory')" class="btn" style="background:rgba(255,255,255,.06);border:1px solid #2a3248;color:#fff;min-height:48px;padding:.7rem 1.2rem;font-size:.95rem;font-weight:700">
+              Άκυρο
+            </button>
+            <button type="submit" class="btn btn-primary" style="min-height:48px;padding:.7rem 1.4rem;font-size:.98rem;font-weight:800">
+              <i class="fa-solid fa-check"></i> Δημιουργία
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
 
     <!-- LIST -->
     <?php if (!$categories): ?>
@@ -364,44 +433,89 @@ $flash = getFlash();
     <?php endif; ?>
 
   <?php elseif ($tab === 'fields'): ?>
-    <!-- ADD/EDIT CUSTOM FIELD -->
     <?php
     $editingField = null;
     if (isset($_GET['field'])) foreach ($customFields as $cf) if ((int)$cf['id']===(int)$_GET['field']) { $editingField = $cf; break; }
+    $modalOpenOnLoad = $editingField ? true : false;
     ?>
-    <form method="POST" style="background:#111520;border:1px solid #1e2536;border-radius:14px;padding:1.25rem;margin-bottom:1rem">
-      <input type="hidden" name="csrf_token" value="<?= csrf() ?>">
-      <input type="hidden" name="_action" value="field_save">
-      <input type="hidden" name="field_id" value="<?= $editingField ? (int)$editingField['id'] : '' ?>">
-      <h3 style="margin:0 0 1rem;color:#e63946;font-size:.95rem;text-transform:uppercase;letter-spacing:.08em">
-        <?= $editingField ? 'Επεξεργασία πεδίου' : '+ Νέο πεδίο εγγραφής' ?>
-      </h3>
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:.75rem">
-        <input type="text" name="label" required maxlength="160" placeholder="Ετικέτα (π.χ. Μέγεθος T-shirt)" value="<?= h($editingField['label'] ?? '') ?>" style="padding:.6rem;background:#0d1017;border:1px solid #2a3248;border-radius:8px;color:#f0f2ff">
-        <input type="text" name="code" maxlength="60" placeholder="Κωδικός (auto)" value="<?= h($editingField['code'] ?? '') ?>" style="padding:.6rem;background:#0d1017;border:1px solid #2a3248;border-radius:8px;color:#f0f2ff;font-family:monospace">
-        <select name="field_type" style="padding:.6rem;background:#0d1017;border:1px solid #2a3248;border-radius:8px;color:#f0f2ff">
-          <?php foreach (['text'=>'Κείμενο','textarea'=>'Πολυγραμμικό','select'=>'Λίστα','number'=>'Αριθμός','date'=>'Ημερομηνία','checkbox'=>'Checkbox'] as $v=>$lbl): ?>
-            <option value="<?= $v ?>" <?= ($editingField['field_type']??'text')===$v?'selected':'' ?>><?= h($lbl) ?></option>
-          <?php endforeach; ?>
-        </select>
-        <input type="number" name="display_order" placeholder="Σειρά" value="<?= (int)($editingField['display_order'] ?? 0) ?>" style="padding:.6rem;background:#0d1017;border:1px solid #2a3248;border-radius:8px;color:#f0f2ff">
-        <label style="display:flex;align-items:center;gap:.4rem;color:#c8cfe0;padding:.6rem;background:#0d1017;border:1px solid #2a3248;border-radius:8px">
-          <input type="checkbox" name="required" value="1" <?= !empty($editingField['required'])?'checked':'' ?>>
-          <span>Υποχρεωτικό</span>
-        </label>
+    <!-- Header + open modal button -->
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:.75rem;flex-wrap:wrap;margin-bottom:1rem">
+      <div style="color:#a9b3c9;font-size:.92rem">
+        <?= count($customFields) ?> ειδικά πεδία · Επιπλέον στοιχεία που ζητούνται στην εγγραφή (T-shirt, ασφάλεια, διατροφή…).
       </div>
-      <label style="display:block;margin-top:.75rem">
-        <div style="font-size:.82rem;color:#c8cfe0;font-weight:700;margin-bottom:.3rem">Options (μόνο για Λίστα — μία επιλογή ανά γραμμή)</div>
-        <textarea name="options" rows="3" style="width:100%;padding:.6rem;background:#0d1017;border:1px solid #2a3248;border-radius:8px;color:#f0f2ff;font-family:inherit"><?= h($editingField['options'] ?? '') ?></textarea>
-      </label>
-      <label style="display:block;margin-top:.75rem">
-        <div style="font-size:.82rem;color:#c8cfe0;font-weight:700;margin-bottom:.3rem">Help text</div>
-        <input type="text" name="help_text" maxlength="255" value="<?= h($editingField['help_text'] ?? '') ?>" style="width:100%;padding:.6rem;background:#0d1017;border:1px solid #2a3248;border-radius:8px;color:#f0f2ff">
-      </label>
-      <div style="margin-top:.85rem"><button class="btn btn-primary"><i class="fa-solid fa-save"></i> Αποθήκευση</button>
-      <?php if ($editingField): ?><a href="?id=<?= $id ?>&tab=fields" class="btn btn-ghost">Άκυρο</a><?php endif; ?>
+      <button type="button" class="btn btn-primary" onclick="openModal('modalAddField')" style="min-height:44px;font-size:.98rem">
+        <i class="fa-solid fa-plus"></i> Νέο Ειδικό Πεδίο
+      </button>
+    </div>
+
+    <!-- Modal (add/edit special field) -->
+    <div id="modalAddField" class="ev-modal-backdrop" role="dialog" aria-modal="true"
+         style="display:<?= $modalOpenOnLoad ? 'flex' : 'none' ?>;position:fixed;inset:0;background:rgba(0,0,0,.72);backdrop-filter:blur(5px);z-index:10500;align-items:center;justify-content:center;padding:1rem"
+         onclick="if(event.target===this)closeModal('modalAddField')">
+      <div style="background:#111520;border:1px solid #1e2536;border-radius:16px;max-width:560px;width:100%;max-height:90vh;overflow:auto;box-shadow:0 30px 80px rgba(0,0,0,.6)">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:1.1rem 1.35rem;border-bottom:1px solid #1e2536">
+          <h3 style="margin:0;font-size:1.05rem;color:#fff;font-weight:800">
+            <i class="fa-solid <?= $editingField ? 'fa-pen' : 'fa-plus' ?>" style="color:#e63946"></i>
+            <?= $editingField ? 'Επεξεργασία πεδίου' : 'Νέο Ειδικό Πεδίο' ?>
+          </h3>
+          <a href="?id=<?= $id ?>&tab=fields" onclick="closeModal('modalAddField');return true"
+             style="background:rgba(255,255,255,.05);border:1px solid #2a3248;color:#fff;width:36px;height:36px;border-radius:10px;display:inline-flex;align-items:center;justify-content:center;text-decoration:none">
+            <i class="fa-solid fa-xmark"></i>
+          </a>
+        </div>
+        <form method="POST" style="padding:1.1rem 1.35rem">
+          <input type="hidden" name="csrf_token" value="<?= csrf() ?>">
+          <input type="hidden" name="_action" value="field_save">
+          <input type="hidden" name="field_id" value="<?= $editingField ? (int)$editingField['id'] : '' ?>">
+          <div style="display:grid;grid-template-columns:1fr;gap:.85rem">
+            <label>
+              <div style="font-size:.82rem;font-weight:700;color:#c9cee1;margin-bottom:.3rem">Ετικέτα *</div>
+              <input type="text" name="label" required maxlength="160" placeholder="π.χ. Μέγεθος T-shirt" value="<?= h($editingField['label'] ?? '') ?>"
+                     style="width:100%;padding:.85rem 1rem;background:#0d1017;border:1.5px solid #2a3248;border-radius:10px;color:#fff;font-size:1rem;min-height:48px">
+            </label>
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:.75rem">
+              <label>
+                <div style="font-size:.82rem;font-weight:700;color:#c9cee1;margin-bottom:.3rem">Τύπος</div>
+                <select name="field_type" style="width:100%;padding:.75rem 1rem;background:#0d1017;border:1.5px solid #2a3248;border-radius:10px;color:#fff;font-size:.95rem;min-height:48px">
+                  <?php foreach (['text'=>'Κείμενο','textarea'=>'Πολυγραμμικό','select'=>'Λίστα','number'=>'Αριθμός','date'=>'Ημερομηνία','checkbox'=>'Checkbox'] as $v=>$lbl): ?>
+                    <option value="<?= $v ?>" <?= ($editingField['field_type']??'text')===$v?'selected':'' ?>><?= h($lbl) ?></option>
+                  <?php endforeach; ?>
+                </select>
+              </label>
+              <label>
+                <div style="font-size:.82rem;font-weight:700;color:#c9cee1;margin-bottom:.3rem">Σειρά εμφάνισης</div>
+                <input type="number" name="display_order" placeholder="0" value="<?= (int)($editingField['display_order'] ?? 0) ?>"
+                       style="width:100%;padding:.75rem 1rem;background:#0d1017;border:1.5px solid #2a3248;border-radius:10px;color:#fff;font-size:.95rem;min-height:48px">
+              </label>
+            </div>
+            <label style="display:flex;align-items:center;gap:.7rem;padding:.75rem 1rem;background:#0d1017;border:1.5px solid #2a3248;border-radius:10px;cursor:pointer;min-height:48px">
+              <input type="checkbox" name="required" value="1" <?= !empty($editingField['required'])?'checked':'' ?> style="width:20px;height:20px;accent-color:#e63946">
+              <span style="color:#fff;font-weight:700;font-size:.95rem">Υποχρεωτικό στην εγγραφή</span>
+            </label>
+            <label>
+              <div style="font-size:.82rem;font-weight:700;color:#c9cee1;margin-bottom:.3rem">Επιλογές (μόνο για Λίστα — μία ανά γραμμή)</div>
+              <textarea name="options" rows="3" placeholder="XS&#10;S&#10;M&#10;L&#10;XL"
+                        style="width:100%;padding:.75rem 1rem;background:#0d1017;border:1.5px solid #2a3248;border-radius:10px;color:#fff;font-family:inherit;font-size:.95rem;resize:vertical;min-height:80px"><?= h($editingField['options'] ?? '') ?></textarea>
+            </label>
+            <label>
+              <div style="font-size:.82rem;font-weight:700;color:#c9cee1;margin-bottom:.3rem">Βοηθητικό κείμενο (προαιρετικό)</div>
+              <input type="text" name="help_text" maxlength="255" value="<?= h($editingField['help_text'] ?? '') ?>"
+                     placeholder="π.χ. Απαιτείται για την παράδοση του πακέτου"
+                     style="width:100%;padding:.75rem 1rem;background:#0d1017;border:1.5px solid #2a3248;border-radius:10px;color:#fff;font-size:.95rem;min-height:48px">
+            </label>
+            <input type="hidden" name="code" value="<?= h($editingField['code'] ?? '') ?>">
+          </div>
+          <div style="display:flex;gap:.5rem;justify-content:flex-end;flex-wrap:wrap;margin-top:1.2rem;padding-top:1rem;border-top:1px solid #1e2536">
+            <a href="?id=<?= $id ?>&tab=fields" class="btn" style="background:rgba(255,255,255,.06);border:1px solid #2a3248;color:#fff;min-height:48px;padding:.7rem 1.2rem;font-size:.95rem;font-weight:700;text-decoration:none;display:inline-flex;align-items:center">
+              Άκυρο
+            </a>
+            <button type="submit" class="btn btn-primary" style="min-height:48px;padding:.7rem 1.4rem;font-size:.98rem;font-weight:800">
+              <i class="fa-solid fa-save"></i> Αποθήκευση
+            </button>
+          </div>
+        </form>
       </div>
-    </form>
+    </div>
 
     <!-- LIST -->
     <?php if (!$customFields): ?>
@@ -469,4 +583,27 @@ $flash = getFlash();
 </div>
 </div>
 </div>
+
+<script>
+/* Simple modal open/close helpers (mobile-friendly, esc-to-close, body scroll lock) */
+window.openModal = function(id) {
+  var m = document.getElementById(id);
+  if (!m) return;
+  m.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+  var firstInput = m.querySelector('input[type="text"],input[type="number"],select,textarea');
+  if (firstInput) setTimeout(function(){ firstInput.focus(); }, 100);
+};
+window.closeModal = function(id) {
+  var m = document.getElementById(id);
+  if (m) m.style.display = 'none';
+  document.body.style.overflow = '';
+};
+document.addEventListener('keydown', function(e){
+  if (e.key !== 'Escape') return;
+  document.querySelectorAll('.ev-modal-backdrop').forEach(function(m){
+    if (m.style.display && m.style.display !== 'none') { m.style.display = 'none'; document.body.style.overflow = ''; }
+  });
+});
+</script>
 </body></html>
