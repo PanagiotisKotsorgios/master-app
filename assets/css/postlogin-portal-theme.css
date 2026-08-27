@@ -290,6 +290,14 @@ select { color-scheme: dark; }
 a { color: #ff8891 !important; }
 a:hover { color: #ffffff !important; }
 a.nav-item, a.brand, a.logo, a.no-color { color: inherit !important; }
+/* Elements that manage their own color (topbar chip, sidebar rows, buttons-as-links) */
+.user-chip, .user-chip *,
+.sidebar-item, .sidebar-item *,
+.btn, .btn * { color: inherit !important; }
+/* User dropdown labels — keep them readable (base rule is #f0f2ff in layout.php) */
+.dropdown-item { color: #f0f2ff !important; }
+.dropdown-item:hover { color: #ffffff !important; }
+.dropdown-item i { color: inherit !important; opacity: .85; }
 
 /* Headings inside content */
 .main-content h1, .main-content h2, .main-content h3, .main-content h4, .main-content h5 {
