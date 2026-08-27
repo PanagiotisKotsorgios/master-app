@@ -82,15 +82,15 @@ body::after{content:'';position:fixed;inset:0;background-image:url("data:image/s
 }
 
 .nav-links{display:flex;align-items:center;gap:2rem;list-style:none;flex:1;justify-content:center}
-.nav-links a{font-size:.88rem;font-weight:600;color:#ffffff;transition:color .2s;letter-spacing:.02em;white-space:nowrap;opacity:.92}
-.nav-links a:hover{color:#ffffff;opacity:1}
+.nav-links a{font-size:.88rem;font-weight:600;color:#ffffff !important;transition:color .2s;letter-spacing:.02em;white-space:nowrap}
+.nav-links a:hover{color:#ffffff !important}
 .nav-ctas{display:flex;align-items:center;gap:.75rem;flex-shrink:0}
 
 /* ── PARENT PORTAL BUTTON - Red Border Only ── */
 .btn-parent-portal {
     font-size: 0.9rem;
     font-weight: 600;
-    color: #ffffff;
+    color: #ffffff !important;
     padding: .45rem .95rem;
     border: 1.5px solid var(--red);
     border-radius: 8px;
@@ -108,8 +108,8 @@ body::after{content:'';position:fixed;inset:0;background-image:url("data:image/s
     transform: translateY(-1px);
 }
 
-.btn-nav-login{font-size:.9rem;font-weight:600;color:#ffffff;padding:.45rem .875rem;border-radius:8px;transition:all .2s}
-.btn-nav-login:hover{color:#ffffff;background:rgba(255,255,255,.08)}
+.btn-nav-login{font-size:.9rem;font-weight:600;color:#ffffff !important;padding:.45rem .875rem;border-radius:8px;transition:all .2s}
+.btn-nav-login:hover{color:#ffffff !important;background:rgba(255,255,255,.08)}
 .btn-nav-cta{font-size:.9rem;font-weight:700;background:linear-gradient(135deg,var(--red),var(--red2));color:#fff;padding:.5rem 1.25rem;border-radius:8px;transition:all .2s;box-shadow:0 0 18px rgba(230,57,70,.4);letter-spacing:.01em}
 .btn-nav-cta:hover{background:linear-gradient(135deg,var(--red2),#b32430);box-shadow:0 0 28px rgba(230,57,70,.6);transform:translateY(-1px)}
 

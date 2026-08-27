@@ -160,16 +160,16 @@ body::after{
 }
 .nav-links{display:flex;align-items:center;gap:2rem;list-style:none;flex:1;justify-content:center}
 .nav-links a{
-  font-size:.88rem;font-weight:500;color:var(--muted);
+  font-size:.88rem;font-weight:600;color:#ffffff !important;
   transition:color .2s;letter-spacing:.02em;white-space:nowrap
 }
-.nav-links a:hover,.nav-links a.active{color:var(--white)}
+.nav-links a:hover,.nav-links a.active{color:#ffffff !important}
 .nav-ctas{display:flex;align-items:center;gap:.75rem;flex-shrink:0}
 /* ── PARENT PORTAL BUTTON - Red Border Only ── */
 .btn-parent-portal {
     font-size: 0.9rem;
-    font-weight: 500;
-    color: var(--red);
+    font-weight: 600;
+    color: #ffffff !important;
     padding: .45rem .95rem;
     border: 1.5px solid var(--red);
     border-radius: 8px;
@@ -179,6 +179,7 @@ body::after{
     gap: 0.5rem;
     white-space: nowrap;
 }
+.btn-parent-portal i { color: var(--red); }
 .btn-parent-portal:hover {
     background: rgba(230, 57, 70, 0.08);
     color: #fff;
@@ -187,10 +188,10 @@ body::after{
 }
 
 .btn-nav-login{
-  font-size:.9rem;font-weight:500;color:var(--muted);
+  font-size:.9rem;font-weight:600;color:#ffffff !important;
   padding:.45rem .875rem;border-radius:8px;transition:all .2s
 }
-.btn-nav-login:hover{color:var(--white);background:rgba(255,255,255,.06)}
+.btn-nav-login:hover{color:#ffffff !important;background:rgba(255,255,255,.08)}
 .btn-nav-cta{
   font-size:.9rem;font-weight:700;background:linear-gradient(135deg,var(--red),var(--red2));
   color:#fff;padding:.5rem 1.25rem;border-radius:8px;transition:all .2s;
@@ -305,7 +306,7 @@ body::after{
   color:var(--red);margin-bottom:.75rem
 }
 .contact-hero h1{
-  font-family:'Syne',sans-serif;font-size:clamp(2rem,6vw,3.5rem);
+  font-family:'Outfit',sans-serif;font-size:clamp(2rem,6vw,3.5rem);
   font-weight:800;line-height:1.1;margin-bottom:.875rem
 }
 .contact-hero h1 em{font-style:normal;color:var(--red)}
@@ -342,7 +343,7 @@ body::after{
   display:flex;align-items:center;justify-content:center;font-size:1.15rem;color:var(--red)
 }
 .info-card h4{
-  font-family:'Syne',sans-serif;font-size:.85rem;font-weight:700;color:var(--white);margin-bottom:.25rem
+  font-family:'Outfit',sans-serif;font-size:.85rem;font-weight:700;color:var(--white);margin-bottom:.25rem
 }
 .info-card p,.info-card a{font-size:.875rem;color:var(--muted);line-height:1.6;word-break:break-all}
 .info-card a:hover{color:var(--red)}
@@ -359,7 +360,7 @@ body::after{
   padding:2rem 2.25rem;
 }
 .form-panel h2{
-  font-family:'Syne',sans-serif;font-size:1.25rem;font-weight:800;
+  font-family:'Outfit',sans-serif;font-size:1.25rem;font-weight:800;
   margin-bottom:1.5rem;display:flex;align-items:center;gap:.6rem
 }
 .form-panel h2 i{color:var(--red);font-size:1.1rem}
@@ -409,7 +410,7 @@ body::after{
   padding:.9rem;
   background:linear-gradient(135deg,var(--red),var(--red2));
   color:#fff;
-  font-family:'Syne',sans-serif;
+  font-family:'Outfit',sans-serif;
   font-size:1rem;
   font-weight:700;
   border:none;
@@ -440,7 +441,7 @@ body::after{
   animation:popIn .5s cubic-bezier(.22,1,.36,1) both
 }
 @keyframes popIn{from{transform:scale(0)}to{transform:scale(1)}}
-.success-state h3{font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:800;margin-bottom:.625rem}
+.success-state h3{font-family:'Outfit',sans-serif;font-size:1.3rem;font-weight:800;margin-bottom:.625rem}
 .success-state p{font-size:.9rem;color:var(--muted);line-height:1.7;max-width:340px;margin:0 auto 1.5rem}
 .btn-back{
   display:inline-flex;align-items:center;gap:.5rem;background:rgba(255,255,255,.06);color:var(--white);
@@ -462,7 +463,7 @@ body::after{
 .foot-top{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:3rem;margin-bottom:0;padding-bottom:3rem}
 .foot-brand p{font-size:.94rem;color:var(--muted);margin-top:.875rem;max-width:240px;line-height:1.75}
 .foot-col h4{
-  font-family:'Syne',sans-serif;font-weight:700;font-size:.8rem;letter-spacing:.08em;text-transform:uppercase;
+  font-family:'Outfit',sans-serif;font-weight:700;font-size:.8rem;letter-spacing:.08em;text-transform:uppercase;
   color:var(--white);margin-bottom:1.1rem;display:flex;align-items:center;gap:.45rem
 }
 .foot-col h4 i{color:var(--red);font-size:.75rem}
