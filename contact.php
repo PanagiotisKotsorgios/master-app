@@ -535,7 +535,7 @@ body::after{
     <div class="nav-ctas">
       <!-- New Parent Portal Button - Red Border Only -->
       <a href="<?= APP_URL ?>/parent/login.php" class="btn-parent-portal">
-        <i class="fa-solid fa-house-chimney-user"></i> &nbsp; Πύλη Γονέα
+        <i class="fa-solid fa-house-chimney-user"></i> &nbsp; Πύλη Γονέα / Αθλητή
       </a>
       <a href="<?= APP_URL ?>/login.php" class="btn-nav-login">
         <i class="fa-solid fa-arrow-right-to-bracket"></i> &nbsp; Σύνδεση
@@ -557,7 +557,7 @@ body::after{
   <a href="<?= APP_URL ?>/index.php#pricing"><i class="fas fa-credit-card"></i> Τιμές</a>
   <div class="mob-divider"></div>
   <a href="<?= APP_URL ?>/contact.php"><i class="fas fa-envelope"></i> Επικοινωνία</a>
-  <a href="<?= APP_URL ?>/parent/login.php" class="mob-portal"><i class="fa-solid fa-house-chimney-user"></i> Πύλη Γονέα</a>
+  <a href="<?= APP_URL ?>/parent/login.php" class="mob-portal"><i class="fa-solid fa-house-chimney-user"></i> Πύλη Γονέα / Αθλητή</a>
   <a href="<?= APP_URL ?>/login.php" class="mob-login"><i class="fas fa-lock"></i> Σύνδεση</a>
   <a href="<?= APP_URL ?>/register.php" class="mob-cta"><i class="fa-sharp fa-regular fa-share-from-square"></i> Εγγραφή Εδώ</a>
 </div>

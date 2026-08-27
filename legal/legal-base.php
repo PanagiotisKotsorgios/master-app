@@ -237,7 +237,7 @@ body::after{content:'';position:fixed;inset:0;background-image:url("data:image/s
     </a>
     <div class="nav-ctas">
       <a href="<?= APP_URL ?>/parent/login.php" class="btn-parent-portal">
-        <i class="fa-solid fa-house-chimney-user"></i> Πύλη Γονέα
+        <i class="fa-solid fa-house-chimney-user"></i> Πύλη Γονέα / Αθλητή
       </a>
       <a href="<?= APP_URL ?>/login.php" class="btn-nav-login">
         <i class="fa-solid fa-arrow-right-to-bracket"></i> Σύνδεση

@@ -8,6 +8,9 @@ require_once __DIR__ . '/../includes/rate_limit.php';
 if (isset($_SESSION['is_parent']) && $_SESSION['is_parent'] === true) {
     redirect(APP_URL . '/parent/index.php');
 }
+if (isset($_SESSION['is_athlete']) && $_SESSION['is_athlete'] === true) {
+    redirect(APP_URL . '/athlete/index.php');
+}
 
 $error  = '';
 $flash  = getFlash();
@@ -84,8 +87,49 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $db->prepare("UPDATE parent_users SET last_login = NOW() WHERE id = ?")->execute([$matched['id']]);
                     redirect(APP_URL . '/parent/index.php');
                 } else {
-                    recordFailedLogin($email, $clientIp);
-                    $error = 'Λάθος email ή κωδικός. Παρακαλώ δοκιμάστε ξανά.';
+                    // ── Fallback: try athlete_users (adult athlete portal) ──
+                    $athleteMatched   = null;
+                    $athleteSuspended = false;
+                    try {
+                        $stmtA = $db->prepare("
+                            SELECT au.*, s.name AS school_name, a.athlete_portal_access
+                            FROM athlete_users au
+                            JOIN schools  s ON s.id = au.school_id
+                            JOIN athletes a ON a.id = au.athlete_id
+                            WHERE au.email = ?
+                            LIMIT 10
+                        ");
+                        $stmtA->execute([$email]);
+                        foreach ($stmtA->fetchAll() as $rowA) {
+                            if (password_verify($password, $rowA['password_hash'])) {
+                                if (!(int)$rowA['active']) { $athleteSuspended = true; break; }
+                                if (!(int)($rowA['athlete_portal_access'] ?? 0)) { $athleteSuspended = true; break; }
+                                $athleteMatched = $rowA;
+                                break;
+                            }
+                        }
+                    } catch (\PDOException $e) { /* athlete tables may not exist yet */ }
+
+                    if ($athleteSuspended) {
+                        $error = 'Η πρόσβαση στο portal σας έχει απενεργοποιηθεί. Επικοινωνήστε με τη σχολή σας.';
+                    } elseif ($athleteMatched) {
+                        clearLoginAttempts($email, $clientIp);
+                        session_regenerate_id(true);
+                        $_SESSION['user_id']            = $athleteMatched['id'];
+                        $_SESSION['athlete_id']         = (int)$athleteMatched['athlete_id'];
+                        $_SESSION['school_id']          = (int)$athleteMatched['school_id'];
+                        $_SESSION['school_name']        = $athleteMatched['school_name'];
+                        $_SESSION['is_athlete']         = true;
+                        $_SESSION['athlete_email']      = $athleteMatched['email'];
+                        $_SESSION['athlete_first_login']    = (bool)($athleteMatched['first_login'] ?? false);
+                        $_SESSION['athlete_terms_accepted'] = !empty($athleteMatched['terms_accepted_at']);
+                        $db->prepare("UPDATE athlete_users SET last_login = NOW() WHERE id = ?")
+                           ->execute([$athleteMatched['id']]);
+                        redirect(APP_URL . '/athlete/index.php');
+                    } else {
+                        recordFailedLogin($email, $clientIp);
+                        $error = 'Λάθος email ή κωδικός. Παρακαλώ δοκιμάστε ξανά.';
+                    }
                 }
             }
         }
@@ -100,7 +144,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
-  <title>Portal Γονέων — Σύνδεση — MAster</title>
+  <title>Σύνδεση Γονέα / Αθλητή — MAster</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
@@ -250,16 +294,16 @@ input[type="email"], input[type="password"], input[type="text"]#password {
     </a>
   </div>
 
- <div class="page-heading">Σύνδεση Γονέα</div>
+ <div class="page-heading">Σύνδεση Γονέα / Αθλητή</div>
   <p class="page-sub">
-    Παρακολουθήστε τις συνδρομές και τις πληρωμές<br>
-    των παιδιών σας σε πραγματικό χρόνο.
+    Παρακολουθήστε συνδρομές, πληρωμές, έγγραφα<br>
+    και το δικό σας δελτίο σε πραγματικό χρόνο.
   </p>
 
-  <!-- ── Parent-only notice ── -->
+  <!-- ── Dual-role notice ── -->
   <div style="display:flex;align-items:center;justify-content:center;gap:.45rem;background:rgba(230,57,70,.1);border:1.5px solid rgba(230,57,70,.35);border-radius:10px;padding:.6rem .9rem;margin-bottom:1.5rem;font-size:.9rem;font-weight:700;color:#ff6b74;text-align:center;line-height:1.45;">
     <i class="fas fa-user-shield" style="color:#e63946;font-size:1rem;flex-shrink:0;"></i>
-    <span>Αποκλειστικά για <strong>Γονείς</strong>. <br>Αθλητικά Σωματεία συνδέονται <a href="https://master-app.gr/login.php" style="color:#ff6b74;text-decoration:underline;font-weight:800;white-space:nowrap;">εδώ →</a></span>
+    <span>Πρόσβαση για <strong>Γονείς</strong> &amp; <strong>Ενήλικες Αθλητές</strong>.<br>Αθλητικά Σωματεία συνδέονται <a href="https://master-app.gr/login.php" style="color:#ff6b74;text-decoration:underline;font-weight:800;white-space:nowrap;">εδώ →</a></span>
   </div>
 
   <?php if ($error): ?>
@@ -287,7 +331,7 @@ input[type="email"], input[type="password"], input[type="text"]#password {
     <div class="form-group">
       <label for="email">
         <i class="fas fa-envelope"></i>
-        Email Γονέα
+        Email
       </label>
       <div class="input-wrap">
         <input type="email" id="email" name="email"
@@ -328,7 +372,7 @@ input[type="email"], input[type="password"], input[type="text"]#password {
   <div class="card-footer">
     <i class="fas fa-circle-info" style="color:#3b82f6;margin-right:.3rem"></i>
     Τα στοιχεία σύνδεσης εστάλησαν στο email σας<br>
-    κατά την εγγραφή του παιδιού σας.<br><br>
+    από τη σχολή σας.<br><br>
     Πρόβλημα σύνδεσης;
     <a href="<?= APP_URL ?>/contact.php" style="color:#e63946;font-weight:700;text-decoration:underline;text-underline-offset:3px">Επικοινωνήστε μαζί μας εδώ</a>.
   </div>

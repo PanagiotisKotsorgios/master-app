@@ -1110,6 +1110,126 @@ HTML;
 
 
 // =============================================================================
+// 8b) ATHLETE PORTAL CREDENTIALS EMAIL
+// =============================================================================
+
+/**
+ * Sends login credentials to an adult athlete for their own portal.
+ * Mirrors sendParentCredentials() but points at /parent/login.php
+ * (the unified login page auto-routes to /athlete/index.php).
+ */
+function sendAthleteCredentials(
+    string $toEmail,
+    string $rawPassword,
+    string $athleteName,
+    string $schoolName,
+    ?string &$debugOut = null
+): bool {
+    if (!filter_var($toEmail, FILTER_VALIDATE_EMAIL)) return false;
+
+    $appUrl   = defined('APP_URL') ? APP_URL : 'https://master-app.gr';
+    $loginUrl = $appUrl . '/parent/login.php';
+    $subject  = "Πρόσβαση στο Portal Αθλητή — $schoolName";
+
+    $bodyText = "Γεια σου $athleteName,\n\n"
+        . "Ο σύλλογος $schoolName σου έδωσε πρόσβαση στο δικό σου Portal Αθλητή στο MAster.\n\n"
+        . "Μέσα από το portal μπορείς να δεις τη συνδρομή σου, τα έγγραφά σου, τις εκδηλώσεις της σχολής,\n"
+        . "και να ανεβάσεις μόνος/η σου δελτίο αθλητή, πιστοποιητικά Dan, ζώνη, ιατρικό.\n\n"
+        . "━━━━━━━━━━━━━━━━━━━━━\n"
+        . "Email σύνδεσης : $toEmail\n"
+        . "Κωδικός        : $rawPassword\n"
+        . "━━━━━━━━━━━━━━━━━━━━━\n\n"
+        . "Συνδέσου εδώ: $loginUrl\n\n"
+        . "Άλλαξε τον κωδικό σου μετά την πρώτη σύνδεση.\n\n"
+        . "— $schoolName";
+
+    $safeEmail    = htmlspecialchars($toEmail,     ENT_QUOTES, 'UTF-8');
+    $safePassword = htmlspecialchars($rawPassword, ENT_QUOTES, 'UTF-8');
+    $safeAthlete  = htmlspecialchars($athleteName, ENT_QUOTES, 'UTF-8');
+    $safeSchool   = htmlspecialchars($schoolName,  ENT_QUOTES, 'UTF-8');
+    $safeUrl      = htmlspecialchars($loginUrl,    ENT_QUOTES, 'UTF-8');
+    $year         = date('Y');
+    $logoUrl      = $appUrl . '/assets/img/logo-tr.png';
+    $fromEmail    = function_exists('getMailFromEmail') ? getMailFromEmail() : 'noreply@master-app.gr';
+
+    $html = <<<HTML
+<!DOCTYPE html>
+<html lang="el">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>{$subject}</title>
+</head>
+<body style="margin:0;padding:0;background:#07090f;font-family:Arial,Helvetica,sans-serif">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#07090f;padding:32px 16px">
+  <tr><td style="text-align:center">
+    <table width="100%" cellpadding="0" cellspacing="0"
+           style="max-width:560px;background:#111520;border-radius:16px;border:1px solid #1e2536;overflow:hidden">
+      <tr>
+        <td style="background:linear-gradient(135deg,#0d0d1a,#2a1040);padding:28px 32px 24px;text-align:center;border-bottom:2px solid #501a30">
+          <img src="{$logoUrl}" alt="MAster" style="height:64px;width:auto;max-width:200px;object-fit:contain;display:block;margin:0 auto 10px">
+          <h1 style="margin:0 0 4px;font-size:1.15rem;letter-spacing:.04em;color:#f0f2ff;font-weight:700">{$safeSchool}</h1>
+          <p style="margin:0;font-size:.78rem;color:#8892b0;letter-spacing:.04em">Portal Αθλητή — MAster</p>
+        </td>
+      </tr>
+      <tr>
+        <td style="padding:32px;color:#d0d8f0;font-size:.96rem;line-height:1.85">
+          <p style="margin:0 0 16px">Γεια σου <strong style="color:#f0f2ff">{$safeAthlete}</strong>,</p>
+          <p style="margin:0 0 20px">Ο σύλλογος <strong style="color:#f0f2ff">{$safeSchool}</strong> σου έδωσε πρόσβαση στο δικό σου <strong style="color:#e63946">Portal Αθλητή</strong> στο MAster.</p>
+          <p style="margin:0 0 24px;color:#8892b0;font-size:.9rem">Μπορείς να δεις τη συνδρομή σου, τα έγγραφά σου, τις εκδηλώσεις της σχολής, και να ανεβάσεις δελτίο αθλητή, πιστοποιητικά Dan, ζώνη, ιατρικό.</p>
+
+          <table width="100%" cellpadding="0" cellspacing="0" style="background:#0d1117;border:1px solid #1e2536;border-radius:12px;margin-bottom:28px">
+            <tr>
+              <td style="padding:20px 24px">
+                <p style="margin:0 0 12px;font-size:.78rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#6b7494">Στοιχεία Σύνδεσης</p>
+                <table cellpadding="0" cellspacing="0">
+                  <tr>
+                    <td style="color:#6b7494;font-size:.88rem;padding:4px 0;white-space:nowrap;padding-right:16px">Email:</td>
+                    <td style="color:#f0f2ff;font-size:.88rem;font-weight:700;padding:4px 0">{$safeEmail}</td>
+                  </tr>
+                  <tr>
+                    <td style="color:#6b7494;font-size:.88rem;padding:4px 0;white-space:nowrap;padding-right:16px">Κωδικός:</td>
+                    <td style="color:#e63946;font-size:1rem;font-weight:700;letter-spacing:.08em;padding:4px 0;font-family:monospace">{$safePassword}</td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+          </table>
+
+          <div style="text-align:center;margin-bottom:24px">
+            <a href="{$safeUrl}" style="display:inline-block;background:linear-gradient(135deg,#e63946,#b52a35);color:#fff;font-weight:700;font-size:.95rem;padding:.75rem 2rem;border-radius:10px;text-decoration:none;letter-spacing:.02em">
+              Σύνδεση στο Portal Αθλητή →
+            </a>
+          </div>
+
+          <p style="margin:0;font-size:.82rem;color:#6b7494;text-align:center">Άλλαξε τον κωδικό σου μετά την πρώτη σύνδεση.<br>Για απορίες επικοινώνησε με τη σχολή.</p>
+        </td>
+      </tr>
+      <tr><td style="padding:0 32px"><div style="border-top:1px solid #1e2536"></div></td></tr>
+      <tr>
+        <td style="padding:20px 32px;text-align:center;font-size:.74rem;color:#4a5270;line-height:1.7">
+          &copy; {$year} Παναγιώτης Κοτσόργιος &nbsp;&middot;&nbsp;
+          <a href="mailto:{$fromEmail}" style="color:#6b7494;text-decoration:none">{$fromEmail}</a><br>
+          <span style="font-size:.68rem;color:#363d52">Αποστολή από {$safeSchool} μέσω MAster.</span>
+        </td>
+      </tr>
+    </table>
+  </td></tr>
+</table>
+</body>
+</html>
+HTML;
+
+    $debugOut = null;
+    $result = sendEmail($toEmail, $subject, $html, $bodyText, '', $debugOut, null, $schoolName);
+    if (!$result) {
+        error_log("[MAster mailer] sendAthleteCredentials FAILED to=$toEmail debug=" . ($debugOut ?? 'n/a'));
+    }
+    return $result;
+}
+
+
+// =============================================================================
 // 9) SCHOOL PLAN ACTIVATION EMAIL
 // =============================================================================
 

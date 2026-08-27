@@ -542,6 +542,69 @@ if (($a['_action'] ?? '') === 'edit_exam_payment') {
         redirect(APP_URL . '/pages/athletes.php?view=' . $id);
     }
 
+    // ── Grant / re-send athlete portal access (adult athletes only) ──
+    if (($a['_action'] ?? '') === 'grant_athlete_portal') {
+        $id = (int)($a['id'] ?? 0);
+        $athRow = $db->prepare("SELECT full_name, email, birthdate FROM athletes WHERE id=? AND school_id=? LIMIT 1");
+        $athRow->execute([$id, $sid]);
+        $ath = $athRow->fetch();
+        if (!$ath || !filter_var($ath['email'] ?? '', FILTER_VALIDATE_EMAIL)) {
+            flash('Χρειάζεται έγκυρο email αθλητή για να δοθεί πρόσβαση.', 'danger');
+            redirect(APP_URL . '/pages/athletes.php?view=' . $id);
+        }
+        // Adult check
+        $adult = true;
+        if (!empty($ath['birthdate'])) {
+            try { $adult = ((new DateTime())->diff(new DateTime($ath['birthdate']))->y >= 18); }
+            catch (Exception $e) { $adult = false; }
+        }
+        if (!$adult) {
+            flash('Το Portal Αθλητή διατίθεται μόνο σε ενήλικες αθλητές (18+).', 'warning');
+            redirect(APP_URL . '/pages/athletes.php?view=' . $id);
+        }
+
+        require_once __DIR__ . '/../includes/mailer.php';
+        $aEmail = trim(strtolower($ath['email']));
+        $rawPassword  = bin2hex(random_bytes(5));
+        $passwordHash = password_hash($rawPassword, PASSWORD_DEFAULT);
+
+        // Upsert athlete_users
+        $existStmt = $db->prepare("SELECT id FROM athlete_users WHERE athlete_id=? LIMIT 1");
+        $existStmt->execute([$id]);
+        $auId = (int)$existStmt->fetchColumn();
+        if ($auId) {
+            $db->prepare("UPDATE athlete_users SET email=?, password_hash=?, first_login=1, active=1 WHERE id=?")
+               ->execute([$aEmail, $passwordHash, $auId]);
+        } else {
+            $db->prepare("INSERT INTO athlete_users (school_id, athlete_id, email, password_hash, first_login, active)
+                          VALUES (?, ?, ?, ?, 1, 1)")
+               ->execute([$sid, $id, $aEmail, $passwordHash]);
+        }
+        // Flip flag on athletes
+        $db->prepare("UPDATE athletes SET athlete_portal_access=1 WHERE id=? AND school_id=?")->execute([$id, $sid]);
+
+        $schStmt = $db->prepare("SELECT name FROM schools WHERE id=? LIMIT 1");
+        $schStmt->execute([$sid]);
+        $schoolName = (string)($schStmt->fetchColumn() ?: 'MAster');
+        $emailDebug = null;
+        $emailSent = sendAthleteCredentials($aEmail, $rawPassword, trim((string)$ath['full_name']), $schoolName, $emailDebug);
+        if ($emailSent) {
+            flash('✉️ Στάλθηκαν κωδικοί πρόσβασης Portal Αθλητή στο ' . htmlspecialchars($aEmail, ENT_QUOTES, 'UTF-8') . '.');
+        } else {
+            $hint = $emailDebug ? ' [' . htmlspecialchars(substr($emailDebug, 0, 120), ENT_QUOTES, 'UTF-8') . ']' : '';
+            flash('Το email δεν στάλθηκε' . $hint . '. Δώστε χειροκίνητα τον κωδικό: <strong>' . htmlspecialchars($rawPassword, ENT_QUOTES, 'UTF-8') . '</strong>', 'warning');
+        }
+        redirect(APP_URL . '/pages/athletes.php?view=' . $id);
+    }
+
+    if (($a['_action'] ?? '') === 'revoke_athlete_portal') {
+        $id = (int)($a['id'] ?? 0);
+        $db->prepare("UPDATE athletes SET athlete_portal_access=0 WHERE id=? AND school_id=?")->execute([$id, $sid]);
+        $db->prepare("UPDATE athlete_users SET active=0 WHERE athlete_id=? AND school_id=?")->execute([$id, $sid]);
+        flash('Η πρόσβαση Portal Αθλητή απενεργοποιήθηκε.', 'warning');
+        redirect(APP_URL . '/pages/athletes.php?view=' . $id);
+    }
+
     if (($a['_action'] ?? '') === 'deactivate_athlete') {
         $id = (int)$a['id'];
         $db->prepare("UPDATE athletes SET active=0 WHERE id=? AND school_id=?")->execute([$id,$sid]);
@@ -1462,6 +1525,48 @@ if ($viewId && $athlete):
         <i class="fa-solid fa-paper-plane"></i> Αποστολή Κωδικών Portal Γονέων
       </button>
     </form>
+  </div>
+  <?php endif; ?>
+
+  <?php if ($isAdult && !empty($athlete['email'])):
+    $hasPortal = (int)($athlete['athlete_portal_access'] ?? 0) === 1;
+  ?>
+  <div style="padding:.5rem 1rem .85rem;display:flex;flex-direction:column;gap:.5rem">
+    <form method="post">
+      <?=csrfField()?>
+      <input type="hidden" name="_action" value="grant_athlete_portal">
+      <input type="hidden" name="id" value="<?=$viewId?>">
+      <button type="submit" class="btn btn-sm"
+              style="background:rgba(230,57,70,.12);color:#ff8891;border:1px solid rgba(230,57,70,.35);width:100%;justify-content:center"
+              onclick="return confirm('<?= $hasPortal ? 'Θα σταλεί νέος κωδικός Portal Αθλητή στο ' : 'Θα δοθεί πρόσβαση Portal Αθλητή και θα σταλεί κωδικός στο ' ?><?=h($athlete['email'])?>. Συνέχεια;')">
+        <i class="fa-solid fa-user-shield"></i>
+        <?= $hasPortal ? 'Επαναποστολή Κωδικών Portal Αθλητή' : 'Δώσε Πρόσβαση Portal Αθλητή' ?>
+      </button>
+    </form>
+    <?php if ($hasPortal): ?>
+    <form method="post" onsubmit="return confirm('Απενεργοποίηση πρόσβασης Portal Αθλητή;');">
+      <?=csrfField()?>
+      <input type="hidden" name="_action" value="revoke_athlete_portal">
+      <input type="hidden" name="id" value="<?=$viewId?>">
+      <button type="submit" class="btn btn-sm" style="background:rgba(255,255,255,.05);color:var(--muted,#8892b0);border:1px solid rgba(255,255,255,.1);width:100%;justify-content:center">
+        <i class="fa-solid fa-ban"></i> Απενεργοποίηση Πρόσβασης
+      </button>
+    </form>
+    <?php endif; ?>
+    <div style="font-size:.72rem;color:#6b7494;line-height:1.5;text-align:center;padding:.3rem 0 0">
+      <?php if ($hasPortal): ?>
+        <i class="fa-solid fa-circle-check" style="color:#2dc653"></i>
+        Έχει ενεργή πρόσβαση στο <a href="<?=APP_URL?>/parent/login.php" target="_blank" style="color:#8892b0;text-decoration:underline">Portal Αθλητή</a>.
+      <?php else: ?>
+        <i class="fa-solid fa-circle-info" style="color:#3b82f6"></i>
+        Ο αθλητής θα λάβει email με κωδικό για το δικό του portal.
+      <?php endif; ?>
+    </div>
+  </div>
+  <?php elseif ($isAdult): ?>
+  <div style="padding:.5rem 1rem .85rem;font-size:.72rem;color:#6b7494;line-height:1.5;text-align:center">
+    <i class="fa-solid fa-envelope-open-text"></i>
+    Καταχώρησε email αθλητή για να δώσεις πρόσβαση Portal Αθλητή.
   </div>
   <?php endif; ?>
 </div>
