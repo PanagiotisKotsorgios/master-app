@@ -175,10 +175,21 @@ body .topbar,
 
 /* ── Tables ── */
 table { color: #e6ebf5 !important; }
-thead th {
-  background: rgba(255,255,255,.03) !important;
-  color: #7c8aa3 !important;
-  border-bottom: 1px solid rgba(255,255,255,.08) !important;
+/* Universal table headers: full white, slightly larger, more visible for
+   older users. Applies to every post-login table (departments, athletes,
+   subscriptions, events, invoices, analytics, admin panels, etc.). */
+thead th,
+.table-wrap thead th,
+.pa-matrix thead th,
+.pa-simple thead th {
+  background: rgba(255,255,255,.04) !important;
+  color: #ffffff !important;
+  font-weight: 800 !important;
+  font-size: clamp(.86rem, 2.4vw, .98rem) !important;
+  letter-spacing: .05em !important;
+  text-transform: uppercase !important;
+  padding: .7rem .85rem !important;
+  border-bottom: 1px solid rgba(255,255,255,.12) !important;
 }
 tbody td {
   color: #e6ebf5 !important;
