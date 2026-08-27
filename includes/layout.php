@@ -371,7 +371,7 @@ function renderSidebar(string $active = ''): void {
             $mainItems[] = [
                 'href'  => APP_URL.'/pages/payment_analytics.php',
                 'icon'  => 'fa-solid fa-chart-line',
-                'label' => 'Αναλυτικά Πληρωμών',
+                'label' => 'Αναλυτικά',
                 'key'   => 'payment_analytics',
                 'pro'   => true,
             ];

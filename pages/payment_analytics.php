@@ -264,12 +264,36 @@ renderHead('Αναλυτικά Πληρωμών' . ($isPrint ? ' — Εκτύπ�
     width:100%;padding:.55rem .7rem;background:#0d1117;border:1.5px solid #1e2536;border-radius:8px;color:#f0f2ff;font-size:.9rem;font-family:inherit
 }
 .pa-filters .actions { display:flex;gap:.5rem;flex-wrap:wrap;grid-column:1/-1;margin-top:.35rem }
-.pa-actions-top { display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:1rem;justify-content:flex-end }
-.pa-actions-top a { padding:.5rem .95rem;border-radius:9px;font-weight:700;font-size:.87rem;text-decoration:none;display:inline-flex;align-items:center;gap:.4rem }
-.pa-actions-top .p-xlsx { background:#2dc653;color:#fff }
-.pa-actions-top .p-xlsx:hover { background:#25a344 }
-.pa-actions-top .p-print { background:rgba(59,130,246,.15);color:#93c5fd;border:1px solid rgba(59,130,246,.3) }
-.pa-actions-top .p-print:hover { background:rgba(59,130,246,.25) }
+.pa-actions-top { display:flex;gap:.55rem;flex-wrap:wrap;margin-bottom:1rem;justify-content:flex-end }
+.pa-actions-top a {
+  padding:.7rem 1.2rem;border-radius:10px;
+  font-weight:800;font-size:.95rem;
+  text-decoration:none;
+  display:inline-flex;align-items:center;gap:.55rem;
+  min-height:44px;letter-spacing:.01em;
+  transition:transform .15s, box-shadow .15s, background .15s, color .15s;
+}
+.pa-actions-top a:hover { transform:translateY(-1px) }
+.pa-actions-top .p-xlsx {
+  background:linear-gradient(135deg,#22c55e 0%,#16a34a 100%);
+  color:#ffffff !important;
+  box-shadow:0 6px 18px -6px rgba(34,197,94,.55), inset 0 0 0 1px rgba(255,255,255,.15);
+}
+.pa-actions-top .p-xlsx i { color:#ffffff !important }
+.pa-actions-top .p-xlsx:hover {
+  background:linear-gradient(135deg,#16a34a 0%,#118a3f 100%);
+  box-shadow:0 10px 24px -8px rgba(34,197,94,.65), inset 0 0 0 1px rgba(255,255,255,.2);
+}
+.pa-actions-top .p-print {
+  background:linear-gradient(135deg,#3b82f6 0%,#2563eb 100%);
+  color:#ffffff !important;
+  box-shadow:0 6px 18px -6px rgba(59,130,246,.55), inset 0 0 0 1px rgba(255,255,255,.15);
+}
+.pa-actions-top .p-print i { color:#ffffff !important }
+.pa-actions-top .p-print:hover {
+  background:linear-gradient(135deg,#2563eb 0%,#1d4ed8 100%);
+  box-shadow:0 10px 24px -8px rgba(59,130,246,.65), inset 0 0 0 1px rgba(255,255,255,.2);
+}
 
 .pa-kpis { display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:.75rem;margin-bottom:1.1rem }
 .pa-kpi { background:#111520;border:1px solid #1e2536;border-radius:14px;padding:.9rem 1rem;display:flex;flex-direction:column;gap:.15rem }

@@ -42,31 +42,44 @@ renderHead('Διοργανώσεις');
 #dm-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.55); z-index: 9998; cursor: pointer; }
 #dm-overlay.on { display: block; }
 
-/* ── Tabs ── */
+/* ── Tabs (accessibility: large, white, high-contrast) ── */
 .ev-tabs {
-  display:flex;gap:.4rem;flex-wrap:wrap;margin-bottom:1.2rem;
-  background:#0d1117;border:1px solid #1e2536;border-radius:12px;padding:.35rem;
+  display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:1.4rem;
+  background:#0d1117;border:1px solid #1e2536;border-radius:14px;padding:.45rem;
   width:fit-content;max-width:100%;
 }
 .ev-tab {
-  display:inline-flex;align-items:center;gap:.5rem;
-  padding:.55rem 1rem;border-radius:9px;
-  color:#8892b0;font-weight:700;font-size:.9rem;text-decoration:none;
+  display:inline-flex;align-items:center;gap:.6rem;
+  padding:.85rem 1.5rem;border-radius:11px;
+  color:#ffffff !important;
+  font-weight:800;font-size:1.08rem;text-decoration:none;
+  letter-spacing:.01em;line-height:1.2;
   transition:all .18s;
-  cursor:pointer;border:none;background:none;font-family:inherit;
+  cursor:pointer;border:none;background:transparent;font-family:inherit;
+  min-height:48px;
 }
-.ev-tab:hover { color:#f0f2ff;background:rgba(255,255,255,.04) }
+.ev-tab i { color:#ffffff !important;font-size:1.1rem }
+.ev-tab:hover {
+  background:rgba(255,255,255,.06);
+  transform:translateY(-1px);
+}
 .ev-tab.active {
-  background:linear-gradient(135deg,rgba(230,57,70,.2),rgba(230,57,70,.08));
-  color:#ffffff;
-  box-shadow:inset 0 0 0 1px rgba(230,57,70,.4);
+  background:linear-gradient(135deg,#e63946 0%,#c72832 100%);
+  color:#ffffff !important;
+  box-shadow:0 6px 18px -6px rgba(230,57,70,.65), inset 0 0 0 1px rgba(255,255,255,.15);
 }
+.ev-tab.active i { color:#ffffff !important }
 .ev-tab .count {
-  background:rgba(255,255,255,.08);color:#c9cee1;
-  padding:.1rem .5rem;border-radius:50px;
-  font-size:.72rem;font-weight:800;
+  background:rgba(255,255,255,.16);color:#ffffff !important;
+  padding:.2rem .65rem;border-radius:50px;
+  font-size:.85rem;font-weight:900;
+  min-width:26px;text-align:center;
 }
-.ev-tab.active .count { background:rgba(230,57,70,.3);color:#ffffff }
+.ev-tab.active .count { background:rgba(0,0,0,.28);color:#ffffff !important }
+@media (max-width:520px){
+  .ev-tab { padding:.7rem 1rem; font-size:1rem }
+  .ev-tab .count { font-size:.78rem }
+}
 
 .my-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:1.15rem}
 .my-card{background:#111520;border:1px solid #1e2536;border-radius:16px;overflow:hidden;

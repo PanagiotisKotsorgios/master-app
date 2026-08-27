@@ -60,22 +60,42 @@ body::before, body::after {
 .sidebar-school { color: #7c8aa3 !important; }
 .sidebar-bottom { border-top-color: rgba(255,255,255,.06) !important; }
 
-/* Nav items */
+/* Nav items — enlarged & high-contrast for consistency across every page
+   (older-users legibility target) */
 .sidebar .nav-item, .nav-item {
-  color: #c1c8d4 !important;
+  color: #eef1f8 !important;
   border-radius: 8px !important;
   transition: color .18s ease, background .18s ease !important;
+  padding: .75rem 1rem !important;
+  font-size: .98rem !important;
+  font-weight: 600 !important;
+  gap: .8rem !important;
+  min-height: 44px !important;
+  line-height: 1.25 !important;
+}
+.sidebar .nav-item .icon, .nav-item .icon,
+.sidebar .nav-item i, .nav-item i {
+  font-size: 1.05rem !important;
+  width: 22px !important;
+  text-align: center !important;
 }
 .sidebar .nav-item:hover, .nav-item:hover {
   color: #ffffff !important;
-  background: rgba(255,255,255,.05) !important;
+  background: rgba(255,255,255,.06) !important;
 }
 .sidebar .nav-item.active, .nav-item.active {
   color: #ffffff !important;
-  background: linear-gradient(90deg, rgba(230,57,70,.22), rgba(230,57,70,.08)) !important;
+  background: linear-gradient(90deg, rgba(230,57,70,.28), rgba(230,57,70,.1)) !important;
   border-left: 3px solid #e63946 !important;
 }
 .sidebar .nav-item i, .nav-item i { color: inherit !important; }
+.sidebar .nav-label, .nav-label {
+  font-size: .7rem !important;
+  color: #7c8aa3 !important;
+  letter-spacing: .1em !important;
+  padding: .5rem 1rem .35rem !important;
+  font-weight: 700 !important;
+}
 
 /* Sidebar plan chip */
 .sidebar-plan {
