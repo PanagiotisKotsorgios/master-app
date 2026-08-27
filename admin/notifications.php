@@ -94,7 +94,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['_action'] ?? '') === 'rese
             $subject = "Υπενθύμιση Συνδρομής — {$schoolName}";
             $plainBody = "Αγαπητέ/ή κηδεμόνα / αθλητή,\n\nΘα θέλαμε φιλικά να σας υπενθυμίσουμε τη συνδρομή του/της {$athleteName}." .
                 ($amount > 0 ? "\nΠοσό: {$amountFmt}" : '') .
-                "\n\nΌποτε σας εξυπηρετεί, επικοινωνήστε με τη σχολή σας για τη διευθέτησή της. Είμαστε στη διάθεσή σας.\n\nΣας ευχαριστούμε πολύ,\n{$schoolName}";
+                "\n\nΠαρακαλούμε να τακτοποιηθεί. Αν χρειαστείτε κάτι είμαστε στην διάθεση σας.\n\nΣας ευχαριστούμε πολύ,\n{$schoolName}";
             $html = function_exists('buildEmailHtml')
                 ? buildEmailHtml($plainBody, $schoolName, $subject)
                 : nl2br(htmlspecialchars($plainBody, ENT_QUOTES, 'UTF-8'));
