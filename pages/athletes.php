@@ -967,7 +967,11 @@ textarea.form-control{min-height:90px;resize:vertical}
 @media(max-width:500px){.btn-add-athlete{font-size:.95rem!important;padding:.65rem 1.2rem!important;min-height:44px!important}}
 
 .table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}.table-wrap table{width:100%;border-collapse:collapse}
-.table-wrap th{font-size:clamp(.72rem,2.2vw,.82rem)!important;font-weight:800;text-transform:uppercase;letter-spacing:.04em;white-space:nowrap;padding:.45rem .7rem;color:var(--muted,#8892b0)}
+/* Bigger, full-white table headers for better legibility */
+.table-wrap th{font-size:clamp(.86rem,2.4vw,.98rem)!important;font-weight:800;text-transform:uppercase;letter-spacing:.05em;white-space:nowrap;padding:.65rem .8rem;color:#ffffff!important}
+/* Phone-cell link colour must beat the global `a { color:#ff8891 !important }` rule from postlogin-portal-theme.css */
+.phone-cell a{color:#ffffff!important}
+.phone-cell a:hover{color:#ffffff!important;background:rgba(255,255,255,.08)!important}
 .table-wrap td{font-size:clamp(.82rem,2.8vw,.94rem)!important;padding:.45rem .7rem;vertical-align:middle}
 .table-wrap tbody tr{transition:background .15s}.table-wrap tbody tr:hover{background:rgba(255,255,255,.03)}
 .athlete-name{font-weight:700;display:block;font-size:clamp(.85rem,2.8vw,.95rem)!important}
