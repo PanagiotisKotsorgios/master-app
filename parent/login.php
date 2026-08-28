@@ -300,12 +300,6 @@ input[type="email"], input[type="password"], input[type="text"]#password {
     και το δικό σας δελτίο σε πραγματικό χρόνο.
   </p>
 
-  <!-- ── Dual-role notice ── -->
-  <div style="display:flex;align-items:center;justify-content:center;gap:.45rem;background:rgba(230,57,70,.1);border:1.5px solid rgba(230,57,70,.35);border-radius:10px;padding:.6rem .9rem;margin-bottom:1.5rem;font-size:.9rem;font-weight:700;color:#ff6b74;text-align:center;line-height:1.45;">
-    <i class="fas fa-user-shield" style="color:#e63946;font-size:1rem;flex-shrink:0;"></i>
-    <span>Πρόσβαση για <strong>Γονείς</strong> &amp; <strong>Ενήλικες Αθλητές</strong>.<br>Αθλητικά Σωματεία συνδέονται <a href="https://master-app.gr/login.php" style="color:#ff6b74;text-decoration:underline;font-weight:800;white-space:nowrap;">εδώ →</a></span>
-  </div>
-
   <?php if ($error): ?>
   <div class="alert alert-error">
     <i class="fas fa-circle-exclamation"></i>

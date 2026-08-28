@@ -449,12 +449,6 @@ $flash = getFlash();
 
   <div class="page-heading">Σύνδεση στο σύστημα</div>
 
-<!-- ── Club-only notice ── -->
-  <div class="club-only-notice">
-    <i class="fas fa-shield-halved"></i>
-    <span>Αποκλειστικά για <strong>Αθλητικά Σωματεία</strong>. Γονείς συνδέονται <a href="https://master-app.gr/parent/login.php" style="color:#ff6b74;text-decoration:underline;font-weight:800;white-space:nowrap;">εδώ →</a></span>
-  </div>
-
   <?php if ($error): ?>
   <div class="alert alert-error">
     <i class="fas fa-circle-exclamation"></i>
