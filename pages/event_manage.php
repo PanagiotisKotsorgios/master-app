@@ -95,33 +95,79 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             redirect(eventManageUrl($id) . '&tab=payments');
         }
-        // ── Partial payment: mark specific registrations as paid ──
+        // ── Partial payment: organiser enters an amount received for a
+        //    school; the system verifies the oldest N athletes whose sum
+        //    of fees is <= that amount, then annotates any leftover in
+        //    notes_organiser (so the receipt trail stays audit-safe).
         if ($action === 'mark_partial_paid') {
             $psid   = (int)($_POST['school_id'] ?? 0);
-            $regIds = array_values(array_filter(array_map('intval', (array)($_POST['reg_ids'] ?? []))));
+            $amount = (float)($_POST['amount'] ?? 0);
             $note   = trim((string)($_POST['note'] ?? ''));
-            if ($psid > 0 && $regIds) {
-                $ph  = implode(',', array_fill(0, count($regIds), '?'));
-                $sql = "UPDATE event_registrations
+            if ($psid > 0 && $amount > 0) {
+                $db2 = getDB();
+                // Fetch every pending reg of the school, oldest first
+                $q = $db2->prepare("
+                    SELECT id, amount FROM event_registrations
+                     WHERE event_id = ?
+                       AND registering_school_id = ?
+                       AND payment_status IN ('unpaid','proof_uploaded')
+                       AND status NOT IN ('rejected','withdrawn')
+                     ORDER BY created_at ASC, id ASC
+                ");
+                $q->execute([$id, $psid]);
+                $pending = $q->fetchAll(PDO::FETCH_ASSOC);
+
+                $budget    = $amount;
+                $toVerify  = [];
+                $sumCovered = 0.0;
+                foreach ($pending as $r) {
+                    $fee = (float)$r['amount'];
+                    if ($budget + 0.005 < $fee) break;   // can't cover another whole athlete
+                    $toVerify[] = (int)$r['id'];
+                    $budget    -= $fee;
+                    $sumCovered += $fee;
+                }
+                $leftover = $amount - $sumCovered;
+
+                $n = 0;
+                if ($toVerify) {
+                    // Compose the note we'll write on every updated row
+                    $stampParts = ['Μερική πληρωμή +' . number_format($amount, 2, ',', '.') . '€'];
+                    if ($leftover > 0.005) {
+                        $stampParts[] = 'υπόλοιπο ποσού μη κατανεμημένο ' . number_format($leftover, 2, ',', '.') . '€';
+                    }
+                    if ($note !== '') $stampParts[] = mb_substr($note, 0, 200);
+                    $stamp = implode(' · ', $stampParts);
+
+                    $ph  = implode(',', array_fill(0, count($toVerify), '?'));
+                    $upd = $db2->prepare("
+                        UPDATE event_registrations
                            SET payment_status = 'verified',
                                paid_at        = NOW(),
                                verified_at    = NOW(),
                                verified_by    = ?,
-                               notes_organiser = CASE
-                                   WHEN ? = '' THEN notes_organiser
-                                   ELSE ?
-                               END
-                         WHERE event_id = ?
-                           AND registering_school_id = ?
-                           AND id IN ($ph)
-                           AND payment_status IN ('unpaid','proof_uploaded')
-                           AND status NOT IN ('rejected','withdrawn')";
-                $params = array_merge([$userId, $note, $note, $id, $psid], $regIds);
-                $upd = getDB()->prepare($sql);
-                $upd->execute($params);
-                $n = $upd->rowCount();
-                if (function_exists('auditLog')) auditLog('event_partial_paid', 'event', $id, "school=$psid n=$n note=" . mb_substr($note, 0, 60));
-                flash("Καταχωρήθηκαν $n πληρωμένες εγγραφές.");
+                               notes_organiser = CONCAT(COALESCE(notes_organiser,''),
+                                                       IF(notes_organiser IS NULL OR notes_organiser = '', '', ' · '),
+                                                       ?)
+                         WHERE id IN ($ph)
+                    ");
+                    $upd->execute(array_merge([$userId, $stamp], $toVerify));
+                    $n = $upd->rowCount();
+                }
+
+                if (function_exists('auditLog')) {
+                    auditLog('event_partial_paid', 'event', $id,
+                        "school=$psid amount=" . number_format($amount, 2, '.', '') .
+                        " covered=$n leftover=" . number_format($leftover, 2, '.', ''));
+                }
+
+                if ($n > 0) {
+                    $msg = "Καταχωρήθηκε πληρωμή " . number_format($amount, 2, ',', '.') . "€ · $n αθλητές πληρωμένοι.";
+                    if ($leftover > 0.005) $msg .= " Υπόλοιπο ποσού που δεν κάλυψε άλλον αθλητή: " . number_format($leftover, 2, ',', '.') . "€ (καταγράφηκε στη σημείωση).";
+                    flash($msg);
+                } else {
+                    flash("Το ποσό " . number_format($amount, 2, ',', '.') . "€ δεν καλύπτει ούτε έναν πλήρη αθλητή.", 'warning');
+                }
             }
             redirect(eventManageUrl($id) . '&tab=payments');
         }
@@ -766,23 +812,28 @@ $flash = getFlash();
         </div>
       </div>
 
-      <!-- Partial-payment modals, one per pending school -->
+      <!-- Partial-payment modals — amount-based, one per pending school -->
       <?php foreach ($pendingBySchool as $psid => $ps):
+        // Per-athlete unit price (typical Kumite/Kata event fee is the
+        // same for every reg of that school; we pick the min so the
+        // "N athletes will be covered" preview stays conservative).
         $psRegs = array_values(array_filter($registrations, function($r) use ($psid) {
             return (int)$r['registering_school_id'] === (int)$psid
                 && in_array($r['payment_status'], ['unpaid','proof_uploaded'], true)
                 && !in_array($r['status'], ['rejected','withdrawn'], true);
         }));
+        $amounts = array_map(fn($r) => (float)$r['amount'], $psRegs);
+        $unitFee = $amounts ? min($amounts) : (float)$ev['fee_amount'];
       ?>
         <div id="modalPartialPay<?= (int)$psid ?>" class="ev-modal-backdrop" role="dialog" aria-modal="true"
              style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.72);backdrop-filter:blur(5px);z-index:10600;align-items:center;justify-content:center;padding:1rem"
              onclick="if(event.target===this)closeModal('modalPartialPay<?= (int)$psid ?>')">
-          <div style="background:#111520;border:1px solid #1e2536;border-radius:16px;max-width:560px;width:100%;max-height:90vh;overflow:auto;box-shadow:0 30px 80px rgba(0,0,0,.6)">
+          <div style="background:#111520;border:1px solid #1e2536;border-radius:16px;max-width:520px;width:100%;max-height:90vh;overflow:auto;box-shadow:0 30px 80px rgba(0,0,0,.6)">
             <div style="display:flex;align-items:center;justify-content:space-between;padding:1.1rem 1.35rem;border-bottom:1px solid #1e2536">
               <div>
                 <h3 style="margin:0;font-size:1.05rem;color:#fff;font-weight:800">
                   <i class="fa-solid fa-hand-holding-dollar" style="color:#f0a500"></i>
-                  Μερική πληρωμή
+                  Μερική πληρωμή συλλόγου
                 </h3>
                 <div style="color:#8892b0;font-size:.85rem;margin-top:.2rem"><?= h($ps['name']) ?></div>
               </div>
@@ -791,48 +842,54 @@ $flash = getFlash();
                 <i class="fa-solid fa-xmark"></i>
               </button>
             </div>
-            <form method="POST" style="padding:1.1rem 1.35rem">
+            <form method="POST" style="padding:1.1rem 1.35rem" data-partial-form data-unit="<?= number_format($unitFee, 2, '.', '') ?>" data-total="<?= number_format($ps['total'], 2, '.', '') ?>" data-count="<?= (int)$ps['count'] ?>">
               <input type="hidden" name="csrf_token" value="<?= csrf() ?>">
               <input type="hidden" name="_action" value="mark_partial_paid">
               <input type="hidden" name="school_id" value="<?= (int)$psid ?>">
-              <div style="color:#c8cfe0;font-size:.88rem;margin-bottom:.85rem;line-height:1.5">
-                Επιλέξτε ποιοι αθλητές έχουν πληρωθεί μέχρι στιγμής. Οι υπόλοιποι θα παραμείνουν εκκρεμείς.
-              </div>
-              <div style="background:#0d1017;border:1px solid #2a3248;border-radius:10px;max-height:340px;overflow:auto">
-                <div style="padding:.55rem .75rem;border-bottom:1px solid #1e2536;background:rgba(255,255,255,.02);display:flex;align-items:center;gap:.5rem">
-                  <label style="display:flex;align-items:center;gap:.5rem;cursor:pointer;color:#c8cfe0;font-weight:700;font-size:.85rem">
-                    <input type="checkbox"
-                           onchange="document.querySelectorAll('.reg-cb-<?= (int)$psid ?>').forEach(function(cb){cb.checked = this.checked;}.bind(this))"
-                           style="width:18px;height:18px;accent-color:#2dc653">
-                    Επιλογή όλων
-                  </label>
+
+              <!-- Snapshot of what's owed -->
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:.6rem;margin-bottom:1rem">
+                <div style="background:#0d1017;border:1px solid #1e2536;border-radius:10px;padding:.65rem .85rem">
+                  <div style="color:#8892b0;font-size:.7rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase">Εκκρεμείς</div>
+                  <div style="color:#fff;font-weight:800;font-size:1.15rem"><?= (int)$ps['count'] ?> αθλητές</div>
                 </div>
-                <?php foreach ($psRegs as $r): ?>
-                  <label style="display:flex;align-items:center;gap:.65rem;padding:.55rem .75rem;border-bottom:1px solid #1e2536;cursor:pointer">
-                    <input type="checkbox" name="reg_ids[]" value="<?= (int)$r['id'] ?>"
-                           class="reg-cb-<?= (int)$psid ?>"
-                           style="width:18px;height:18px;accent-color:#2dc653;flex-shrink:0">
-                    <div style="flex:1;min-width:0">
-                      <div style="color:#fff;font-weight:700;font-size:.92rem"><?= h($r['athlete_name'] ?? '—') ?></div>
-                      <div style="color:#8892b0;font-size:.78rem;margin-top:.15rem">
-                        <?= h($r['cat_name'] ?? '—') ?>
-                        <?php if ($r['payment_status'] === 'proof_uploaded'): ?>
-                          · <span style="color:#93c5fd">Αποδεικτικό ανέβηκε</span>
-                        <?php endif; ?>
-                      </div>
-                    </div>
-                    <div style="color:#f0a500;font-weight:800;font-size:.88rem;white-space:nowrap"><?= number_format((float)$r['amount'], 2, ',', '.') ?> €</div>
-                  </label>
-                <?php endforeach; ?>
+                <div style="background:#0d1017;border:1px solid rgba(230,57,70,.3);border-radius:10px;padding:.65rem .85rem">
+                  <div style="color:#8892b0;font-size:.7rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase">Υπόλοιπο</div>
+                  <div style="color:#ff8891;font-weight:800;font-size:1.15rem"><?= number_format($ps['total'], 2, ',', '.') ?> €</div>
+                </div>
               </div>
-              <div style="margin-top:.9rem">
-                <label>
-                  <div style="font-size:.78rem;font-weight:700;color:#c9cee1;margin-bottom:.3rem">Σημείωση (προαιρετικό)</div>
-                  <input type="text" name="note" maxlength="255"
-                         placeholder="π.χ. Δόθηκε προκαταβολή για 8 αθλητές, ακολουθεί το υπόλοιπο"
-                         style="width:100%;padding:.7rem 1rem;background:#0d1017;border:1.5px solid #2a3248;border-radius:10px;color:#fff;font-size:.9rem;min-height:44px">
-                </label>
+
+              <label style="display:block;margin-bottom:.85rem">
+                <div style="font-size:.85rem;font-weight:800;color:#f0f2ff;margin-bottom:.4rem">Ποσό που έλαβα (€)</div>
+                <input type="number" name="amount" step="0.01" min="0" max="<?= number_format($ps['total'], 2, '.', '') ?>"
+                       required
+                       oninput="__partialPreview(this.form)"
+                       placeholder="π.χ. 100.00"
+                       style="width:100%;padding:.95rem 1rem;background:#0d1017;border:2px solid #2a3248;border-radius:10px;color:#fff;font-size:1.15rem;font-weight:800;min-height:56px;font-variant-numeric:tabular-nums">
+                <div style="display:flex;gap:.4rem;margin-top:.55rem;flex-wrap:wrap">
+                  <button type="button" onclick="__partialSetAmount(this,<?= number_format($ps['total']/2, 2, '.', '') ?>)"
+                          style="background:rgba(255,255,255,.06);color:#c9cee1;border:1px solid #2a3248;padding:.42rem .85rem;border-radius:8px;font-weight:700;font-size:.82rem;cursor:pointer">
+                    50% (<?= number_format($ps['total']/2, 2, ',', '.') ?>€)
+                  </button>
+                  <button type="button" onclick="__partialSetAmount(this,<?= number_format($ps['total'], 2, '.', '') ?>)"
+                          style="background:rgba(45,198,83,.14);color:#8fe6a1;border:1px solid rgba(45,198,83,.4);padding:.42rem .85rem;border-radius:8px;font-weight:700;font-size:.82rem;cursor:pointer">
+                    Όλο (<?= number_format($ps['total'], 2, ',', '.') ?>€)
+                  </button>
+                </div>
+              </label>
+
+              <div id="__partialPreview_<?= (int)$psid ?>"
+                   style="background:rgba(59,130,246,.06);border:1px solid rgba(59,130,246,.25);border-radius:10px;padding:.7rem .95rem;color:#c8dbff;font-size:.9rem;line-height:1.55;margin-bottom:.9rem">
+                Εισάγετε ποσό για προεπισκόπηση κατανομής.
               </div>
+
+              <label style="display:block">
+                <div style="font-size:.78rem;font-weight:700;color:#c9cee1;margin-bottom:.3rem">Σημείωση (προαιρετικό)</div>
+                <input type="text" name="note" maxlength="255"
+                       placeholder="π.χ. Έδωσαν 100€ σε μετρητά, ακολουθεί κατάθεση για τα υπόλοιπα"
+                       style="width:100%;padding:.7rem 1rem;background:#0d1017;border:1.5px solid #2a3248;border-radius:10px;color:#fff;font-size:.9rem;min-height:44px">
+              </label>
+
               <div style="display:flex;gap:.5rem;justify-content:flex-end;flex-wrap:wrap;margin-top:1.1rem;padding-top:1rem;border-top:1px solid #1e2536">
                 <button type="button" onclick="closeModal('modalPartialPay<?= (int)$psid ?>')"
                         style="background:rgba(255,255,255,.06);border:1px solid #2a3248;color:#fff;min-height:44px;padding:.65rem 1.1rem;font-size:.92rem;font-weight:700;border-radius:10px;cursor:pointer">
@@ -840,13 +897,43 @@ $flash = getFlash();
                 </button>
                 <button type="submit"
                         style="background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;border:none;min-height:44px;padding:.65rem 1.3rem;font-size:.95rem;font-weight:800;border-radius:10px;cursor:pointer">
-                  <i class="fa-solid fa-check"></i> Καταχώρηση πληρωμής
+                  <i class="fa-solid fa-check"></i> Καταχώρηση
                 </button>
               </div>
             </form>
           </div>
         </div>
       <?php endforeach; ?>
+
+      <script>
+        window.__partialSetAmount = function(btn, val) {
+          var form = btn.closest('form');
+          var amt  = form.querySelector('input[name="amount"]');
+          if (amt) { amt.value = val.toFixed(2); __partialPreview(form); }
+        };
+        window.__partialPreview = function(form) {
+          var unit  = parseFloat(form.getAttribute('data-unit')  || '0');
+          var total = parseFloat(form.getAttribute('data-total') || '0');
+          var count = parseInt(form.getAttribute('data-count')   || '0', 10);
+          var amt   = parseFloat(form.querySelector('input[name="amount"]').value || '0');
+          var box   = form.querySelector('[id^="__partialPreview_"]');
+          if (!box) return;
+          if (!(amt > 0) || !(unit > 0)) {
+            box.innerHTML = 'Εισάγετε ποσό για προεπισκόπηση κατανομής.';
+            return;
+          }
+          var covered  = Math.min(count, Math.floor(amt / unit + 1e-6));
+          var covering = covered * unit;
+          var leftover = Math.max(0, amt - covering);
+          var remaining = Math.max(0, total - covering);
+          var msg = 'Θα σημανθούν <strong>' + covered + '</strong> από ' + count + ' αθλητές ως πληρωμένοι';
+          if (covering > 0) msg += ' (' + covering.toFixed(2).replace('.', ',') + ' €).';
+          if (leftover > 0.005) msg += '<br>Υπόλοιπο ποσού που δεν κάλυψε πλήρη αθλητή: <strong>' + leftover.toFixed(2).replace('.', ',') + ' €</strong> — θα καταγραφεί στη σημείωση.';
+          if (remaining > 0.005) msg += '<br>Θα παραμείνουν <strong>' + (count - covered) + '</strong> αθλητές εκκρεμείς (' + remaining.toFixed(2).replace('.', ',') + ' €).';
+          if (covered === count) msg += '<br><span style="color:#8fe6a1;font-weight:800">✓ Πλήρης εξόφληση</span>';
+          box.innerHTML = msg;
+        };
+      </script>
     <?php endif; ?>
 
     <?php if (!$payments && $totalPendingClubs === 0): ?>
