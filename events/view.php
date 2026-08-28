@@ -213,11 +213,6 @@ $canonical = eventPublicUrl($ev);
           <i class="fa-solid fa-user-plus"></i> Δήλωση συμμετοχής (απαιτείται σύνδεση)
         </a>
       <?php endif; ?>
-      <?php if (in_array($ev['status'], ['in_progress','completed'], true)): ?>
-        <a href="<?= APP_URL ?>/events/results.php?slug=<?= h($ev['slug']) ?>" class="btn btn-ghost">
-          <i class="fa-solid fa-medal"></i> Αποτελέσματα
-        </a>
-      <?php endif; ?>
       <?php if ($ev['venue_url']): ?>
         <a href="<?= h($ev['venue_url']) ?>" target="_blank" rel="noopener" class="btn btn-ghost">
           <i class="fa-solid fa-map"></i> Χάρτης

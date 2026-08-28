@@ -151,8 +151,6 @@ $flash = getFlash();
            style="background:linear-gradient(135deg,rgba(59,130,246,.14),rgba(37,99,235,.05));border:1px solid rgba(59,130,246,.35);color:#93c5fd">
           <i class="fa-solid fa-print"></i> Εκτύπωση Κληρώσεων
         </a>
-        <a href="<?= APP_URL ?>/pages/event_bracket.php?id=<?= (int)$ev['id'] ?>" class="btn btn-ghost btn-sm"><i class="fa-solid fa-sitemap"></i> Λίστες / Pools</a>
-        <a href="<?= APP_URL ?>/events/results.php?slug=<?= h($ev['slug']) ?>" target="_blank" class="btn btn-ghost btn-sm"><i class="fa-solid fa-medal"></i> Αποτελέσματα</a>
         <a href="<?= APP_URL ?>/pages/event_edit.php?id=<?= (int)$ev['id'] ?>" class="btn btn-ghost btn-sm"><i class="fa-solid fa-pen"></i> Επεξεργασία</a>
       </div>
     </div>
@@ -310,28 +308,102 @@ $flash = getFlash();
     <!-- LIST -->
     <?php if (!$categories): ?>
       <p style="color:#6b7494">Δεν έχουν οριστεί κατηγορίες ακόμα.</p>
-    <?php else: ?>
-      <div style="background:#111520;border:1px solid #1e2536;border-radius:14px;overflow:hidden">
-        <table style="width:100%;border-collapse:collapse">
+    <?php else:
+      // ── Compute registrations per category + match/time estimates ──
+      $regsPerCat = [];
+      foreach ($registrations as $r) {
+          if (in_array($r['status'], ['rejected','withdrawn'], true)) continue;
+          $cid = (int)($r['category_id'] ?? 0);
+          $regsPerCat[$cid] = ($regsPerCat[$cid] ?? 0) + 1;
+      }
+      $totalAthletes = 0; $totalMatches = 0; $totalMinutes = 0;
+      $rowMetrics    = [];
+      foreach ($categories as $c) {
+          $cid       = (int)$c['id'];
+          $athletes  = (int)($regsPerCat[$cid] ?? 0);
+          $matches   = eventEstimateMatches((string)$c['format'], $athletes, (int)($c['pool_size'] ?? 4));
+          $minutes   = eventEstimateMinutes($matches, $c['style'] ?? '', (string)$c['format']);
+          $rowMetrics[$cid] = ['athletes' => $athletes, 'matches' => $matches, 'minutes' => $minutes];
+          $totalAthletes += $athletes;
+          $totalMatches  += $matches;
+          $totalMinutes  += $minutes;
+      }
+      $rings = max(1, (int)($ev['ring_count'] ?? 1));
+      $minsPerRing = (int)ceil($totalMinutes / $rings);
+      $fmtHM = function(int $mins): string {
+          if ($mins <= 0) return '—';
+          $h = intdiv($mins, 60); $m = $mins % 60;
+          if ($h === 0) return $m . ' λεπτά';
+          if ($m === 0) return $h . ' ώρες';
+          return $h . 'ώ ' . $m . 'λ';
+      };
+    ?>
+
+      <!-- ── Χρονοπρογραμματισμός · summary card ── -->
+      <div style="background:linear-gradient(135deg,rgba(59,130,246,.06),rgba(230,57,70,.05));
+                  border:1px solid #1e2536;border-radius:14px;padding:1.1rem 1.25rem;margin-bottom:1rem">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:.75rem;flex-wrap:wrap;margin-bottom:.75rem">
+          <h3 style="margin:0;color:#93c5fd;font-size:1rem;font-weight:800;display:flex;align-items:center;gap:.5rem">
+            <i class="fa-solid fa-stopwatch"></i> Χρονοπρογραμματισμός
+          </h3>
+          <div style="color:#a9b3c9;font-size:.85rem">
+            <?= $rings ?> <?= $rings === 1 ? 'τερέν' : 'τερέν' ?> · ~<?= h($fmtHM($minsPerRing)) ?> ανά τερέν
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:.7rem">
+          <div style="background:#0d1017;border:1px solid #1e2536;border-radius:10px;padding:.75rem .9rem">
+            <div style="color:#8892b0;font-size:.7rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase">Αθλητές</div>
+            <div style="color:#fff;font-family:'Bebas Neue',sans-serif;font-size:1.85rem;line-height:1"><?= $totalAthletes ?></div>
+          </div>
+          <div style="background:#0d1017;border:1px solid #1e2536;border-radius:10px;padding:.75rem .9rem">
+            <div style="color:#8892b0;font-size:.7rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase">Αγώνες (εκτίμηση)</div>
+            <div style="color:#fff;font-family:'Bebas Neue',sans-serif;font-size:1.85rem;line-height:1"><?= $totalMatches ?></div>
+          </div>
+          <div style="background:#0d1017;border:1px solid #1e2536;border-radius:10px;padding:.75rem .9rem">
+            <div style="color:#8892b0;font-size:.7rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase">Σύνολο χρόνου</div>
+            <div style="color:#fff;font-family:'Bebas Neue',sans-serif;font-size:1.55rem;line-height:1;font-weight:500"><?= h($fmtHM($totalMinutes)) ?></div>
+          </div>
+          <div style="background:#0d1017;border:1px solid #1e2536;border-radius:10px;padding:.75rem .9rem">
+            <div style="color:#8892b0;font-size:.7rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase">Ανά Τερέν</div>
+            <div style="color:#8fe6a1;font-family:'Bebas Neue',sans-serif;font-size:1.55rem;line-height:1;font-weight:500"><?= h($fmtHM($minsPerRing)) ?></div>
+          </div>
+        </div>
+        <div style="margin-top:.75rem;color:#8892b0;font-size:.78rem;line-height:1.5">
+          <i class="fa-solid fa-circle-info" style="color:#3b82f6"></i>
+          Εκτίμηση βασισμένη στα όρια που έχεις ορίσει στο event (τερέν = <?= $rings ?>). Kumite ≈ 7' ανά αγώνα, Kata / Round-robin ≈ 4'. Για ακριβή προγραμματισμό, μπες στις <em>Κληρώσεις</em> της κάθε κατηγορίας και τρέξε τη <em>Δημιουργία προγράμματος</em>.
+        </div>
+      </div>
+
+      <div style="background:#111520;border:1px solid #1e2536;border-radius:14px;overflow:auto">
+        <table style="width:100%;border-collapse:collapse;min-width:820px">
           <thead style="background:#0d1017">
             <tr style="color:#8892b0;font-size:.72rem;text-transform:uppercase;letter-spacing:.08em">
               <th style="text-align:left;padding:.7rem 1rem">Όνομα</th>
               <th style="text-align:left;padding:.7rem 1rem">Φύλο</th>
               <th style="text-align:left;padding:.7rem 1rem">Ηλικία</th>
               <th style="text-align:left;padding:.7rem 1rem">Βάρος</th>
-              <th style="text-align:left;padding:.7rem 1rem">Format</th>
+              <th style="text-align:left;padding:.7rem 1rem">Μορφή</th>
+              <th style="text-align:right;padding:.7rem 1rem">Αθλητές</th>
+              <th style="text-align:right;padding:.7rem 1rem">Αγώνες</th>
+              <th style="text-align:right;padding:.7rem 1rem">Χρόνος</th>
               <th style="text-align:left;padding:.7rem 1rem">Χρέωση</th>
               <th style="padding:.7rem 1rem"></th>
             </tr>
           </thead>
           <tbody>
-            <?php foreach ($categories as $c): ?>
+            <?php foreach ($categories as $c):
+              $cid = (int)$c['id'];
+              $m   = $rowMetrics[$cid] ?? ['athletes'=>0,'matches'=>0,'minutes'=>0];
+            ?>
             <tr style="border-top:1px solid #1e2536;color:#f0f2ff">
               <td style="padding:.7rem 1rem;font-weight:700"><?= h($c['name']) ?></td>
               <td style="padding:.7rem 1rem"><?= ['M'=>'Α','F'=>'Γ','MX'=>'Μικτό'][$c['gender']] ?></td>
               <td style="padding:.7rem 1rem"><?= h(($c['min_age']??'—') . '-' . ($c['max_age']??'—')) ?></td>
               <td style="padding:.7rem 1rem"><?= h(($c['min_weight']??'—') . '-' . ($c['max_weight']??'—')) ?></td>
               <td style="padding:.7rem 1rem"><?= h(eventFormatLabel($c['format'] ?? '')) ?></td>
+              <td style="padding:.7rem 1rem;text-align:right;font-weight:700"><?= $m['athletes'] ?></td>
+              <td style="padding:.7rem 1rem;text-align:right;color:#93c5fd;font-weight:700"><?= $m['matches'] ?></td>
+              <td style="padding:.7rem 1rem;text-align:right;color:#f0a500;font-weight:700;white-space:nowrap"><?= h($fmtHM($m['minutes'])) ?></td>
               <td style="padding:.7rem 1rem"><?= $c['fee_override']!==null ? number_format((float)$c['fee_override'],2,',','.').'€' : '<i style="color:#6b7494">default</i>' ?></td>
               <td style="padding:.7rem 1rem;text-align:right;white-space:nowrap">
                 <a href="<?= APP_URL ?>/pages/event_draws_print.php?id=<?= $id ?>&cat=<?= (int)$c['id'] ?>" target="_blank" class="btn btn-ghost btn-sm" title="Εκτύπωση κληρώσεων κατηγορίας">
@@ -350,6 +422,15 @@ $flash = getFlash();
             </tr>
             <?php endforeach; ?>
           </tbody>
+          <tfoot style="background:#0d1017">
+            <tr style="color:#c8cfe0;font-weight:800;border-top:2px solid #1e2536">
+              <td colspan="5" style="padding:.75rem 1rem;font-weight:800">Σύνολο</td>
+              <td style="padding:.75rem 1rem;text-align:right"><?= $totalAthletes ?></td>
+              <td style="padding:.75rem 1rem;text-align:right;color:#93c5fd"><?= $totalMatches ?></td>
+              <td style="padding:.75rem 1rem;text-align:right;color:#f0a500;white-space:nowrap"><?= h($fmtHM($totalMinutes)) ?></td>
+              <td colspan="2"></td>
+            </tr>
+          </tfoot>
         </table>
       </div>
     <?php endif; ?>

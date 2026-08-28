@@ -1410,6 +1410,45 @@ function eventStyleLabel(string $s): string {
     ][$s] ?? $s;
 }
 
+/**
+ * Estimate the number of matches a category will produce given its
+ * format + participant count. Formula is intentionally simple so the
+ * organiser can eyeball it — the actual bracket generator may end up
+ * with a few more (byes, extra bronze) or fewer (walkovers).
+ */
+function eventEstimateMatches(string $format, int $athletes, int $poolSize = 4): int {
+    if ($athletes < 2) return 0;
+    switch ($format) {
+        case 'single_elim':  return $athletes - 1;
+        case 'double_elim':  return max(0, 2 * $athletes - 2);
+        case 'round_robin':  return (int)($athletes * ($athletes - 1) / 2);
+        case 'pool_only':
+            $pools = max(1, (int)ceil($athletes / max(2, $poolSize)));
+            $per   = (int)ceil($athletes / $pools);
+            return $pools * (int)($per * ($per - 1) / 2);
+        case 'pool_ko':
+            $pools       = max(1, (int)ceil($athletes / max(2, $poolSize)));
+            $per         = (int)ceil($athletes / $pools);
+            $poolMatches = $pools * (int)($per * ($per - 1) / 2);
+            $koMatches   = max(1, 2 * $pools - 1);  // top-2-per-pool single-elim
+            return $poolMatches + $koMatches;
+        case 'exhibition':   return $athletes;   // one demo run per athlete
+        default:             return max(0, $athletes - 1);
+    }
+}
+
+/**
+ * Estimate the minutes a category will take on a single tatami.
+ * Kumite ≈ 5min live + 2min changeover ≈ 7 min/match.
+ * Kata ≈ 3-4 min per match (fewer per bout, no rest).
+ */
+function eventEstimateMinutes(int $matches, ?string $style, string $format = ''): int {
+    if ($matches <= 0) return 0;
+    $lc = mb_strtolower((string)$style, 'UTF-8');
+    $perMatch = (str_contains($lc, 'kata') || $format === 'round_robin') ? 4 : 7;
+    return $matches * $perMatch;
+}
+
 function eventStatusLabel(string $s): string {
     return [
         'draft'       => 'Πρόχειρο',
