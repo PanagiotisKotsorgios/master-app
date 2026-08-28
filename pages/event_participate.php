@@ -27,15 +27,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['_action'] ?? '';
     try {
         if ($action === 'register') {
-            $catId    = (int)($_POST['category_id'] ?? 0);
-            $athletes = array_map('intval', (array)($_POST['athlete_ids'] ?? []));
-            $notes    = trim($_POST['notes'] ?? '');
-            $customIn = (array)($_POST['custom'] ?? []);
+            $catId       = (int)($_POST['category_id'] ?? 0);
+            $athletes    = array_map('intval', (array)($_POST['athlete_ids'] ?? []));
+            $notes       = trim($_POST['notes'] ?? '');
+            $coachName   = trim($_POST['coach_name']  ?? '');
+            $coachPhone  = trim($_POST['coach_phone'] ?? '');
+            $customIn    = (array)($_POST['custom'] ?? []);
             $done = 0; $skipped = 0;
             foreach ($athletes as $athId) {
                 if ($athId <= 0) continue;
                 try {
-                    $regId = eventRegisterAthlete($id, $catId, $athId, $sid, $userId, $notes);
+                    $regId = eventRegisterAthlete($id, $catId, $athId, $sid, $userId, $notes, $coachName, $coachPhone);
                     eventRegistrationSaveCustom($regId, $id, $customIn);
                     $done++;
                 } catch (Throwable $e) {
@@ -104,6 +106,24 @@ foreach ($myAthletes as &$__a) {
     $__a['sport']  = $__a['sport']  ?? '';
 }
 unset($__a);
+
+// Pre-fill coach info from the school's most recent registration to this
+// event, so the operator doesn't retype every time. Graceful fallback if
+// the columns don't exist yet (migration 024 not yet applied).
+$lastCoachName = '';
+$lastCoachPhone = '';
+try {
+    $__cst = getDB()->prepare("SELECT coach_name, coach_phone
+                                 FROM event_registrations
+                                WHERE event_id = ? AND registering_school_id = ?
+                                  AND (coach_name IS NOT NULL OR coach_phone IS NOT NULL)
+                                ORDER BY id DESC LIMIT 1");
+    $__cst->execute([$id, $sid]);
+    if ($__cr = $__cst->fetch(PDO::FETCH_ASSOC)) {
+        $lastCoachName  = (string)($__cr['coach_name']  ?? '');
+        $lastCoachPhone = (string)($__cr['coach_phone'] ?? '');
+    }
+} catch (Throwable $e) { /* columns not there yet — silent */ }
 
 renderHead('Συμμετοχή: ' . $ev['title']);
 $flash = getFlash();
@@ -188,6 +208,32 @@ $flash = getFlash();
             <?php endforeach; ?>
           </div>
         <?php endif; ?>
+
+        <!-- Coach declaration — same for the whole batch of athletes being registered -->
+        <div style="margin-top:1.25rem;padding:.9rem 1rem;background:rgba(240,165,0,.06);border:1px solid rgba(240,165,0,.25);border-radius:10px">
+          <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.65rem">
+            <i class="fa-solid fa-user-tie" style="color:#f0a500"></i>
+            <div style="font-size:.85rem;font-weight:800;color:#f0f2ff">Προπονητής που θα συνοδεύσει την ομάδα</div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:.65rem">
+            <label>
+              <div style="font-size:.78rem;font-weight:700;color:#c9cee1;margin-bottom:.3rem">Ονοματεπώνυμο</div>
+              <input type="text" name="coach_name" value="<?= h($lastCoachName) ?>" maxlength="160"
+                     placeholder="π.χ. Νίκος Παπαδόπουλος" autocomplete="name"
+                     style="width:100%;padding:.75rem 1rem;background:#0d1017;border:1.5px solid #2a3248;border-radius:10px;color:#fff;font-size:.95rem;min-height:48px">
+            </label>
+            <label>
+              <div style="font-size:.78rem;font-weight:700;color:#c9cee1;margin-bottom:.3rem">Τηλέφωνο επικοινωνίας</div>
+              <input type="tel" name="coach_phone" value="<?= h($lastCoachPhone) ?>" maxlength="40" inputmode="tel"
+                     placeholder="69XXXXXXXX" autocomplete="tel"
+                     style="width:100%;padding:.75rem 1rem;background:#0d1017;border:1.5px solid #2a3248;border-radius:10px;color:#fff;font-size:.95rem;min-height:48px">
+            </label>
+          </div>
+          <div style="color:#8892b0;font-size:.78rem;margin-top:.5rem;line-height:1.5">
+            <i class="fa-solid fa-circle-info" style="color:#3b82f6"></i>
+            Το ίδιο ζεύγος θα καταχωρηθεί για όλους τους αθλητές που δηλώνετε τώρα. Αν αλλάξει, μπορείτε να το ενημερώσετε σε μεταγενέστερη δήλωση.
+          </div>
+        </div>
 
         <label style="display:block;margin-top:1rem">
           <div style="font-size:.85rem;font-weight:700;color:#f0f2ff;margin-bottom:.35rem">Σημειώσεις (προαιρετικά)</div>

@@ -436,6 +436,45 @@ $flash = getFlash();
     <?php endif; ?>
 
   <?php elseif ($tab === 'registrations'): ?>
+    <?php
+      // Coach declarations per school+coach
+      $coachDecls = eventCoachDeclarations($id);
+    ?>
+    <?php if ($coachDecls): ?>
+      <div style="background:#111520;border:1px solid rgba(240,165,0,.28);border-radius:14px;padding:1.1rem 1.25rem;margin-bottom:1rem">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:.5rem;flex-wrap:wrap;margin-bottom:.85rem">
+          <h3 style="margin:0;color:#f0a500;font-size:1rem;font-weight:800;display:flex;align-items:center;gap:.5rem">
+            <i class="fa-solid fa-user-tie"></i> Προπονητές που συνοδεύουν
+            <span style="background:rgba(240,165,0,.2);color:#f0a500;padding:.1rem .55rem;border-radius:50px;font-size:.72rem;font-weight:900"><?= count($coachDecls) ?></span>
+          </h3>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:.7rem">
+          <?php foreach ($coachDecls as $cd): ?>
+            <div style="background:#0d1017;border:1px solid #1e2536;border-radius:10px;padding:.75rem .95rem">
+              <div style="color:#f0f2ff;font-weight:800;font-size:.96rem;display:flex;align-items:center;gap:.4rem">
+                <i class="fa-solid fa-user-tie" style="color:#f0a500;font-size:.85rem"></i>
+                <?= h($cd['coach_name']) ?>
+              </div>
+              <div style="color:#8892b0;font-size:.82rem;margin-top:.25rem">
+                <i class="fa-solid fa-building" style="font-size:.72rem"></i> <?= h($cd['school_name'] ?? '—') ?>
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-top:.5rem;gap:.5rem;flex-wrap:wrap">
+                <?php if (!empty($cd['coach_phone'])): ?>
+                  <a href="tel:<?= h(preg_replace('/\s+/', '', (string)$cd['coach_phone'])) ?>"
+                     style="color:#93c5fd;font-size:.85rem;text-decoration:none;font-weight:700">
+                    <i class="fa-solid fa-phone" style="font-size:.72rem"></i> <?= h($cd['coach_phone']) ?>
+                  </a>
+                <?php else: ?>
+                  <span style="color:#6b7494;font-size:.8rem">Χωρίς τηλέφωνο</span>
+                <?php endif; ?>
+                <span style="color:#8fe6a1;font-size:.78rem;font-weight:700"><?= (int)$cd['athletes'] ?> αθλητ<?= (int)$cd['athletes'] === 1 ? 'ής' : 'ές' ?></span>
+              </div>
+            </div>
+          <?php endforeach; ?>
+        </div>
+      </div>
+    <?php endif; ?>
+
     <?php if (!$registrations): ?>
       <p style="color:#6b7494">Δεν υπάρχουν εγγραφές ακόμα. Μόλις μοιραστείς τον δημόσιο σύνδεσμο, θα εμφανίζονται εδώ.</p>
     <?php else:

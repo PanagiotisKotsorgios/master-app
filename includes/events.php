@@ -441,7 +441,7 @@ function eventAthleteEligible(array $athlete, array $cat): array {
 }
 
 /** Register an athlete into an event category. Returns registration id. */
-function eventRegisterAthlete(int $eventId, int $categoryId, int $athleteId, int $registeringSchoolId, int $userId, string $notes = ''): int {
+function eventRegisterAthlete(int $eventId, int $categoryId, int $athleteId, int $registeringSchoolId, int $userId, string $notes = '', string $coachName = '', string $coachPhone = ''): int {
     $db = getDB();
     $ev = eventGet($eventId);
     if (!$ev) throw new RuntimeException('Ο διαγωνισμός δεν βρέθηκε.');
@@ -486,10 +486,16 @@ function eventRegisterAthlete(int $eventId, int $categoryId, int $athleteId, int
 
     $sql = "INSERT INTO event_registrations
               (event_id, category_id, registering_school_id, athlete_id, coach_user_id,
+               coach_name, coach_phone,
                athlete_snapshot, status, payment_status, amount, notes_participant)
-            VALUES (?,?,?,?,?,?, 'pending','unpaid',?,?)";
+            VALUES (?,?,?,?,?,?,?,?, 'pending','unpaid',?,?)";
     $st = $db->prepare($sql);
-    $st->execute([$eventId, $categoryId, $registeringSchoolId, $athleteId, $userId, $snapshot, $amount, mb_substr($notes, 0, 500)]);
+    $st->execute([
+        $eventId, $categoryId, $registeringSchoolId, $athleteId, $userId,
+        $coachName !== '' ? mb_substr($coachName, 0, 160) : null,
+        $coachPhone !== '' ? mb_substr($coachPhone, 0, 40) : null,
+        $snapshot, $amount, mb_substr($notes, 0, 500),
+    ]);
     $regId = (int)$db->lastInsertId();
 
     auditLog('event_registered', 'event_registration', $regId, "event=$eventId cat=$categoryId athlete=$athleteId");
@@ -507,6 +513,32 @@ function eventRegistrationsForOrganiser(int $eventId): array {
     $st = getDB()->prepare($sql);
     $st->execute([$eventId]);
     return $st->fetchAll();
+}
+
+/**
+ * Coaches declared by participating schools for this event.
+ * One row per (school × coach) combination. Silently tolerates the
+ * pre-migration schema (returns empty).
+ */
+function eventCoachDeclarations(int $eventId): array {
+    try {
+        $sql = "SELECT r.registering_school_id, s.name AS school_name,
+                       r.coach_name, r.coach_phone,
+                       COUNT(*) AS athletes,
+                       MAX(r.created_at) AS last_reg
+                  FROM event_registrations r
+             LEFT JOIN schools s ON s.id = r.registering_school_id
+                 WHERE r.event_id = ?
+                   AND r.coach_name IS NOT NULL AND r.coach_name <> ''
+                   AND r.status NOT IN ('rejected','withdrawn')
+              GROUP BY r.registering_school_id, r.coach_name, r.coach_phone
+              ORDER BY s.name, r.coach_name";
+        $st = getDB()->prepare($sql);
+        $st->execute([$eventId]);
+        return $st->fetchAll();
+    } catch (Throwable $e) {
+        return [];
+    }
 }
 
 // ══════════════════════════════════════════════════════════════
