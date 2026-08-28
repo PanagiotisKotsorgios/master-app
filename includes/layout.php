@@ -570,6 +570,41 @@ function renderSidebar(string $active = ''): void {
     } catch(e){}
   };
 })();
+
+/* Universal "Καθαρισμός" button tagger — scans buttons + anchor tags,
+   applies .btn-clear class when the visible text is (or ends with)
+   "Καθαρισμός". Runs once on DOMContentLoaded and again on any late
+   DOM insert via a lightweight MutationObserver. */
+(function(){
+  function tag(el){
+    if (!el || el.classList.contains('btn-clear')) return;
+    var txt = (el.textContent || '').replace(/\s+/g, ' ').trim();
+    if (!txt) return;
+    if (txt === 'Καθαρισμός' || txt.endsWith(' Καθαρισμός') || /^Καθαρισμός\b/.test(txt)) {
+      el.classList.add('btn-clear');
+    }
+  }
+  function sweep(root){
+    (root || document).querySelectorAll('a, button').forEach(tag);
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function(){ sweep(); });
+  } else {
+    sweep();
+  }
+  try {
+    new MutationObserver(function(muts){
+      muts.forEach(function(m){
+        m.addedNodes && m.addedNodes.forEach(function(n){
+          if (n.nodeType === 1) {
+            if (n.tagName === 'A' || n.tagName === 'BUTTON') tag(n);
+            else sweep(n);
+          }
+        });
+      });
+    }).observe(document.body, { childList: true, subtree: true });
+  } catch(e){}
+})();
 </script>
 <?php
 }

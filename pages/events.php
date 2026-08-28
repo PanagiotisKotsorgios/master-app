@@ -305,8 +305,10 @@ renderHead('Διοργανώσεις');
       <div style="font-size:3rem;margin-bottom:.75rem;color:#4a5270"><i class="fa-solid fa-users-line"></i></div>
       <h3 style="color:#f0f2ff;margin:0 0 .5rem">Δεν συμμετέχετε ακόμα σε καμία διοργάνωση.</h3>
       <p style="margin:0 0 1.25rem">Ψάξτε στις διοργανώσεις άλλων συλλόγων και δηλώστε τους αθλητές σας.</p>
-      <a href="<?= APP_URL ?>/pages/events_browse.php" class="btn btn-primary">
-        <i class="fa-solid fa-magnifying-glass"></i> Αναζήτηση διοργανώσεων
+      <a href="<?= APP_URL ?>/pages/events_browse.php" class="btn btn-primary"
+         style="color:#ffffff !important;font-weight:800;padding:.85rem 1.4rem;font-size:1rem;text-decoration:none;display:inline-flex;align-items:center;gap:.55rem">
+        <i class="fa-solid fa-magnifying-glass" style="color:#ffffff !important"></i>
+        <span style="color:#ffffff !important">Αναζήτηση διοργανώσεων</span>
       </a>
     </div>
   <?php else: ?>

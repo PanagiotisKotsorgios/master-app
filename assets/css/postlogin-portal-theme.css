@@ -350,6 +350,52 @@ a.nav-item, a.brand, a.logo, a.no-color { color: inherit !important; }
 /* Divider */
 hr { border: none !important; height: 1px !important; background: rgba(255,255,255,.08) !important; }
 
+/* Primary buttons — always white text/icons everywhere. The global
+   anchor rule (a { color:#ff8891 !important }) was bleeding into
+   btn-primary anchors and making labels look muted. */
+.btn.btn-primary,
+a.btn.btn-primary,
+button.btn-primary {
+  color: #ffffff !important;
+}
+.btn.btn-primary *,
+a.btn.btn-primary *,
+button.btn-primary * {
+  color: #ffffff !important;
+}
+.btn.btn-primary i,
+a.btn.btn-primary i,
+button.btn-primary i {
+  color: #ffffff !important;
+}
+
+/* Universal "Καθαρισμός" reset buttons — red bg + white fg wherever
+   a JS pass tags an element with .btn-clear. The pass runs on every
+   post-login page from includes/layout.php below. */
+.btn-clear,
+a.btn-clear,
+button.btn-clear {
+  background: linear-gradient(135deg, #e63946, #c72832) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255,255,255,.15) !important;
+  box-shadow: 0 4px 14px -4px rgba(230,57,70,.5) !important;
+  font-weight: 800 !important;
+  padding: .6rem 1rem !important;
+  border-radius: 10px !important;
+  min-height: 42px !important;
+  text-decoration: none !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: .5rem !important;
+  transition: transform .15s, box-shadow .15s !important;
+}
+.btn-clear:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px -4px rgba(230,57,70,.7) !important;
+}
+.btn-clear * { color: #ffffff !important; }
+.btn-clear i { color: #ffffff !important; }
+
 /* ── Mobile-friendly base overrides ────────────────────────────
    Fixes cropped filter grids, overflowing tables, tiny buttons
    on phones. Applies to every post-login page automatically. */
