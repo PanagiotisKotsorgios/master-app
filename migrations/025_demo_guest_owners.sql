@@ -17,7 +17,7 @@
 
 INSERT INTO users (school_id, name, email, password, role, active, created_at)
 SELECT s.id, 'Test Owner — Athens', 'opengplms@gmail.com',
-       '$2y$10$D2u3JqGqk2P9c8jvKf3.LO7c5o8kFjXK8Z4T6iN1r7Y2lQ3v9wS8O',
+       '$2y$10$5zL/uydtqqSBz2pv.6Y5.Oc..OG8Mxpd8/5uGo4iCB1fJPgwsyhqO',
        'owner', 1, NOW()
   FROM schools s
  WHERE s.name = 'Α.Σ. Test Athens'
@@ -25,7 +25,7 @@ SELECT s.id, 'Test Owner — Athens', 'opengplms@gmail.com',
 
 INSERT INTO users (school_id, name, email, password, role, active, created_at)
 SELECT s.id, 'Test Owner — Larisa', 'nolifeprogrammer1@gmail.com',
-       '$2y$10$D2u3JqGqk2P9c8jvKf3.LO7c5o8kFjXK8Z4T6iN1r7Y2lQ3v9wS8O',
+       '$2y$10$5zL/uydtqqSBz2pv.6Y5.Oc..OG8Mxpd8/5uGo4iCB1fJPgwsyhqO',
        'owner', 1, NOW()
   FROM schools s
  WHERE s.name = 'ΓΣ Test Larisas'
@@ -33,7 +33,7 @@ SELECT s.id, 'Test Owner — Larisa', 'nolifeprogrammer1@gmail.com',
 
 INSERT INTO users (school_id, name, email, password, role, active, created_at)
 SELECT s.id, 'Test Owner — Thessaloniki', 'info@mykalypsis.gr',
-       '$2y$10$D2u3JqGqk2P9c8jvKf3.LO7c5o8kFjXK8Z4T6iN1r7Y2lQ3v9wS8O',
+       '$2y$10$5zL/uydtqqSBz2pv.6Y5.Oc..OG8Mxpd8/5uGo4iCB1fJPgwsyhqO',
        'owner', 1, NOW()
   FROM schools s
  WHERE s.name = 'ΑΟ Test Thessalonikis'
@@ -41,7 +41,7 @@ SELECT s.id, 'Test Owner — Thessaloniki', 'info@mykalypsis.gr',
 
 INSERT INTO users (school_id, name, email, password, role, active, created_at)
 SELECT s.id, 'Test Owner — Patras', 'support@timologion.gr',
-       '$2y$10$D2u3JqGqk2P9c8jvKf3.LO7c5o8kFjXK8Z4T6iN1r7Y2lQ3v9wS8O',
+       '$2y$10$5zL/uydtqqSBz2pv.6Y5.Oc..OG8Mxpd8/5uGo4iCB1fJPgwsyhqO',
        'owner', 1, NOW()
   FROM schools s
  WHERE s.name = 'Σ.Α. Test Patras'
