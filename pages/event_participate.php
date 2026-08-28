@@ -79,7 +79,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 getDB()->prepare("UPDATE event_payments SET meta = ? WHERE id = ? AND paying_school_id = ?")
                        ->execute([$meta, $payId, $sid]);
             }
-            flash('Η απόδειξη ανέβηκε. Ο διοργανωτής θα την επιβεβαιώσει.');
+            // Redirect straight to the proof-uploaded confirmation
+            // so the front-end can pop up a big success dialog.
+            redirect(APP_URL . '/pages/event_participate.php?id=' . $id . '&proof_uploaded=' . $payId . '#pay-' . $payId);
         }
     } catch (Throwable $e) {
         flash('Σφάλμα: ' . $e->getMessage(), 'error');
@@ -501,5 +503,63 @@ $flash = getFlash();
     });
   });
 })();
+</script>
+
+<!-- ── Proof-upload success modal ── -->
+<?php $proofUploaded = isset($_GET['proof_uploaded']) ? (int)$_GET['proof_uploaded'] : 0; ?>
+<div id="proofSuccessModal" role="dialog" aria-modal="true"
+     style="display:<?= $proofUploaded > 0 ? 'flex' : 'none' ?>;position:fixed;inset:0;
+            background:rgba(0,0,0,.75);backdrop-filter:blur(6px);
+            z-index:10800;align-items:center;justify-content:center;padding:1rem"
+     onclick="if(event.target===this)__closeProofModal()">
+  <div style="background:#111520;border:1px solid rgba(45,198,83,.4);border-radius:18px;
+              max-width:460px;width:100%;padding:2rem 1.75rem 1.5rem;text-align:center;
+              box-shadow:0 30px 80px rgba(0,0,0,.6), 0 0 0 1px rgba(45,198,83,.15) inset;
+              animation:proofPop .35s cubic-bezier(.2,1.2,.4,1) both">
+    <div style="width:72px;height:72px;margin:0 auto .95rem;border-radius:50%;
+                background:linear-gradient(135deg,#22c55e,#16a34a);
+                display:flex;align-items:center;justify-content:center;
+                box-shadow:0 8px 24px -6px rgba(34,197,94,.55)">
+      <i class="fa-solid fa-check" style="color:#ffffff;font-size:2rem"></i>
+    </div>
+    <h3 style="margin:0 0 .5rem;color:#ffffff;font-size:1.25rem;font-weight:800">
+      Η απόδειξη εστάλη με επιτυχία
+    </h3>
+    <p style="margin:0 0 1.35rem;color:#c8dbff;font-size:.95rem;line-height:1.55">
+      <i class="fa-regular fa-clock" style="color:#93c5fd;margin-right:.3rem"></i>
+      Είσαι σε αναμονή έγκρισης από τον διοργανωτή του πρωταθλήματος.
+      Θα ενημερωθείς μόλις επιβεβαιωθεί η πληρωμή.
+    </p>
+    <button type="button" onclick="__closeProofModal()"
+            style="background:linear-gradient(135deg,#22c55e,#16a34a);color:#ffffff;
+                   border:none;padding:.85rem 1.75rem;border-radius:12px;
+                   font-weight:800;font-size:1rem;cursor:pointer;min-height:48px;
+                   font-family:inherit;box-shadow:0 6px 20px -6px rgba(34,197,94,.55)">
+      Εντάξει
+    </button>
+  </div>
+</div>
+<style>
+  @keyframes proofPop {
+    from { opacity:0; transform:scale(.9); }
+    to   { opacity:1; transform:scale(1); }
+  }
+</style>
+<script>
+  window.__closeProofModal = function() {
+    var m = document.getElementById('proofSuccessModal');
+    if (m) m.style.display = 'none';
+    // Clean URL so a refresh doesn't re-pop the dialog
+    if (window.history && window.history.replaceState) {
+      try {
+        var u = new URL(window.location.href);
+        u.searchParams.delete('proof_uploaded');
+        window.history.replaceState({}, '', u.toString());
+      } catch(e){}
+    }
+  };
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'Escape') __closeProofModal();
+  });
 </script>
 </body></html>
