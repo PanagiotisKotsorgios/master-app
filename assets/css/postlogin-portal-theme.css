@@ -350,6 +350,46 @@ a.nav-item, a.brand, a.logo, a.no-color { color: inherit !important; }
 /* Divider */
 hr { border: none !important; height: 1px !important; background: rgba(255,255,255,.08) !important; }
 
+/* ── Mobile-friendly base overrides ────────────────────────────
+   Fixes cropped filter grids, overflowing tables, tiny buttons
+   on phones. Applies to every post-login page automatically. */
+@media (max-width: 640px) {
+  /* Ensure no horizontal page overflow */
+  html, body { overflow-x: hidden !important; }
+  .main-content, .page-body { min-width: 0 !important; overflow-x: hidden !important; }
+  .page-body { padding: .85rem !important; }
+
+  /* Any fixed multi-col grid used as a filter/toolbar collapses to 1-col */
+  [style*="grid-template-columns:repeat(auto-fit,minmax"],
+  [style*="grid-template-columns: repeat(auto-fit,minmax"],
+  [style*="grid-template-columns:repeat(auto-fill,minmax"],
+  [style*="grid-template-columns: repeat(auto-fill,minmax"] {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Any raw table without its own scroll wrapper gets one so the
+     table itself can breathe without cropping the shell. */
+  table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; max-width: 100%; }
+  table thead, table tbody, table tfoot, table tr { display: table; width: 100%; table-layout: auto; }
+
+  /* Buttons + inputs bumped to a comfortable tap size */
+  .btn, button, input[type="submit"], input[type="button"] {
+    min-height: 42px !important;
+    font-size: .95rem !important;
+  }
+  input, select, textarea { font-size: 16px !important; /* prevent iOS zoom */ }
+
+  /* Header action bars wrap tightly */
+  h1, h2, h3 { font-size: 1.1rem !important; }
+
+  /* Toolbars that were width:fit-content push to 100% on phones */
+  .ev-tabs, .tabs-bar { width: 100% !important; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+}
+@media (max-width: 420px) {
+  .page-body { padding: .65rem !important; }
+  h1, h2, h3 { font-size: 1rem !important; }
+}
+
 /* Selection */
 ::selection { background: rgba(230,57,70,.4) !important; color: #ffffff !important; }
 

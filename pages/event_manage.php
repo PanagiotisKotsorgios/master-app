@@ -95,6 +95,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             redirect(eventManageUrl($id) . '&tab=payments');
         }
+        // ── Partial payment: mark specific registrations as paid ──
+        if ($action === 'mark_partial_paid') {
+            $psid   = (int)($_POST['school_id'] ?? 0);
+            $regIds = array_values(array_filter(array_map('intval', (array)($_POST['reg_ids'] ?? []))));
+            $note   = trim((string)($_POST['note'] ?? ''));
+            if ($psid > 0 && $regIds) {
+                $ph  = implode(',', array_fill(0, count($regIds), '?'));
+                $sql = "UPDATE event_registrations
+                           SET payment_status = 'verified',
+                               paid_at        = NOW(),
+                               verified_at    = NOW(),
+                               verified_by    = ?,
+                               notes_organiser = CASE
+                                   WHEN ? = '' THEN notes_organiser
+                                   ELSE ?
+                               END
+                         WHERE event_id = ?
+                           AND registering_school_id = ?
+                           AND id IN ($ph)
+                           AND payment_status IN ('unpaid','proof_uploaded')
+                           AND status NOT IN ('rejected','withdrawn')";
+                $params = array_merge([$userId, $note, $note, $id, $psid], $regIds);
+                $upd = getDB()->prepare($sql);
+                $upd->execute($params);
+                $n = $upd->rowCount();
+                if (function_exists('auditLog')) auditLog('event_partial_paid', 'event', $id, "school=$psid n=$n note=" . mb_substr($note, 0, 60));
+                flash("Καταχωρήθηκαν $n πληρωμένες εγγραφές.");
+            }
+            redirect(eventManageUrl($id) . '&tab=payments');
+        }
         if ($action === 'field_save') {
             eventCustomFieldSave($id, $_POST, isset($_POST['field_id']) && $_POST['field_id']!=='' ? (int)$_POST['field_id'] : null);
             flash('Το πεδίο αποθηκεύτηκε.');
@@ -669,8 +699,8 @@ $flash = getFlash();
       uasort($pendingBySchool, fn($a,$b) => $b['total'] <=> $a['total']);
     ?>
     <?php if ($totalPendingClubs > 0): ?>
-      <div style="background:#111520;border:1px solid rgba(230,57,70,.35);border-radius:14px;padding:1.15rem 1.35rem;margin-bottom:1rem">
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:.75rem;flex-wrap:wrap;margin-bottom:.85rem">
+      <div style="background:#111520;border:1px solid rgba(230,57,70,.35);border-radius:14px;overflow:hidden;margin-bottom:1rem">
+        <div style="padding:1rem 1.25rem;border-bottom:1px solid #1e2536;display:flex;align-items:center;justify-content:space-between;gap:.75rem;flex-wrap:wrap">
           <h3 style="margin:0;color:#ff8891;font-size:1rem;font-weight:800;display:flex;align-items:center;gap:.5rem">
             <i class="fa-solid fa-triangle-exclamation"></i>
             Σχολές με εκκρεμείς πληρωμές
@@ -680,30 +710,143 @@ $flash = getFlash();
             Συνολικό υπόλοιπο: <strong style="color:#f0a500"><?= number_format($totalPendingAmount, 2, ',', '.') ?> €</strong>
           </div>
         </div>
-        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:.7rem">
-          <?php foreach ($pendingBySchool as $psid => $ps): ?>
-            <div style="background:#0d1017;border:1px solid #1e2536;border-radius:10px;padding:.85rem 1rem">
-              <div style="font-weight:800;color:#fff;font-size:.98rem;margin-bottom:.35rem"><?= h($ps['name']) ?></div>
-              <div style="display:flex;justify-content:space-between;gap:.75rem;flex-wrap:wrap;color:#8892b0;font-size:.82rem">
-                <span><?= $ps['count'] ?> συμμετοχές<?php if ($ps['proof']): ?> · <span style="color:#93c5fd"><?= $ps['proof'] ?> με αποδεικτικό</span><?php endif; ?></span>
-                <strong style="color:#ff8891"><?= number_format($ps['total'], 2, ',', '.') ?> €</strong>
-              </div>
-              <div style="margin-top:.55rem;display:flex;gap:.35rem;flex-wrap:wrap">
-                <form method="POST" style="display:inline"
-                      onsubmit="return confirm('Σήμανση ΟΛΩΝ των <?= $ps['count'] ?> εγγραφών του <?= h($ps['name']) ?> ως Πληρωμένες;')">
-                  <input type="hidden" name="csrf_token" value="<?= csrf() ?>">
-                  <input type="hidden" name="_action" value="mark_school_paid">
-                  <input type="hidden" name="school_id" value="<?= (int)$psid ?>">
-                  <button type="submit" title="Σήμανση όλων ως πληρωμένες"
-                          style="background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;border:none;padding:.4rem .7rem;border-radius:8px;font-weight:700;font-size:.78rem;cursor:pointer">
-                    <i class="fa-solid fa-check"></i> Έλαβα όλη την πληρωμή
-                  </button>
-                </form>
-              </div>
-            </div>
-          <?php endforeach; ?>
+        <div style="overflow-x:auto">
+          <table style="width:100%;border-collapse:collapse;font-size:.94rem;min-width:640px">
+            <thead>
+              <tr style="background:#0d1017;color:#8892b0;font-size:.72rem;text-transform:uppercase;letter-spacing:.08em">
+                <th style="text-align:left;padding:.75rem 1rem">Σύλλογος</th>
+                <th style="text-align:right;padding:.75rem 1rem;white-space:nowrap">Συμμετοχές</th>
+                <th style="text-align:right;padding:.75rem 1rem;white-space:nowrap">Υπόλοιπο</th>
+                <th style="text-align:right;padding:.75rem 1rem">Ενέργειες</th>
+              </tr>
+            </thead>
+            <tbody>
+              <?php foreach ($pendingBySchool as $psid => $ps):
+                // Collect this school's unpaid registrations for the modal
+                $psRegs = array_values(array_filter($registrations, function($r) use ($psid) {
+                    return (int)$r['registering_school_id'] === (int)$psid
+                        && in_array($r['payment_status'], ['unpaid','proof_uploaded'], true)
+                        && !in_array($r['status'], ['rejected','withdrawn'], true);
+                }));
+              ?>
+                <tr style="border-top:1px solid #1e2536;color:#f0f2ff">
+                  <td style="padding:.75rem 1rem;font-weight:700">
+                    <?= h($ps['name']) ?>
+                    <?php if ($ps['proof']): ?>
+                      <div style="color:#93c5fd;font-size:.75rem;font-weight:600;margin-top:.2rem">
+                        <i class="fa-solid fa-file-arrow-up"></i> <?= $ps['proof'] ?> με αποδεικτικό
+                      </div>
+                    <?php endif; ?>
+                  </td>
+                  <td style="padding:.75rem 1rem;text-align:right;font-weight:700"><?= $ps['count'] ?></td>
+                  <td style="padding:.75rem 1rem;text-align:right;color:#ff8891;font-weight:800;white-space:nowrap"><?= number_format($ps['total'], 2, ',', '.') ?> €</td>
+                  <td style="padding:.6rem 1rem;text-align:right;white-space:nowrap">
+                    <div style="display:inline-flex;gap:.35rem;flex-wrap:wrap;justify-content:flex-end">
+                      <form method="POST" style="display:inline"
+                            onsubmit="return confirm('Σήμανση ΟΛΩΝ των <?= $ps['count'] ?> εγγραφών του <?= h($ps['name']) ?> ως Πληρωμένες;')">
+                        <input type="hidden" name="csrf_token" value="<?= csrf() ?>">
+                        <input type="hidden" name="_action" value="mark_school_paid">
+                        <input type="hidden" name="school_id" value="<?= (int)$psid ?>">
+                        <button type="submit" title="Σήμανση όλων ως πληρωμένες"
+                                style="background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;border:none;padding:.5rem .85rem;border-radius:8px;font-weight:700;font-size:.8rem;cursor:pointer;min-height:36px">
+                          <i class="fa-solid fa-check"></i> Πλήρης
+                        </button>
+                      </form>
+                      <button type="button" title="Επιλογή αθλητών που πληρώθηκαν"
+                              onclick="openModal('modalPartialPay<?= (int)$psid ?>')"
+                              style="background:linear-gradient(135deg,#f0a500,#d48800);color:#000;border:none;padding:.5rem .85rem;border-radius:8px;font-weight:700;font-size:.8rem;cursor:pointer;min-height:36px">
+                        <i class="fa-solid fa-hand-holding-dollar"></i> Μερική
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              <?php endforeach; ?>
+            </tbody>
+          </table>
         </div>
       </div>
+
+      <!-- Partial-payment modals, one per pending school -->
+      <?php foreach ($pendingBySchool as $psid => $ps):
+        $psRegs = array_values(array_filter($registrations, function($r) use ($psid) {
+            return (int)$r['registering_school_id'] === (int)$psid
+                && in_array($r['payment_status'], ['unpaid','proof_uploaded'], true)
+                && !in_array($r['status'], ['rejected','withdrawn'], true);
+        }));
+      ?>
+        <div id="modalPartialPay<?= (int)$psid ?>" class="ev-modal-backdrop" role="dialog" aria-modal="true"
+             style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.72);backdrop-filter:blur(5px);z-index:10600;align-items:center;justify-content:center;padding:1rem"
+             onclick="if(event.target===this)closeModal('modalPartialPay<?= (int)$psid ?>')">
+          <div style="background:#111520;border:1px solid #1e2536;border-radius:16px;max-width:560px;width:100%;max-height:90vh;overflow:auto;box-shadow:0 30px 80px rgba(0,0,0,.6)">
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:1.1rem 1.35rem;border-bottom:1px solid #1e2536">
+              <div>
+                <h3 style="margin:0;font-size:1.05rem;color:#fff;font-weight:800">
+                  <i class="fa-solid fa-hand-holding-dollar" style="color:#f0a500"></i>
+                  Μερική πληρωμή
+                </h3>
+                <div style="color:#8892b0;font-size:.85rem;margin-top:.2rem"><?= h($ps['name']) ?></div>
+              </div>
+              <button type="button" onclick="closeModal('modalPartialPay<?= (int)$psid ?>')"
+                      style="background:rgba(255,255,255,.05);border:1px solid #2a3248;color:#fff;width:36px;height:36px;border-radius:10px;cursor:pointer">
+                <i class="fa-solid fa-xmark"></i>
+              </button>
+            </div>
+            <form method="POST" style="padding:1.1rem 1.35rem">
+              <input type="hidden" name="csrf_token" value="<?= csrf() ?>">
+              <input type="hidden" name="_action" value="mark_partial_paid">
+              <input type="hidden" name="school_id" value="<?= (int)$psid ?>">
+              <div style="color:#c8cfe0;font-size:.88rem;margin-bottom:.85rem;line-height:1.5">
+                Επιλέξτε ποιοι αθλητές έχουν πληρωθεί μέχρι στιγμής. Οι υπόλοιποι θα παραμείνουν εκκρεμείς.
+              </div>
+              <div style="background:#0d1017;border:1px solid #2a3248;border-radius:10px;max-height:340px;overflow:auto">
+                <div style="padding:.55rem .75rem;border-bottom:1px solid #1e2536;background:rgba(255,255,255,.02);display:flex;align-items:center;gap:.5rem">
+                  <label style="display:flex;align-items:center;gap:.5rem;cursor:pointer;color:#c8cfe0;font-weight:700;font-size:.85rem">
+                    <input type="checkbox"
+                           onchange="document.querySelectorAll('.reg-cb-<?= (int)$psid ?>').forEach(function(cb){cb.checked = this.checked;}.bind(this))"
+                           style="width:18px;height:18px;accent-color:#2dc653">
+                    Επιλογή όλων
+                  </label>
+                </div>
+                <?php foreach ($psRegs as $r): ?>
+                  <label style="display:flex;align-items:center;gap:.65rem;padding:.55rem .75rem;border-bottom:1px solid #1e2536;cursor:pointer">
+                    <input type="checkbox" name="reg_ids[]" value="<?= (int)$r['id'] ?>"
+                           class="reg-cb-<?= (int)$psid ?>"
+                           style="width:18px;height:18px;accent-color:#2dc653;flex-shrink:0">
+                    <div style="flex:1;min-width:0">
+                      <div style="color:#fff;font-weight:700;font-size:.92rem"><?= h($r['athlete_name'] ?? '—') ?></div>
+                      <div style="color:#8892b0;font-size:.78rem;margin-top:.15rem">
+                        <?= h($r['cat_name'] ?? '—') ?>
+                        <?php if ($r['payment_status'] === 'proof_uploaded'): ?>
+                          · <span style="color:#93c5fd">Αποδεικτικό ανέβηκε</span>
+                        <?php endif; ?>
+                      </div>
+                    </div>
+                    <div style="color:#f0a500;font-weight:800;font-size:.88rem;white-space:nowrap"><?= number_format((float)$r['amount'], 2, ',', '.') ?> €</div>
+                  </label>
+                <?php endforeach; ?>
+              </div>
+              <div style="margin-top:.9rem">
+                <label>
+                  <div style="font-size:.78rem;font-weight:700;color:#c9cee1;margin-bottom:.3rem">Σημείωση (προαιρετικό)</div>
+                  <input type="text" name="note" maxlength="255"
+                         placeholder="π.χ. Δόθηκε προκαταβολή για 8 αθλητές, ακολουθεί το υπόλοιπο"
+                         style="width:100%;padding:.7rem 1rem;background:#0d1017;border:1.5px solid #2a3248;border-radius:10px;color:#fff;font-size:.9rem;min-height:44px">
+                </label>
+              </div>
+              <div style="display:flex;gap:.5rem;justify-content:flex-end;flex-wrap:wrap;margin-top:1.1rem;padding-top:1rem;border-top:1px solid #1e2536">
+                <button type="button" onclick="closeModal('modalPartialPay<?= (int)$psid ?>')"
+                        style="background:rgba(255,255,255,.06);border:1px solid #2a3248;color:#fff;min-height:44px;padding:.65rem 1.1rem;font-size:.92rem;font-weight:700;border-radius:10px;cursor:pointer">
+                  Άκυρο
+                </button>
+                <button type="submit"
+                        style="background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;border:none;min-height:44px;padding:.65rem 1.3rem;font-size:.95rem;font-weight:800;border-radius:10px;cursor:pointer">
+                  <i class="fa-solid fa-check"></i> Καταχώρηση πληρωμής
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      <?php endforeach; ?>
     <?php endif; ?>
 
     <?php if (!$payments && $totalPendingClubs === 0): ?>
