@@ -126,11 +126,56 @@ $canonical = eventPublicUrl($ev);
   .par-group{margin-bottom:1.25rem}
   .par-group h3{color:#e63946;font-size:.85rem;text-transform:uppercase;letter-spacing:.08em;margin-bottom:.5rem}
   .par-list{background:#0d1017;border:1px solid #1e2536;border-radius:10px;padding:.5rem}
-  .par-row{padding:.5rem .75rem;border-bottom:1px solid #1e2536;display:flex;justify-content:space-between;color:#c8cfe0;font-size:.9rem}
+  .par-row{padding:.55rem .8rem;border-bottom:1px solid #1e2536;display:flex;justify-content:space-between;color:#c8cfe0;font-size:.9rem;gap:.75rem;align-items:center;transition:background .12s;flex-wrap:wrap}
   .par-row:last-child{border-bottom:none}
-  .par-row .club{color:#8892b0;font-size:.82rem}
+  .par-row:hover{background:rgba(230,57,70,.04)}
+  .par-row .club{color:#8892b0;font-size:.82rem;white-space:nowrap;display:inline-flex;align-items:center}
+  .par-row .par-name{display:flex;align-items:center;gap:.6rem;min-width:0;flex:1}
+  .par-row .par-avatar{width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#e63946,#c72832);color:#fff;font-weight:800;font-size:.78rem;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0}
+  .par-row .par-txt{color:#f0f2ff;font-weight:600;overflow-wrap:anywhere}
+  .par-row.hit{background:rgba(240,165,0,.08);border-left:3px solid #f0a500;padding-left:calc(.8rem - 3px)}
+
+  /* Cats grid — polished cards */
+  .cats-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:.75rem}
+  .cat-card{background:#0d1017;border:1px solid #1e2536;border-radius:12px;padding:.9rem 1rem;transition:border-color .15s,transform .15s}
+  .cat-card:hover{border-color:rgba(230,57,70,.35);transform:translateY(-1px)}
+  .cat-card-head{display:flex;align-items:flex-start;justify-content:space-between;gap:.5rem;margin-bottom:.55rem}
+  .cat-card-head h4{color:#f0f2ff;font-size:.98rem;line-height:1.3;font-weight:800;margin:0;overflow-wrap:anywhere}
+  .cat-card-pill{display:inline-flex;align-items:center;gap:.3rem;background:rgba(230,57,70,.14);color:#ff8891;padding:.22rem .55rem;border-radius:50px;font-size:.75rem;font-weight:800;white-space:nowrap;flex-shrink:0}
+  .cat-card-meta{display:flex;gap:.35rem;flex-wrap:wrap}
+  .cat-chip{display:inline-flex;align-items:center;gap:.3rem;background:rgba(255,255,255,.05);color:#c8cfe0;padding:.22rem .55rem;border-radius:6px;font-size:.75rem;font-weight:600;line-height:1.3}
+  .cat-chip i{color:#8892b0;font-size:.7rem}
+  .cat-chip-fee{background:rgba(240,165,0,.1);color:#f0a500}
+  .cat-chip-fee i{color:#f0a500}
+
+  /* Participants search bar */
+  .par-search-wrap{display:flex;gap:.5rem;margin-bottom:.85rem;flex-wrap:wrap;align-items:center}
+  .par-search-input{position:relative;flex:1;min-width:220px}
+  .par-search-input i{position:absolute;left:.9rem;top:50%;transform:translateY(-50%);color:#6b7494;pointer-events:none;font-size:.9rem}
+  .par-search-input input{width:100%;padding:.85rem 1rem .85rem 2.4rem;background:#0d1017;border:1.5px solid #2a3248;border-radius:12px;color:#f0f2ff;font-family:inherit;font-size:1rem;min-height:48px;transition:border-color .15s,box-shadow .15s}
+  .par-search-input input:focus{outline:none;border-color:#e63946;box-shadow:0 0 0 3px rgba(230,57,70,.15)}
+  #parClearBtn{background:rgba(255,255,255,.06);color:#c8cfe0;border:1px solid #2a3248;padding:.75rem 1rem;border-radius:12px;font-weight:700;cursor:pointer;font-family:inherit;min-height:48px;display:inline-flex;align-items:center;gap:.4rem}
+  #parClearBtn:hover{background:rgba(255,255,255,.1);color:#fff}
+  .par-chips{display:flex;gap:.4rem;flex-wrap:wrap;margin-bottom:1rem;padding-bottom:.6rem;border-bottom:1px solid rgba(255,255,255,.05)}
+  .par-chip{background:rgba(255,255,255,.04);color:#c8cfe0;border:1px solid #1e2536;padding:.4rem .8rem;border-radius:50px;font-size:.82rem;font-weight:700;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:.35rem;transition:all .15s}
+  .par-chip:hover{background:rgba(230,57,70,.1);color:#fff;border-color:rgba(230,57,70,.3)}
+  .par-chip.active{background:linear-gradient(135deg,#e63946,#c72832);color:#fff;border-color:rgba(255,255,255,.15);box-shadow:0 4px 12px -4px rgba(230,57,70,.5)}
+  .par-chip .ct{background:rgba(255,255,255,.15);padding:.05rem .45rem;border-radius:50px;font-size:.7rem;font-weight:800}
+  .par-chip.active .ct{background:rgba(0,0,0,.25)}
+  .par-group{margin-bottom:1.25rem}
+  .par-group.empty{display:none}
+  .par-group h3{color:#e63946;font-size:.85rem;text-transform:uppercase;letter-spacing:.08em;margin-bottom:.5rem;font-weight:800}
+  .par-list{background:#0d1017;border:1px solid #1e2536;border-radius:12px;padding:.35rem}
+
   .cta-row{display:flex;gap:.6rem;flex-wrap:wrap;margin-top:1.25rem}
-  @media(max-width:640px){h1{font-size:1.5rem}.header{padding:1.5rem 1.25rem}.section{padding:1.15rem 1.25rem}}
+  @media(max-width:640px){
+    h1{font-size:1.5rem}
+    .header{padding:1.5rem 1.25rem}
+    .section{padding:1.15rem 1.25rem}
+    .cats-grid{grid-template-columns:1fr}
+    .par-row{align-items:flex-start;flex-direction:column;gap:.3rem}
+    .par-row .club{padding-left:2.15rem}
+  }
 </style>
 <?php include __DIR__ . "/../includes/prelogin_polish.php"; ?>
 </head>
@@ -271,38 +316,107 @@ $canonical = eventPublicUrl($ev);
 
   <?php if ($categories): ?>
     <div class="section">
-      <h2>Κατηγορίες</h2>
-      <?php foreach ($categories as $c): ?>
-        <div class="cat-item">
-          <h4><?= h($c['name']) ?></h4>
-          <div class="cat-meta">
-            <?php if ($c['gender']!=='MX'): ?><span><?= ['M'=>'Άνδρες','F'=>'Γυναίκες'][$c['gender']] ?></span> · <?php endif; ?>
-            <?php if ($c['min_age'] || $c['max_age']): ?><span><?= ($c['min_age']??'—') ?>-<?= ($c['max_age']??'—') ?> ετών</span> · <?php endif; ?>
-            <?php if ($c['min_weight'] || $c['max_weight']): ?><span><?= ($c['min_weight']??'—') ?>-<?= ($c['max_weight']??'—') ?> kg</span> · <?php endif; ?>
-            <span>Format: <?= h($c['format']) ?></span>
-            <?php if ($c['fee_override']!==null): ?> · <span>Κόστος: <?= number_format((float)$c['fee_override'],2,',','.') ?>€</span><?php endif; ?>
+      <h2>Κατηγορίες <span style="color:#8892b0;font-weight:400;font-size:.85rem;letter-spacing:0;text-transform:none;margin-left:.5rem">(<?= count($categories) ?>)</span></h2>
+      <div class="cats-grid">
+        <?php foreach ($categories as $c):
+          $catCount = isset($byCat[$c['name']]) ? count($byCat[$c['name']]) : 0;
+        ?>
+          <div class="cat-card">
+            <div class="cat-card-head">
+              <h4><?= h($c['name']) ?></h4>
+              <span class="cat-card-pill"><i class="fa-solid fa-users"></i> <?= $catCount ?></span>
+            </div>
+            <div class="cat-card-meta">
+              <?php if ($c['gender']!=='MX'): ?>
+                <span class="cat-chip"><i class="fa-solid <?= $c['gender']==='F'?'fa-venus':'fa-mars' ?>"></i> <?= ['M'=>'Άνδρες','F'=>'Γυναίκες'][$c['gender']] ?></span>
+              <?php endif; ?>
+              <?php if ($c['min_age'] || $c['max_age']): ?>
+                <span class="cat-chip"><i class="fa-solid fa-cake-candles"></i> <?= ($c['min_age']??'—') ?>–<?= ($c['max_age']??'—') ?> ετών</span>
+              <?php endif; ?>
+              <?php if ($c['min_weight'] || $c['max_weight']): ?>
+                <span class="cat-chip"><i class="fa-solid fa-weight-scale"></i> <?= ($c['min_weight']??'—') ?>–<?= ($c['max_weight']??'—') ?> kg</span>
+              <?php endif; ?>
+              <span class="cat-chip"><i class="fa-solid fa-diagram-project"></i> <?= h(eventFormatLabel($c['format'] ?? '')) ?></span>
+              <?php if ($c['fee_override']!==null): ?>
+                <span class="cat-chip cat-chip-fee"><i class="fa-solid fa-euro-sign"></i> <?= number_format((float)$c['fee_override'],2,',','.') ?>€</span>
+              <?php endif; ?>
+            </div>
           </div>
-        </div>
-      <?php endforeach; ?>
+        <?php endforeach; ?>
+      </div>
     </div>
   <?php endif; ?>
 
-  <?php if ($participants): ?>
-    <div class="section">
-      <h2>Συμμετέχοντες αθλητές (<?= count($participants) ?>)</h2>
-      <?php foreach ($byCat as $catName => $rows): ?>
-        <div class="par-group">
-          <h3><?= h($catName) ?> (<?= count($rows) ?>)</h3>
-          <div class="par-list">
-            <?php foreach ($rows as $p): ?>
-              <div class="par-row">
-                <span><?= h($p['full_name'] ?? '—') ?></span>
-                <span class="club"><?= h($p['school_name'] ?? '—') ?></span>
-              </div>
-            <?php endforeach; ?>
-          </div>
+  <?php if ($participants):
+    // Collect distinct clubs for chips
+    $clubSet = [];
+    foreach ($participants as $p) if (!empty($p['school_name'])) $clubSet[$p['school_name']] = ($clubSet[$p['school_name']] ?? 0) + 1;
+    arsort($clubSet);
+  ?>
+    <div class="section" id="participantsSection">
+      <div style="display:flex;align-items:baseline;justify-content:space-between;gap:.75rem;flex-wrap:wrap;margin-bottom:1rem">
+        <h2 style="margin:0">Συμμετέχοντες αθλητές
+          <span style="color:#8892b0;font-weight:400;font-size:.85rem;letter-spacing:0;text-transform:none;margin-left:.5rem">
+            (<span id="parVisibleCount"><?= count($participants) ?></span> / <?= count($participants) ?>)
+          </span>
+        </h2>
+        <div style="color:#6b7494;font-size:.78rem">
+          <i class="fa-solid fa-shield-halved" style="color:#8fe6a1"></i> Τα ονόματα εμφανίζονται ανώνυμα για λόγους απορρήτου
         </div>
-      <?php endforeach; ?>
+      </div>
+
+      <!-- Live search + club filter -->
+      <div class="par-search-wrap">
+        <div class="par-search-input">
+          <i class="fa-solid fa-magnifying-glass"></i>
+          <input type="search" id="parSearch" placeholder="Αναζήτηση αθλητή, συλλόγου ή κατηγορίας…"
+                 autocomplete="off" inputmode="search" enterkeyhint="search"
+                 oninput="__parFilter()">
+        </div>
+        <button type="button" id="parClearBtn" onclick="__parClear()" style="display:none">
+          <i class="fa-solid fa-xmark"></i> Καθαρισμός
+        </button>
+      </div>
+
+      <?php if (count($clubSet) > 1): ?>
+      <div class="par-chips" role="tablist" aria-label="Φίλτρο συλλόγου">
+        <button type="button" class="par-chip active" data-club="" onclick="__parClub(this,'')">
+          Όλοι <span class="ct"><?= count($participants) ?></span>
+        </button>
+        <?php foreach ($clubSet as $clubName => $clubCount): ?>
+          <button type="button" class="par-chip" data-club="<?= h(mb_strtolower($clubName, 'UTF-8')) ?>" onclick="__parClub(this,'<?= h(mb_strtolower(addslashes($clubName), 'UTF-8')) ?>')">
+            <?= h($clubName) ?> <span class="ct"><?= (int)$clubCount ?></span>
+          </button>
+        <?php endforeach; ?>
+      </div>
+      <?php endif; ?>
+
+      <div id="parAllGroups">
+        <?php foreach ($byCat as $catName => $rows): ?>
+          <div class="par-group" data-cat="<?= h(mb_strtolower($catName, 'UTF-8')) ?>">
+            <h3><?= h($catName) ?> <span style="color:#8892b0;font-weight:600;font-size:.72rem;margin-left:.35rem">(<span class="par-group-count"><?= count($rows) ?></span>)</span></h3>
+            <div class="par-list">
+              <?php foreach ($rows as $p): ?>
+                <div class="par-row"
+                     data-name="<?= h(mb_strtolower($p['full_name'] ?? '', 'UTF-8')) ?>"
+                     data-club="<?= h(mb_strtolower($p['school_name'] ?? '', 'UTF-8')) ?>"
+                     data-cat="<?= h(mb_strtolower($catName, 'UTF-8')) ?>">
+                  <div class="par-name">
+                    <span class="par-avatar"><?= h(mb_strtoupper(mb_substr($p['full_name'] ?? '?', 0, 1, 'UTF-8'), 'UTF-8')) ?></span>
+                    <span class="par-txt"><?= h($p['full_name'] ?? '—') ?></span>
+                  </div>
+                  <span class="club"><i class="fa-solid fa-building" style="color:#e63946;font-size:.68rem;margin-right:.2rem"></i><?= h($p['school_name'] ?? '—') ?></span>
+                </div>
+              <?php endforeach; ?>
+            </div>
+          </div>
+        <?php endforeach; ?>
+      </div>
+
+      <div id="parEmpty" style="display:none;padding:2rem 1rem;text-align:center;color:#8892b0;background:#0d1017;border:1px dashed #2a3248;border-radius:12px">
+        <i class="fa-solid fa-magnifying-glass" style="font-size:1.6rem;display:block;margin-bottom:.5rem;opacity:.5"></i>
+        Δεν βρέθηκε αθλητής με αυτά τα κριτήρια.
+      </div>
     </div>
   <?php endif; ?>
 
@@ -339,6 +453,80 @@ $canonical = eventPublicUrl($ev);
     · Πλατφόρμα διαχείρισης αθλητικών συλλόγων
   </p>
 </div>
+
+<script>
+/* ── Live participants search + club chip filter ────────────── */
+(function(){
+  var rows       = Array.from(document.querySelectorAll('#parAllGroups .par-row'));
+  var groups     = Array.from(document.querySelectorAll('#parAllGroups .par-group'));
+  var totalRows  = rows.length;
+  var searchEl   = document.getElementById('parSearch');
+  var clearEl    = document.getElementById('parClearBtn');
+  var countEl    = document.getElementById('parVisibleCount');
+  var emptyEl    = document.getElementById('parEmpty');
+  var currentClub = '';
+
+  function norm(s){
+    if (!s) return '';
+    return s.toString()
+      .normalize('NFD').replace(/[̀-ͯ]/g,'') // strip Greek tonos etc.
+      .toLowerCase()
+      .replace(/ς/g,'σ')
+      .replace(/\s+/g,' ')
+      .trim();
+  }
+
+  function apply(){
+    var q = norm(searchEl && searchEl.value || '');
+    if (clearEl) clearEl.style.display = (q || currentClub) ? 'inline-flex' : 'none';
+    var totalVisible = 0;
+    groups.forEach(function(g){
+      var groupHits = 0;
+      var groupRows = g.querySelectorAll('.par-row');
+      var catNorm   = norm(g.getAttribute('data-cat') || '');
+      groupRows.forEach(function(r){
+        var name = r.getAttribute('data-name') || '';
+        var club = r.getAttribute('data-club') || '';
+        var cat  = r.getAttribute('data-cat')  || '';
+        var showByClub = !currentClub || club === currentClub;
+        var showByQ = true, isHit = false;
+        if (q) {
+          var hay = norm(name + ' ' + club + ' ' + cat);
+          showByQ = hay.indexOf(q) >= 0;
+          isHit   = showByQ && norm(name).indexOf(q) >= 0;
+        }
+        var visible = showByClub && showByQ;
+        r.style.display = visible ? '' : 'none';
+        r.classList.toggle('hit', isHit);
+        if (visible) { groupHits++; totalVisible++; }
+      });
+      // Update the group's count next to its title
+      var groupCountEl = g.querySelector('.par-group-count');
+      if (groupCountEl) groupCountEl.textContent = groupHits;
+      g.classList.toggle('empty', groupHits === 0);
+    });
+    if (countEl) countEl.textContent = totalVisible;
+    if (emptyEl) emptyEl.style.display = totalVisible === 0 ? 'block' : 'none';
+  }
+
+  window.__parFilter = apply;
+  window.__parClub = function(btn, club) {
+    currentClub = club || '';
+    document.querySelectorAll('.par-chip').forEach(function(c){ c.classList.remove('active'); });
+    if (btn) btn.classList.add('active');
+    apply();
+  };
+  window.__parClear = function() {
+    if (searchEl) { searchEl.value = ''; }
+    currentClub = '';
+    document.querySelectorAll('.par-chip').forEach(function(c){ c.classList.remove('active'); });
+    var firstChip = document.querySelector('.par-chip[data-club=""]');
+    if (firstChip) firstChip.classList.add('active');
+    apply();
+    if (searchEl) searchEl.focus();
+  };
+})();
+</script>
 
 </body>
 </html>
