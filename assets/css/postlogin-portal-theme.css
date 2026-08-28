@@ -413,43 +413,51 @@ button.btn-clear {
     grid-template-columns: 1fr !important;
   }
 
-  /* Tables: keep proper table layout so every row shares the same
-     column widths (no zig-zag dividers) and never let a table itself
-     scroll — its wrapper is the only horizontal scroller, so we don't
-     get double scrollbars stacked at the bottom. Long cell content
-     wraps inside its column instead of pushing the column wider. */
+  /* Tables on phones — one horizontal scrollbar on the WRAPPER only.
+     Columns keep their natural widths (no fixed-layout compression),
+     every row shares the same column widths (proper table layout on
+     thead/tbody/tr — no per-row display:table hacks), and the shell
+     never gets its own second scrollbar. */
+
+  /* The wrapper is the only horizontal scroller */
   .table-wrap,
   [class*="tbl-wrap"], [class*="table-scroll"] {
     overflow-x: auto !important;
     -webkit-overflow-scrolling: touch;
     max-width: 100%;
   }
-  table {
+  /* Table inside a wrapper: natural width, scroll happens on the wrapper */
+  .table-wrap > table,
+  [class*="tbl-wrap"] > table,
+  [class*="table-scroll"] > table {
     display: table !important;
-    width: 100% !important;
-    max-width: 100% !important;
-    table-layout: fixed !important;
+    width: max-content !important;
+    max-width: none !important;
+    min-width: 100% !important;
+    table-layout: auto !important;
     overflow: visible !important;
-    border-collapse: collapse !important;
   }
-  table thead { display: table-header-group !important; }
-  table tbody { display: table-row-group !important; }
-  table tfoot { display: table-footer-group !important; }
-  table tr    { display: table-row !important; width: auto !important; }
+  /* Orphan tables (no wrapper) — make the table itself the scroller */
+  table {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    max-width: 100%;
+  }
+  /* Keep the real table semantics on rows/cells so columns line up */
+  table thead { display: table-header-group; }
+  table tbody { display: table-row-group; }
+  table tfoot { display: table-footer-group; }
+  table tr    { display: table-row; }
   table th, table td {
-    display: table-cell !important;
-    word-wrap: break-word !important;
-    overflow-wrap: anywhere !important;
-    white-space: normal !important;
-    vertical-align: top !important;
-    min-width: 0 !important;
+    display: table-cell;
+    vertical-align: middle;
+    white-space: nowrap; /* names/phones/badges stay on one line, scroll instead */
   }
-  /* Chip/pill contents inside cells must not force the column wider */
-  table .badge, table .chip, table .pill,
-  table [class*="status"], table [class*="badge"] {
-    max-width: 100% !important;
+  /* Cells that are explicitly wrap-friendly may opt back in */
+  table th.wrap, table td.wrap, table td[data-wrap] {
     white-space: normal !important;
-    word-break: break-word !important;
+    word-break: break-word;
   }
 
   /* Buttons + inputs bumped to a comfortable tap size */
