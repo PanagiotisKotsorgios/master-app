@@ -413,10 +413,44 @@ button.btn-clear {
     grid-template-columns: 1fr !important;
   }
 
-  /* Any raw table without its own scroll wrapper gets one so the
-     table itself can breathe without cropping the shell. */
-  table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; max-width: 100%; }
-  table thead, table tbody, table tfoot, table tr { display: table; width: 100%; table-layout: auto; }
+  /* Tables: keep proper table layout so every row shares the same
+     column widths (no zig-zag dividers) and never let a table itself
+     scroll — its wrapper is the only horizontal scroller, so we don't
+     get double scrollbars stacked at the bottom. Long cell content
+     wraps inside its column instead of pushing the column wider. */
+  .table-wrap,
+  [class*="tbl-wrap"], [class*="table-scroll"] {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+    max-width: 100%;
+  }
+  table {
+    display: table !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    table-layout: fixed !important;
+    overflow: visible !important;
+    border-collapse: collapse !important;
+  }
+  table thead { display: table-header-group !important; }
+  table tbody { display: table-row-group !important; }
+  table tfoot { display: table-footer-group !important; }
+  table tr    { display: table-row !important; width: auto !important; }
+  table th, table td {
+    display: table-cell !important;
+    word-wrap: break-word !important;
+    overflow-wrap: anywhere !important;
+    white-space: normal !important;
+    vertical-align: top !important;
+    min-width: 0 !important;
+  }
+  /* Chip/pill contents inside cells must not force the column wider */
+  table .badge, table .chip, table .pill,
+  table [class*="status"], table [class*="badge"] {
+    max-width: 100% !important;
+    white-space: normal !important;
+    word-break: break-word !important;
+  }
 
   /* Buttons + inputs bumped to a comfortable tap size */
   .btn, button, input[type="submit"], input[type="button"] {
