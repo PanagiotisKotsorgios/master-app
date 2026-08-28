@@ -379,14 +379,21 @@ button.btn-clear {
   color: #ffffff !important;
   border: 1px solid rgba(255,255,255,.15) !important;
   box-shadow: 0 4px 14px -4px rgba(230,57,70,.5) !important;
-  font-weight: 800 !important;
-  padding: .6rem 1rem !important;
-  border-radius: 10px !important;
-  min-height: 42px !important;
+  font-weight: 700 !important;
+  padding: .45rem .85rem !important;
+  border-radius: 9px !important;
+  min-height: 36px !important;
+  height: auto !important;
+  width: auto !important;
+  max-width: max-content !important;
+  align-self: flex-start !important;
+  flex: 0 0 auto !important;
   text-decoration: none !important;
   display: inline-flex !important;
   align-items: center !important;
-  gap: .5rem !important;
+  justify-content: center !important;
+  gap: .4rem !important;
+  font-size: .88rem !important;
   transition: transform .15s, box-shadow .15s !important;
 }
 .btn-clear:hover {
@@ -399,6 +406,43 @@ button.btn-clear {
 /* ── Mobile-friendly base overrides ────────────────────────────
    Fixes cropped filter grids, overflowing tables, tiny buttons
    on phones. Applies to every post-login page automatically. */
+/* ── Mobile modal / popup opacity ────────────────────────────────
+   On phones the underlying page shows through translucent backdrops.
+   Force every dialog / modal / popup wrapper to a solid dark backdrop
+   so content behind it disappears. */
+@media (max-width: 640px) {
+  .modal-backdrop,
+  [role="dialog"][style*="position:fixed"],
+  [id$="Modal"][style*="position:fixed"],
+  [id*="Modal"][class*="backdrop"],
+  [id$="Popup"][style*="position:fixed"],
+  [class*="modal-overlay"],
+  [class*="popup-overlay"] {
+    background: rgba(4, 8, 16, 0.96) !important;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+}
+
+@media (max-width: 900px) {
+  /* Off-canvas sidebar: allow full internal scroll so bottom items
+     (Pro Συνδρομητής / Αποσύνδεση) are always reachable, and respect
+     the phone's safe-area at the bottom (iOS home indicator, Android
+     gesture bar) so nothing gets clipped by system UI. */
+  .sidebar {
+    min-height: 0 !important;
+    height: auto !important;
+    max-height: 100dvh;
+    max-height: 100vh;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + .75rem) !important;
+  }
+  /* Kill the sticky bottom fade that could hide the last item */
+  .sidebar::after { content: none !important; display: none !important; }
+}
+
 @media (max-width: 640px) {
   /* Ensure no horizontal page overflow */
   html, body { overflow-x: hidden !important; }
@@ -457,6 +501,19 @@ button.btn-clear {
   /* Cells that are explicitly wrap-friendly may opt back in */
   table th.wrap, table td.wrap, table td[data-wrap] {
     white-space: normal !important;
+    word-break: break-word;
+  }
+  /* Modal / popover / dialog tables always wrap — no horizontal
+     scroll room inside a popup, so long values must break to next line
+     instead of being clipped by the modal edge. */
+  .modal table th, .modal table td,
+  [role="dialog"] table th, [role="dialog"] table td,
+  [id*="Modal"] table th, [id*="Modal"] table td,
+  [id*="modal"] table th, [id*="modal"] table td,
+  [id*="Popup"] table th, [id*="Popup"] table td,
+  [id*="Preview"] table th, [id*="Preview"] table td {
+    white-space: normal !important;
+    overflow-wrap: anywhere;
     word-break: break-word;
   }
 

@@ -215,7 +215,7 @@ renderHead('Διοργανώσεις');
     <?php if ($tab === 'mine'): ?>
     <div style="display:flex;gap:.5rem;flex-wrap:wrap">
       <a href="<?= APP_URL ?>/pages/events_browse.php" class="btn btn-ghost">
-        <i class="fa-solid fa-magnifying-glass"></i> Αναζήτηση διοργανώσεων άλλων συλλόγων
+        <i class="fa-solid fa-magnifying-glass"></i> Αναζήτηση Διοργανώσεων
       </a>
       <a href="<?= APP_URL ?>/pages/event_edit.php" class="btn btn-primary">
         <i class="fa-solid fa-plus"></i> Νέα Διοργάνωση
