@@ -503,7 +503,97 @@ renderHead('Διοργανώσεις');
     })();
   </script>
 
-  <!-- Table -->
+  <?php
+    // ── Aggregate per (event × school) — user asked for club totals,
+    // not per-athlete rows. Uses the currently filtered $regs set.
+    $agg = [];
+    foreach ($regs as $r) {
+        $eid = (int)$r['event_id'];
+        $sk  = (int)($r['registering_school_id'] ?? 0);
+        $key = $eid . '·' . $sk;
+        if (!isset($agg[$key])) {
+            $agg[$key] = [
+                'event_id'     => $eid,
+                'event_title'  => $r['event_title'],
+                'starts_at'    => $r['starts_at'],
+                'school_id'    => $sk,
+                'school_name'  => $r['school_name'] ?: '— Άγνωστη σχολή —',
+                'athletes'     => 0,
+                'total'        => 0.0,
+                'paid'         => 0.0,
+                'unpaid'       => 0.0,
+                'unpaid_count' => 0,
+                'proof_count'  => 0,
+            ];
+        }
+        $agg[$key]['athletes']++;
+        $agg[$key]['total'] += (float)$r['amount'];
+        $ps = $r['payment_status'];
+        if (in_array($ps, ['verified','waived'], true)) {
+            $agg[$key]['paid'] += (float)$r['amount'];
+        } elseif ($ps === 'unpaid') {
+            $agg[$key]['unpaid'] += (float)$r['amount'];
+            $agg[$key]['unpaid_count']++;
+        } elseif ($ps === 'proof_uploaded') {
+            $agg[$key]['proof_count']++;
+        }
+    }
+    // Unpaid first, then by school name
+    uasort($agg, function($a, $b){
+        if ($b['unpaid'] != $a['unpaid']) return $b['unpaid'] <=> $a['unpaid'];
+        return strcasecmp($a['school_name'], $b['school_name']);
+    });
+  ?>
+
+  <?php if ($agg): ?>
+  <div style="background:#111520;border:1px solid #1e2536;border-radius:14px;margin-bottom:1rem;overflow:hidden">
+    <div style="padding:.9rem 1.15rem;border-bottom:1px solid #1e2536;display:flex;align-items:center;gap:.6rem;flex-wrap:wrap">
+      <div style="width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,#3b82f6,#2563eb);display:flex;align-items:center;justify-content:center;color:#fff"><i class="fa-solid fa-building-columns"></i></div>
+      <div style="flex:1;min-width:180px">
+        <div style="font-weight:800;color:#fff;font-size:1rem">Σύνολα ανά σύλλογο</div>
+        <div style="color:#8892b0;font-size:.78rem;margin-top:.1rem"><?= count($agg) ?> σύλλογοι · <?= array_sum(array_column($agg,'athletes')) ?> αθλητές συνολικά</div>
+      </div>
+    </div>
+    <div class="table-wrap" style="overflow-x:auto">
+      <table style="width:100%;border-collapse:collapse;font-size:.94rem;min-width:640px">
+        <thead>
+          <tr style="background:rgba(255,255,255,.03)">
+            <th style="padding:.7rem 1rem;text-align:left;font-size:.72rem;font-weight:700;color:#a9b3c9;text-transform:uppercase;letter-spacing:.08em">Σύλλογος / Διοργάνωση</th>
+            <th style="padding:.7rem .75rem;text-align:right;font-size:.72rem;font-weight:700;color:#a9b3c9;text-transform:uppercase;letter-spacing:.08em">Αθλητές</th>
+            <th style="padding:.7rem .75rem;text-align:right;font-size:.72rem;font-weight:700;color:#a9b3c9;text-transform:uppercase;letter-spacing:.08em">Σύνολο</th>
+            <th style="padding:.7rem .75rem;text-align:right;font-size:.72rem;font-weight:700;color:#a9b3c9;text-transform:uppercase;letter-spacing:.08em">Πληρωμένο</th>
+            <th style="padding:.7rem .75rem;text-align:right;font-size:.72rem;font-weight:700;color:#a9b3c9;text-transform:uppercase;letter-spacing:.08em">Εκκρεμεί</th>
+          </tr>
+        </thead>
+        <tbody>
+          <?php foreach ($agg as $a): ?>
+            <tr style="border-top:1px solid rgba(255,255,255,.05)">
+              <td style="padding:.75rem 1rem">
+                <div style="font-weight:800;color:#fff"><?= h($a['school_name']) ?></div>
+                <div style="font-size:.78rem;color:#8892b0;margin-top:.15rem">
+                  <i class="fa-solid fa-trophy" style="color:#e63946;font-size:.7rem"></i>
+                  <?= h($a['event_title']) ?>
+                  <?php if ($a['starts_at']): ?> · <?= h(date('d/m/Y', strtotime($a['starts_at']))) ?><?php endif; ?>
+                </div>
+              </td>
+              <td style="padding:.75rem .75rem;text-align:right;font-weight:700;color:#fff"><?= (int)$a['athletes'] ?></td>
+              <td style="padding:.75rem .75rem;text-align:right;font-weight:700;color:#fff"><?= number_format($a['total'], 2, ',', '.') ?> €</td>
+              <td style="padding:.75rem .75rem;text-align:right;font-weight:800;color:<?= $a['paid']>0 ? '#8fe6a1' : '#4a5270' ?>"><?= number_format($a['paid'], 2, ',', '.') ?> €</td>
+              <td style="padding:.75rem .75rem;text-align:right;font-weight:800;color:<?= $a['unpaid']>0 ? '#ff8891' : '#4a5270' ?>">
+                <?php if ($a['unpaid']>0): ?>
+                  <?= number_format($a['unpaid'], 2, ',', '.') ?> €
+                  <div style="font-size:.7rem;font-weight:700;color:#ff8891;opacity:.85;margin-top:.1rem"><?= (int)$a['unpaid_count'] ?> αθλητ<?= $a['unpaid_count']===1?'ής':'ές' ?></div>
+                <?php else: ?>—<?php endif; ?>
+              </td>
+            </tr>
+          <?php endforeach; ?>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <?php endif; ?>
+
+  <!-- Detail table (per registration) -->
   <div style="background:#111520;border:1px solid #1e2536;border-radius:14px;overflow:hidden">
     <?php if (!$regsAll): ?>
       <div style="padding:3rem 1.5rem;text-align:center;color:#a9b3c9">
