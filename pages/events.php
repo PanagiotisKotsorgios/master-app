@@ -53,10 +53,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($act === 'update_reg_payment' || $
     redirect(APP_URL . '/pages/events.php?tab=payments&ok=1');
 }
 
-$tab      = ($_GET['tab'] ?? 'mine') === 'payments' ? 'payments' : 'mine';
+$tabRaw = $_GET['tab'] ?? 'mine';
+if (!in_array($tabRaw, ['mine', 'joined', 'payments'], true)) $tabRaw = 'mine';
+$tab      = $tabRaw;
 $events   = $tab === 'mine' ? eventsMineForSchool($sid) : [];
 $regsAll  = eventRegistrationsAcrossOrganiserSchool($sid);   // for the tab count
 $regs     = $tab === 'payments' ? $regsAll : [];
+
+// ── "Διοργανώσεις που συμμετέχω": events any of my athletes are registered in ──
+// (this is the participant side — different from eventsMineForSchool which is
+//  the organiser side).
+$joinedEvents = [];
+try {
+    $st = getDB()->prepare("
+        SELECT e.id, e.slug, e.title, e.subtitle, e.type, e.status, e.visibility,
+               e.starts_at, e.ends_at, e.banner_path, e.fee_amount, e.fee_model,
+               e.venue_name, e.organiser_school_id,
+               os.name AS organiser_name,
+               COUNT(r.id) AS my_regs,
+               SUM(CASE WHEN r.payment_status = 'verified' THEN 1 ELSE 0 END) AS my_paid,
+               SUM(CASE WHEN r.payment_status IN ('unpaid','proof_uploaded') THEN 1 ELSE 0 END) AS my_pending,
+               SUM(CASE WHEN r.payment_status IN ('unpaid','proof_uploaded') THEN r.amount ELSE 0 END) AS my_owed
+          FROM event_registrations r
+          JOIN events   e  ON e.id  = r.event_id
+          LEFT JOIN schools os ON os.id = e.organiser_school_id
+         WHERE r.registering_school_id = ?
+           AND r.status NOT IN ('rejected','withdrawn')
+         GROUP BY e.id, e.slug, e.title, e.subtitle, e.type, e.status, e.visibility,
+                  e.starts_at, e.ends_at, e.banner_path, e.fee_amount, e.fee_model,
+                  e.venue_name, e.organiser_school_id, os.name
+         ORDER BY e.starts_at IS NULL, e.starts_at ASC
+    ");
+    $st->execute([$sid]);
+    $joinedEvents = $st->fetchAll(PDO::FETCH_ASSOC);
+} catch (Throwable $e) { $joinedEvents = []; }
 
 // Filters (payments tab)
 $fEvent  = isset($_GET['event'])  ? (int)$_GET['event'] : 0;
@@ -204,6 +234,13 @@ renderHead('Διοργανώσεις');
       <?php $c = $tab === 'mine' ? count($events) : count(eventsMineForSchool($sid)); ?>
       <span class="count"><?= $c ?></span>
     </a>
+    <a class="ev-tab <?= $tab === 'joined' ? 'active' : '' ?>"
+       href="<?= APP_URL ?>/pages/events.php?tab=joined"
+       role="tab" aria-selected="<?= $tab === 'joined' ? 'true' : 'false' ?>">
+      <i class="fa-solid fa-users-line"></i>
+      <span>Συμμετέχω</span>
+      <span class="count"><?= count($joinedEvents) ?></span>
+    </a>
     <a class="ev-tab <?= $tab === 'payments' ? 'active' : '' ?>"
        href="<?= APP_URL ?>/pages/events.php?tab=payments"
        role="tab" aria-selected="<?= $tab === 'payments' ? 'true' : 'false' ?>">
@@ -257,6 +294,96 @@ renderHead('Διοργανώσεις');
             </div>
           </div>
         </a>
+      <?php endforeach; ?>
+    </div>
+  <?php endif; ?>
+
+<?php elseif ($tab === 'joined'): ?>
+  <!-- ═══ TAB: Συμμετέχω ═══ -->
+  <?php if (!$joinedEvents): ?>
+    <div style="background:#111520;border:1px dashed #2a3248;border-radius:14px;padding:2.5rem 1.5rem;text-align:center;color:#8892b0">
+      <div style="font-size:3rem;margin-bottom:.75rem;color:#4a5270"><i class="fa-solid fa-users-line"></i></div>
+      <h3 style="color:#f0f2ff;margin:0 0 .5rem">Δεν συμμετέχετε ακόμα σε καμία διοργάνωση.</h3>
+      <p style="margin:0 0 1.25rem">Ψάξτε στις διοργανώσεις άλλων συλλόγων και δηλώστε τους αθλητές σας.</p>
+      <a href="<?= APP_URL ?>/pages/events_browse.php" class="btn btn-primary">
+        <i class="fa-solid fa-magnifying-glass"></i> Αναζήτηση διοργανώσεων
+      </a>
+    </div>
+  <?php else: ?>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:1rem">
+      <?php foreach ($joinedEvents as $je):
+        $bUrl = !empty($je['banner_path'])
+            ? rtrim(APP_URL, '/') . '/uploads/' . ltrim($je['banner_path'], '/') : '';
+        $myPaid    = (int)$je['my_paid'];
+        $myPending = (int)$je['my_pending'];
+        $myRegs    = (int)$je['my_regs'];
+        $myOwed    = (float)$je['my_owed'];
+        $statusLbl = eventStatusLabel($je['status']);
+        $statusCol = match ($je['status']) {
+            'open','in_progress' => '#8fe6a1',
+            'closed'             => '#fcd34d',
+            'completed'          => '#c8cfe0',
+            'cancelled'          => '#ff8891',
+            default              => '#8892b0',
+        };
+      ?>
+        <div style="background:#111520;border:1px solid #1e2536;border-radius:14px;overflow:hidden;display:flex;flex-direction:column">
+          <div style="position:relative;aspect-ratio:16/9;background:linear-gradient(135deg,#131b2e,#0d1017);display:flex;align-items:center;justify-content:center;overflow:hidden">
+            <?php if ($bUrl): ?>
+              <img src="<?= h($bUrl) ?>" alt="<?= h($je['title']) ?>" loading="lazy" style="width:100%;height:100%;object-fit:cover">
+            <?php else: ?>
+              <i class="fa-solid fa-trophy" style="color:#2a3248;font-size:3rem"></i>
+            <?php endif; ?>
+            <span style="position:absolute;top:.6rem;left:.6rem;background:rgba(230,57,70,.92);color:#fff;font-size:.66rem;font-weight:800;text-transform:uppercase;letter-spacing:.08em;padding:.28rem .6rem;border-radius:6px">
+              <?= h(eventTypeLabel($je['type'])) ?>
+            </span>
+            <span style="position:absolute;top:.6rem;right:.6rem;background:rgba(0,0,0,.55);color:<?= $statusCol ?>;font-size:.68rem;font-weight:800;padding:.28rem .55rem;border-radius:6px">
+              <?= h($statusLbl) ?>
+            </span>
+          </div>
+          <div style="padding:.85rem 1rem;flex:1;display:flex;flex-direction:column;gap:.4rem">
+            <div style="font-weight:800;color:#fff;font-size:1rem;line-height:1.3"><?= h($je['title']) ?></div>
+            <div style="color:#8892b0;font-size:.78rem;line-height:1.5">
+              <i class="fa-solid fa-building" style="color:#e63946;font-size:.72rem"></i> <?= h($je['organiser_name'] ?? '—') ?>
+              <?php if ($je['starts_at']): ?>
+                · <i class="fa-regular fa-calendar" style="color:#e63946;font-size:.72rem"></i> <?= h(date('d/m/Y', strtotime($je['starts_at']))) ?>
+              <?php endif; ?>
+            </div>
+            <?php if (!empty($je['venue_name'])): ?>
+              <div style="color:#8892b0;font-size:.78rem"><i class="fa-solid fa-location-dot" style="color:#e63946;font-size:.72rem"></i> <?= h($je['venue_name']) ?></div>
+            <?php endif; ?>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:.4rem;margin-top:.6rem;padding-top:.6rem;border-top:1px solid #1e2536">
+              <div style="text-align:center;background:#0d1017;border:1px solid #1e2536;border-radius:8px;padding:.4rem">
+                <div style="color:#8892b0;font-size:.62rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase">Οι αθλητές μου</div>
+                <div style="color:#fff;font-weight:800;font-size:1.15rem;line-height:1;margin-top:.15rem"><?= $myRegs ?></div>
+              </div>
+              <div style="text-align:center;background:#0d1017;border:1px solid rgba(45,198,83,.25);border-radius:8px;padding:.4rem">
+                <div style="color:#8892b0;font-size:.62rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase">Πληρώθηκαν</div>
+                <div style="color:#8fe6a1;font-weight:800;font-size:1.15rem;line-height:1;margin-top:.15rem"><?= $myPaid ?></div>
+              </div>
+              <div style="text-align:center;background:#0d1017;border:1px solid rgba(230,57,70,.28);border-radius:8px;padding:.4rem">
+                <div style="color:#8892b0;font-size:.62rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase">Εκκρεμούν</div>
+                <div style="color:#ff8891;font-weight:800;font-size:1.15rem;line-height:1;margin-top:.15rem"><?= $myPending ?></div>
+              </div>
+            </div>
+            <?php if ($myOwed > 0.005): ?>
+              <div style="color:#f0a500;font-size:.82rem;font-weight:700;text-align:center;margin-top:.15rem">
+                Υπόλοιπο: <?= number_format($myOwed, 2, ',', '.') ?> €
+              </div>
+            <?php endif; ?>
+          </div>
+          <div style="padding:0 1rem 1rem;display:flex;gap:.4rem;flex-wrap:wrap">
+            <a href="<?= APP_URL ?>/pages/event_participate.php?id=<?= (int)$je['id'] ?>"
+               class="btn btn-primary" style="flex:1;text-align:center;padding:.7rem 1rem;font-weight:800;min-height:44px">
+              <i class="fa-solid fa-arrow-right"></i> Διαχείριση συμμετοχής
+            </a>
+            <a href="<?= APP_URL ?>/events/view.php?slug=<?= h($je['slug']) ?>" target="_blank"
+               class="btn btn-ghost" style="padding:.7rem;min-height:44px;text-decoration:none" title="Δημόσια σελίδα">
+              <i class="fa-solid fa-arrow-up-right-from-square"></i>
+            </a>
+          </div>
+        </div>
       <?php endforeach; ?>
     </div>
   <?php endif; ?>

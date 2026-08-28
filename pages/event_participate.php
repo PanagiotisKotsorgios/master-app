@@ -160,8 +160,18 @@ $flash = getFlash();
       Ο διοργανωτής δεν έχει προσθέσει κατηγορίες ακόμα.
     </div>
   <?php elseif (!in_array($ev['status'], ['open','draft'], true)): ?>
-    <div style="background:rgba(230,57,70,.1);border:1px solid rgba(230,57,70,.35);border-radius:10px;padding:1rem;color:#ffb3b8">
-      Οι εγγραφές δεν είναι ανοιχτές αυτή τη στιγμή.
+    <div style="background:rgba(240,165,0,.08);border:1px solid rgba(240,165,0,.35);border-radius:12px;padding:1rem 1.15rem;color:#f0a500;line-height:1.5">
+      <div style="display:flex;align-items:center;gap:.55rem;font-weight:800;font-size:.98rem">
+        <i class="fa-solid fa-lock"></i>
+        <?= h(eventStatusLabel($ev['status'])) ?>
+      </div>
+      <div style="color:#c8cfe0;font-size:.9rem;margin-top:.35rem">
+        <?php if ($myRegs): ?>
+          Δεν μπορείτε να δηλώσετε νέους αθλητές πλέον. Οι υπάρχουσες συμμετοχές και οι πληρωμές σας παραμένουν διαθέσιμες παρακάτω.
+        <?php else: ?>
+          Δεν συμμετέχετε σε αυτή τη διοργάνωση και οι εγγραφές έχουν κλείσει. Επικοινωνήστε με τον διοργανωτή εάν έχετε ερώτημα.
+        <?php endif; ?>
+      </div>
     </div>
   <?php else: ?>
     <div style="background:#111520;border:1px solid #1e2536;border-radius:14px;padding:1.25rem;margin-bottom:1rem">

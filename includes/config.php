@@ -724,6 +724,17 @@ function redirect(string $url): never {
         $url = $appUrl . '/';
     }
 
+    // Flush session BEFORE the Location header goes out. Without this,
+    // if the caller has been mutating $_SESSION (e.g. login setting
+    // user_id + session_regenerate_id), some browsers race the
+    // redirect against the pending Set-Cookie / session-file write —
+    // the next page loads without the updated session and bounces the
+    // user back to login. A single refresh then "works" because the
+    // regenerated cookie is finally sent. Safe to call unconditionally.
+    if (session_status() === PHP_SESSION_ACTIVE) {
+        session_write_close();
+    }
+
     header('Location: ' . $url, true, 302);
     exit;
 }
