@@ -23,7 +23,8 @@ if (mb_strlen($q, 'UTF-8') >= 2) {
         JOIN athletes a ON a.id = r.athlete_id
         LEFT JOIN event_categories c ON c.id = r.category_id
         LEFT JOIN schools s ON s.id = r.registering_school_id
-        WHERE e.visibility = 'public' AND e.status IN ('open','in_progress','completed')
+        WHERE e.visibility = 'public'
+          AND e.status IN ('open','closed','in_progress','completed')
           AND r.status NOT IN ('rejected','withdrawn')
           AND r.show_public = 1
           AND a.full_name LIKE ?
@@ -77,9 +78,10 @@ body{font-family:'DM Sans',sans-serif;background:#07090f;color:#f0f2ff;line-heig
 .wrap{max-width:900px;margin:0 auto;padding:2rem 1.25rem}
 h1{font-size:1.8rem;margin-bottom:.5rem}
 .lead{color:#8892b0;margin-bottom:2rem}
-.search-form{display:flex;gap:.5rem;margin-bottom:1.5rem}
-.search-form input{flex:1;padding:1rem 1.25rem;background:#111520;border:1px solid #2a3248;border-radius:12px;color:#f0f2ff;font-size:1.05rem;font-family:inherit}
-.search-form button{padding:1rem 1.5rem;background:#e63946;color:#fff;border:none;border-radius:12px;font-weight:700;cursor:pointer;font-family:inherit}
+.search-form{display:flex;gap:.5rem;margin-bottom:1.5rem;position:relative}
+.search-form input{flex:1;padding:1rem 1.25rem 1rem 3rem;background:#111520;border:1px solid #2a3248;border-radius:12px;color:#f0f2ff;font-size:1.05rem;font-family:inherit;outline:none;transition:border-color .15s,box-shadow .15s}
+.search-form input:focus{border-color:#e63946;box-shadow:0 0 0 3px rgba(230,57,70,.15)}
+.search-icon{position:absolute;left:1.05rem;top:50%;transform:translateY(-50%);color:#6b7494;pointer-events:none;font-size:1rem}
 .athlete{background:#111520;border:1px solid #1e2536;border-radius:14px;padding:1.15rem 1.25rem;margin-bottom:1rem}
 .athlete-name{font-size:1.1rem;font-weight:800;color:#f0f2ff}
 .athlete-club{color:#8892b0;font-size:.85rem;margin-bottom:.7rem}
@@ -118,10 +120,10 @@ mark{background:rgba(230,57,70,.28);color:#fff;padding:0 2px;border-radius:3px}
   <h1>Αναζήτηση αθλητή</h1>
   <p class="lead">Βρείτε σε ποια δημόσια events συμμετέχει ένας αθλητής.</p>
 
-  <form class="search-form" method="GET" id="ath-form" autocomplete="off">
+  <form class="search-form" method="GET" id="ath-form" autocomplete="off" action="<?= APP_URL ?>/events/athletes.php">
+    <span class="search-icon"><i class="fa-solid fa-magnifying-glass"></i></span>
     <input type="search" name="q" id="ath-q" value="<?= h($q) ?>" placeholder="Π.χ. Γιάννης Παπαδόπουλος (τουλάχιστον 2 χαρακτήρες)" autofocus>
     <span class="search-status" id="ath-status"><span class="spin"></span> Αναζήτηση…</span>
-    <button type="submit" title="Αναζήτηση"><i class="fa-solid fa-magnifying-glass"></i></button>
   </form>
 
   <div id="results-area">
@@ -197,7 +199,7 @@ mark{background:rgba(230,57,70,.28);color:#fff;padding:0 2px;border-radius:3px}
     var reqId = ++currentReq;
     status.classList.add('on');
     area.classList.add('loading');
-    var url = form.action || window.location.pathname;
+    var url = window.location.pathname;
     fetch(url + '?q=' + encodeURIComponent(q), { headers: { 'X-Requested-With': 'fetch' }, credentials: 'same-origin' })
       .then(function(r){ return r.text(); })
       .then(function(html){
