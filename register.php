@@ -927,17 +927,8 @@ HTML;
               <i class="fas fa-check"></i>
             </div>
             <div class="legal-check-text">
-              Αποδέχομαι τους <a href="<?= APP_URL ?>/legal/terms.php" target="_blank" onclick="event.stopPropagation()">Όρους Χρήσης</a>,
-              την <a href="<?= APP_URL ?>/legal/privacy.php" target="_blank" onclick="event.stopPropagation()">Πολιτική Απορρήτου</a>
-              και την <strong>άμεση έναρξη της υπηρεσίας</strong> κατά τη δοκιμαστική περίοδο. <span class="req">*</span>
-              <br>
-              <a href="#" class="legal-detail-link" id="legalDetailLink"
-                 onclick="event.stopPropagation(); toggleLegalDetail(event)">
-                <i class="fas fa-circle-info"></i> Νομικές λεπτομέρειες…
-              </a>
-              <div class="legal-detail-text" id="legalDetail">
-                Ζητώ ρητά την άμεση έναρξη εντός της 14ήμερης περιόδου υπαναχώρησης και αποδέχομαι ότι, εφόσον η υπηρεσία εκτελεστεί πλήρως πριν τη λήξη της, χάνω το δικαίωμα υπαναχώρησης (άρθρο 16α Οδηγίας 2011/83/ΕΚ / άρθρο 4§10 Ν.2251/1994).
-              </div>
+              Αποδέχομαι τους <a href="<?= APP_URL ?>/legal/terms.php" target="_blank" onclick="event.stopPropagation()">Όρους Χρήσης</a>
+              και την <a href="<?= APP_URL ?>/legal/privacy.php" target="_blank" onclick="event.stopPropagation()">Πολιτική Απορρήτου</a>. <span class="req">*</span>
             </div>
           </label>
         </div>
