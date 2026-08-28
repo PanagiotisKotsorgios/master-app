@@ -51,7 +51,17 @@ $metaDesc  = 'Ανακαλύψτε πρωταθλήματα, φιλικούς α
   .top-inner{max-width:1200px;margin:0 auto;display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap}
   .brand{font-size:1.2rem;font-weight:800;color:#f0f2ff;text-decoration:none}
   .brand em{color:#e63946;font-style:normal}
-  .btn-login{padding:.55rem 1rem;background:#e63946;color:#fff;border-radius:8px;text-decoration:none;font-weight:700;font-size:.9rem}
+  .btn-login{padding:.55rem 1rem;background:#e63946;color:#fff !important;border-radius:8px;text-decoration:none;font-weight:700;font-size:.9rem}
+  .top-actions{display:flex;gap:.5rem;flex-wrap:wrap;align-items:center}
+  .top-actions a{
+    padding:.55rem .95rem;border-radius:8px;border:1px solid rgba(255,255,255,.14);
+    background:rgba(255,255,255,.04);color:#ffffff !important;font-size:.9rem;font-weight:700;
+    display:inline-flex;align-items:center;gap:.4rem;transition:all .18s;text-decoration:none;
+  }
+  .top-actions a i{color:#ffffff !important}
+  .top-actions a:hover{border-color:rgba(230,57,70,.55);background:rgba(230,57,70,.08);color:#ffffff !important}
+  .top-actions a.active{background:linear-gradient(135deg,#e63946,#c72832);border-color:transparent;color:#ffffff !important;box-shadow:0 4px 14px -4px rgba(230,57,70,.5)}
+  .top-actions a.active i{color:#ffffff !important}
   .wrap{max-width:1200px;margin:0 auto;padding:2rem 1.25rem}
   h1{font-size:2rem;margin-bottom:.5rem}
   .lead{color:#8892b0;margin-bottom:2rem}
@@ -117,12 +127,12 @@ $metaDesc  = 'Ανακαλύψτε πρωταθλήματα, φιλικούς α
 <div class="top">
   <div class="top-inner">
     <a href="<?= APP_URL ?>/" class="brand">MA<em>ster</em> · Events</a>
-    <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap">
-      <a href="<?= APP_URL ?>/events/calendar.php"
-         style="padding:.5rem .85rem;border-radius:8px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.03);color:#c9cee1;font-weight:600;font-size:.9rem;display:inline-flex;align-items:center;gap:.4rem;text-decoration:none;transition:all .18s">
-        <i class="fa-regular fa-calendar"></i> Ημερολόγιο
-      </a>
-      <a href="<?= APP_URL ?>/login.php" class="btn-login">Σύνδεση</a>
+    <div class="top-actions">
+      <a href="<?= APP_URL ?>/events/" class="active"><i class="fas fa-list"></i> Λίστα</a>
+      <a href="<?= APP_URL ?>/events/calendar.php"><i class="fas fa-calendar"></i> Ημερολόγιο</a>
+      <a href="<?= APP_URL ?>/events/athletes.php"><i class="fas fa-magnifying-glass"></i> Αθλητές</a>
+      <a href="<?= APP_URL ?>/"><i class="fas fa-house"></i> Αρχική</a>
+      <a href="<?= APP_URL ?>/login.php" class="btn-login" style="margin-left:.35rem">Σύνδεση</a>
     </div>
   </div>
 </div>

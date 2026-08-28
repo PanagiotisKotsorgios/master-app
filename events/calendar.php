@@ -103,12 +103,14 @@ $metaDesc  = 'Μηνιαίο ημερολόγιο για πρωταθλήματ�
   .top-title i{color:#e63946}
   .top-actions{display:flex;gap:.5rem;flex-wrap:wrap}
   .top-actions a{
-    padding:.5rem .85rem;border-radius:8px;border:1px solid rgba(255,255,255,.1);
-    background:rgba(255,255,255,.03);color:#c9cee1;font-size:.85rem;font-weight:600;
-    display:inline-flex;align-items:center;gap:.4rem;transition:all .18s;
+    padding:.55rem .95rem;border-radius:8px;border:1px solid rgba(255,255,255,.14);
+    background:rgba(255,255,255,.04);color:#ffffff !important;font-size:.9rem;font-weight:700;
+    display:inline-flex;align-items:center;gap:.4rem;transition:all .18s;text-decoration:none;
   }
-  .top-actions a:hover{border-color:rgba(230,57,70,.4);color:#fff}
-  .top-actions a.active{background:linear-gradient(135deg,#e63946,#c72832);border-color:transparent;color:#fff}
+  .top-actions a i{color:#ffffff !important}
+  .top-actions a:hover{border-color:rgba(230,57,70,.55);background:rgba(230,57,70,.08);color:#ffffff !important}
+  .top-actions a.active{background:linear-gradient(135deg,#e63946,#c72832);border-color:transparent;color:#ffffff !important;box-shadow:0 4px 14px -4px rgba(230,57,70,.5)}
+  .top-actions a.active i{color:#ffffff !important}
 
   .wrap{max-width:1200px;margin:0 auto;padding:1.5rem 1.25rem 3rem}
 

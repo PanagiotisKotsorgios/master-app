@@ -63,9 +63,17 @@ if (mb_strlen($q, 'UTF-8') >= 2) {
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'DM Sans',sans-serif;background:#07090f;color:#f0f2ff;line-height:1.55;min-height:100vh}
-.top{position:sticky;top:0;background:rgba(7,9,15,.9);backdrop-filter:blur(10px);border-bottom:1px solid #1e2536;padding:1rem 1.25rem;z-index:10;display:flex;justify-content:space-between;align-items:center}
+.top{position:sticky;top:0;background:rgba(7,9,15,.9);backdrop-filter:blur(10px);border-bottom:1px solid #1e2536;padding:.9rem 1.25rem;z-index:10}
+.top-inner{max-width:1000px;margin:0 auto;display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap}
 .brand{font-size:1.15rem;font-weight:800;color:#f0f2ff;text-decoration:none}
 .brand em{color:#e63946;font-style:normal}
+.top-actions{display:flex;gap:.4rem;align-items:center;flex-wrap:wrap}
+.top-actions a{padding:.55rem .95rem;border-radius:8px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.04);color:#ffffff !important;font-size:.9rem;font-weight:700;display:inline-flex;align-items:center;gap:.4rem;transition:all .18s;text-decoration:none}
+.top-actions a i{color:#ffffff !important}
+.top-actions a:hover{border-color:rgba(230,57,70,.55);background:rgba(230,57,70,.08);color:#ffffff !important}
+.top-actions a.active{background:linear-gradient(135deg,#e63946,#c72832);border-color:transparent;color:#ffffff !important;box-shadow:0 4px 14px -4px rgba(230,57,70,.5)}
+.top-actions a.active i{color:#ffffff !important}
+.top-actions .btn-login{background:linear-gradient(135deg,#e63946,#c72832);border-color:transparent}
 .wrap{max-width:900px;margin:0 auto;padding:2rem 1.25rem}
 h1{font-size:1.8rem;margin-bottom:.5rem}
 .lead{color:#8892b0;margin-bottom:2rem}
@@ -86,8 +94,16 @@ h1{font-size:1.8rem;margin-bottom:.5rem}
 <body>
 
 <div class="top">
-  <a href="<?= APP_URL ?>/" class="brand">MA<em>ster</em></a>
-  <a href="<?= APP_URL ?>/events/" style="color:#8892b0;text-decoration:none;font-size:.9rem"><i class="fa-solid fa-list"></i> Όλα τα events</a>
+  <div class="top-inner">
+    <a href="<?= APP_URL ?>/" class="brand">MA<em>ster</em> · Events</a>
+    <div class="top-actions">
+      <a href="<?= APP_URL ?>/events/"><i class="fas fa-list"></i> Λίστα</a>
+      <a href="<?= APP_URL ?>/events/calendar.php"><i class="fas fa-calendar"></i> Ημερολόγιο</a>
+      <a href="<?= APP_URL ?>/events/athletes.php" class="active"><i class="fas fa-magnifying-glass"></i> Αθλητές</a>
+      <a href="<?= APP_URL ?>/"><i class="fas fa-house"></i> Αρχική</a>
+      <a href="<?= APP_URL ?>/login.php" class="btn-login" style="margin-left:.35rem">Σύνδεση</a>
+    </div>
+  </div>
 </div>
 
 <div class="wrap">
