@@ -55,9 +55,32 @@ $metaDesc  = 'Ανακαλύψτε πρωταθλήματα, φιλικούς α
   .wrap{max-width:1200px;margin:0 auto;padding:2rem 1.25rem}
   h1{font-size:2rem;margin-bottom:.5rem}
   .lead{color:#8892b0;margin-bottom:2rem}
-  .filters{background:#111520;border:1px solid #1e2536;border-radius:14px;padding:1rem 1.25rem;margin-bottom:1.5rem;display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:.65rem}
-  .filters input,.filters select{padding:.7rem;background:#0d1017;border:1px solid #2a3248;border-radius:8px;color:#f0f2ff;font-family:inherit}
-  .filters button{padding:.7rem 1.2rem;background:#e63946;border:none;border-radius:8px;color:#fff;font-weight:700;cursor:pointer}
+  .filters{background:#111520;border:1px solid #1e2536;border-radius:14px;padding:1rem 1.25rem;margin-bottom:1.5rem;
+           display:grid;grid-template-columns:2.5fr 1fr 1fr auto;gap:.65rem;align-items:end;position:relative}
+  .filters .fld{display:flex;flex-direction:column;gap:.3rem}
+  .filters .fld > label{font-size:.7rem;font-weight:700;color:#a9b3c9;text-transform:uppercase;letter-spacing:.08em}
+  .filters .search-wrap{position:relative}
+  .filters .search-wrap i.si{position:absolute;left:.9rem;top:50%;transform:translateY(-50%);color:#6b7494;pointer-events:none;font-size:.9rem}
+  .filters .search-wrap input{padding-left:2.35rem !important}
+  .filters input,.filters select{
+    padding:.75rem 1rem;background:#0d1017;border:1.5px solid #2a3248;border-radius:10px;color:#f0f2ff;
+    font-family:inherit;font-size:.95rem;min-height:48px;width:100%;transition:border-color .15s,box-shadow .15s}
+  .filters input:focus,.filters select:focus{outline:none;border-color:#e63946;box-shadow:0 0 0 3px rgba(230,57,70,.15)}
+  .filters .actions{display:flex;gap:.5rem;flex-wrap:wrap;align-items:center}
+  .filters button.reset{background:rgba(255,255,255,.06);color:#f0f2ff;border:1.5px solid #2a3248;padding:.75rem 1rem;border-radius:10px;font-weight:700;cursor:pointer;font-family:inherit;min-height:48px;display:inline-flex;align-items:center;gap:.35rem}
+  .filters .busy{color:#8892b0;font-size:.8rem;display:none;align-items:center;gap:.35rem}
+  .filters .busy.on{display:inline-flex}
+  .filters .busy i{color:#e63946}
+  @media(max-width:800px){
+    .filters{grid-template-columns:1fr 1fr;gap:.75rem}
+    .filters .fld:first-child{grid-column:1/-1}
+    .filters .actions{grid-column:1/-1;justify-content:flex-end}
+  }
+  @media(max-width:480px){
+    .filters{grid-template-columns:1fr}
+    .filters .actions{justify-content:stretch}
+    .filters .actions .reset{flex:1}
+  }
   .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:1.15rem}
   .card{background:#111520;border:1px solid #1e2536;border-radius:16px;overflow:hidden;text-decoration:none;color:inherit;
         transition:transform .22s cubic-bezier(.2,.9,.3,1.1), border-color .22s ease, box-shadow .22s ease;
@@ -108,17 +131,86 @@ $metaDesc  = 'Ανακαλύψτε πρωταθλήματα, φιλικούς α
   <h1>Πρωταθλήματα · Φιλικά · Camps</h1>
   <p class="lead">Ανακαλύψτε events από συλλόγους πολεμικών τεχνών σε όλη την Ελλάδα.</p>
 
-  <form class="filters" method="GET">
-    <input type="text" name="q" placeholder="Αναζήτηση…" value="<?= h($q) ?>">
-    <select name="type">
-      <option value="">Όλοι οι τύποι</option>
-      <?php foreach (['championship','friendly','camp','seminar','meeting','exam'] as $t): ?>
-        <option value="<?= $t ?>" <?= $type===$t?'selected':'' ?>><?= h(eventTypeLabel($t)) ?></option>
-      <?php endforeach; ?>
-    </select>
-    <input type="text" name="sport" placeholder="Άθλημα" value="<?= h($sport) ?>">
-    <button type="submit"><i class="fa-solid fa-magnifying-glass"></i></button>
+  <form class="filters" method="GET" id="evFiltersForm" autocomplete="off">
+    <div class="fld">
+      <label for="fEvQ">Αναζήτηση</label>
+      <div class="search-wrap">
+        <i class="fa-solid fa-magnifying-glass si"></i>
+        <input type="search" id="fEvQ" name="q" data-live
+               placeholder="Τίτλος, τοποθεσία, σύλλογος…"
+               value="<?= h($q) ?>"
+               inputmode="search" enterkeyhint="search">
+      </div>
+    </div>
+    <div class="fld">
+      <label for="fEvType">Τύπος</label>
+      <select id="fEvType" name="type" data-live>
+        <option value="">— Όλοι —</option>
+        <?php foreach (['championship','friendly','camp','seminar','meeting','exam'] as $t): ?>
+          <option value="<?= $t ?>" <?= $type===$t?'selected':'' ?>><?= h(eventTypeLabel($t)) ?></option>
+        <?php endforeach; ?>
+      </select>
+    </div>
+    <div class="fld">
+      <label for="fEvSport">Άθλημα</label>
+      <input type="text" id="fEvSport" name="sport" data-live
+             placeholder="π.χ. Taekwondo" value="<?= h($sport) ?>">
+    </div>
+    <div class="actions">
+      <?php if ($q || $type || $sport): ?>
+        <a href="<?= APP_URL ?>/events/" class="reset"><i class="fa-solid fa-rotate-left"></i> Καθαρισμός</a>
+      <?php endif; ?>
+      <span id="evBusy" class="busy"><i class="fa-solid fa-spinner fa-spin"></i> Ενημέρωση…</span>
+    </div>
   </form>
+
+  <script>
+  (function(){
+    var form = document.getElementById('evFiltersForm');
+    if (!form) return;
+    var busy = document.getElementById('evBusy');
+    var qEl  = document.getElementById('fEvQ');
+    var cardsGrid = null; // set after cards load below
+    var timer = null;
+
+    function submit() {
+      if (busy) busy.classList.add('on');
+      form.submit();
+    }
+    function norm(s){
+      if (!s) return '';
+      return s.toString().normalize('NFD').replace(/[̀-ͯ]/g,'')
+        .toLowerCase().replace(/ς/g,'σ').trim();
+    }
+    // Instant client-side filter across the CURRENT page's cards so
+    // the user sees narrowing before the server round-trip lands.
+    function clientPrefilter(q) {
+      if (!cardsGrid) cardsGrid = document.querySelector('.grid');
+      if (!cardsGrid) return;
+      var nq = norm(q);
+      cardsGrid.querySelectorAll('.card').forEach(function(c){
+        if (!nq) { c.style.display = ''; return; }
+        var hay = norm(c.getAttribute('data-search') || c.textContent);
+        c.style.display = hay.indexOf(nq) >= 0 ? '' : 'none';
+      });
+    }
+
+    form.querySelectorAll('[data-live]').forEach(function(el){
+      if (el.tagName === 'INPUT' && (el.type === 'search' || el.type === 'text')) {
+        el.addEventListener('input', function(){
+          if (el === qEl) clientPrefilter(el.value); // instant local hint
+          clearTimeout(timer);
+          timer = setTimeout(submit, 450);
+        });
+        el.addEventListener('keydown', function(e){
+          if (e.key === 'Enter') { e.preventDefault(); clearTimeout(timer); submit(); }
+        });
+      } else {
+        el.addEventListener('change', function(){ clearTimeout(timer); timer = setTimeout(submit, 100); });
+      }
+    });
+  })();
+  </script>
 
   <?php if (!$events): ?>
     <div class="empty">
@@ -133,7 +225,18 @@ $metaDesc  = 'Ανακαλύψτε πρωταθλήματα, φιλικούς α
             ? rtrim(APP_URL, '/') . '/uploads/' . ltrim($ev['banner_path'], '/')
             : '';
       ?>
-        <a href="<?= h(eventPublicUrl($ev)) ?>" class="card" aria-label="<?= h($ev['title']) ?>">
+        <?php
+          $__search = trim(
+              ($ev['title']          ?? '') . ' ' .
+              ($ev['organiser_name'] ?? '') . ' ' .
+              ($ev['venue_name']     ?? '') . ' ' .
+              ($ev['subtitle']       ?? '') . ' ' .
+              ($ev['sport']          ?? '') . ' ' .
+              eventTypeLabel($ev['type'])
+          );
+        ?>
+        <a href="<?= h(eventPublicUrl($ev)) ?>" class="card" aria-label="<?= h($ev['title']) ?>"
+           data-search="<?= h(mb_strtolower($__search, 'UTF-8')) ?>">
           <div class="card-media">
             <?php if ($bannerUrl): ?>
               <img src="<?= h($bannerUrl) ?>" alt="<?= h($ev['title']) ?>" loading="lazy">
