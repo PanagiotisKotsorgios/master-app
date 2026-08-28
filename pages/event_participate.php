@@ -290,7 +290,32 @@ $flash = getFlash();
   <?php if ($myRegs): ?>
   <div style="background:#111520;border:1px solid #1e2536;border-radius:14px;padding:1.25rem;margin-bottom:1rem">
     <h3 style="margin:0 0 .85rem;color:#e63946;font-size:1rem;text-transform:uppercase;letter-spacing:.08em">Οι συμμετοχές μου (<?= count($myRegs) ?>)</h3>
-    <table style="width:100%;border-collapse:collapse">
+
+    <style>
+      /* Desktop: normal table. Mobile (<=640px): cards.
+         Both markups are rendered, CSS toggles what's visible. */
+      .my-regs-table { display: table; width: 100%; border-collapse: collapse; }
+      .my-regs-cards { display: none; }
+      @media (max-width: 640px) {
+        .my-regs-table { display: none !important; }
+        .my-regs-cards { display: block !important; }
+      }
+      .my-regs-card {
+        background:#0d1017;border:1px solid #1e2536;border-radius:12px;
+        padding:.85rem 1rem;margin-bottom:.6rem;
+        display:flex;flex-direction:column;gap:.5rem;
+      }
+      .my-regs-card:last-child { margin-bottom: 0; }
+      .my-regs-card .name { color:#fff;font-weight:800;font-size:1rem;line-height:1.3;overflow-wrap:anywhere }
+      .my-regs-card .cat  { color:#c8cfe0;font-size:.85rem;line-height:1.35;overflow-wrap:anywhere }
+      .my-regs-card .row  { display:flex;justify-content:space-between;align-items:center;gap:.5rem;flex-wrap:wrap }
+      .my-regs-card .amt  { color:#f0a500;font-weight:800;font-size:.95rem;font-variant-numeric:tabular-nums }
+      .my-regs-card .badges { display:flex;gap:.35rem;flex-wrap:wrap;align-items:center }
+      .my-regs-card .actions { display:flex;gap:.35rem;flex-wrap:wrap;margin-top:.15rem }
+    </style>
+
+    <!-- Desktop table -->
+    <table class="my-regs-table">
       <thead>
         <tr style="color:#6b7494;font-size:.72rem;text-transform:uppercase;letter-spacing:.08em;border-bottom:1px solid #1e2536">
           <th style="text-align:left;padding:.5rem 0">Αθλητής</th>
@@ -323,6 +348,38 @@ $flash = getFlash();
         <?php endforeach; ?>
       </tbody>
     </table>
+
+    <!-- Mobile cards -->
+    <div class="my-regs-cards">
+      <?php foreach ($myRegs as $r): ?>
+        <div class="my-regs-card">
+          <div>
+            <div class="name"><?= h($r['athlete_name'] ?? '—') ?></div>
+            <div class="cat"><i class="fa-solid fa-layer-group" style="color:#e63946;font-size:.72rem;margin-right:.25rem"></i><?= h($r['cat_name'] ?? '—') ?></div>
+          </div>
+          <div class="row">
+            <span class="amt"><?= number_format((float)$r['amount'],2,',','.') ?>€</span>
+            <div class="badges">
+              <?= eventRegStatusBadge($r['status']) ?>
+              <?= eventPaymentStatusBadge($r['payment_status']) ?>
+            </div>
+          </div>
+          <?php if ($r['status']!=='withdrawn' && $r['payment_status']!=='verified'): ?>
+            <div class="actions">
+              <form method="POST" style="display:inline" onsubmit="return confirm('Ακύρωση εγγραφής;')">
+                <input type="hidden" name="csrf_token" value="<?= csrf() ?>">
+                <input type="hidden" name="_action" value="withdraw">
+                <input type="hidden" name="reg_id" value="<?= (int)$r['id'] ?>">
+                <button type="submit"
+                        style="background:rgba(230,57,70,.14);color:#ff8891;border:1px solid rgba(230,57,70,.35);padding:.5rem .85rem;border-radius:8px;font-weight:700;font-size:.85rem;cursor:pointer;min-height:40px;display:inline-flex;align-items:center;gap:.4rem">
+                  <i class="fa-solid fa-xmark"></i> Ακύρωση συμμετοχής
+                </button>
+              </form>
+            </div>
+          <?php endif; ?>
+        </div>
+      <?php endforeach; ?>
+    </div>
 
     <?php
     $unpaidCount = 0; $unpaidTotal = 0.0;
