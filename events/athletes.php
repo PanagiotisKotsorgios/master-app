@@ -88,6 +88,14 @@ h1{font-size:1.8rem;margin-bottom:.5rem}
 .evt-title{color:#f0f2ff;font-weight:700}
 .evt-meta{color:#6b7494;font-size:.8rem;margin-top:.15rem}
 .empty{text-align:center;padding:2rem;color:#6b7494;border:1px dashed #2a3248;border-radius:14px}
+.search-form{position:relative}
+.search-status{position:absolute;right:5.5rem;top:50%;transform:translateY(-50%);font-size:.8rem;color:#8892b0;display:none;align-items:center;gap:.4rem;pointer-events:none}
+.search-status.on{display:inline-flex}
+.search-status .spin{width:12px;height:12px;border:2px solid rgba(255,255,255,.15);border-top-color:#e63946;border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+#results-area{transition:opacity .12s}
+#results-area.loading{opacity:.55}
+mark{background:rgba(230,57,70,.28);color:#fff;padding:0 2px;border-radius:3px}
 </style>
 <?php include __DIR__ . "/../includes/prelogin_polish.php"; ?>
 </head>
@@ -110,11 +118,13 @@ h1{font-size:1.8rem;margin-bottom:.5rem}
   <h1>Αναζήτηση αθλητή</h1>
   <p class="lead">Βρείτε σε ποια δημόσια events συμμετέχει ένας αθλητής.</p>
 
-  <form class="search-form" method="GET">
-    <input type="search" name="q" value="<?= h($q) ?>" placeholder="Π.χ. Γιάννης Παπαδόπουλος (τουλάχιστον 2 χαρακτήρες)" autofocus>
-    <button type="submit"><i class="fa-solid fa-magnifying-glass"></i></button>
+  <form class="search-form" method="GET" id="ath-form" autocomplete="off">
+    <input type="search" name="q" id="ath-q" value="<?= h($q) ?>" placeholder="Π.χ. Γιάννης Παπαδόπουλος (τουλάχιστον 2 χαρακτήρες)" autofocus>
+    <span class="search-status" id="ath-status"><span class="spin"></span> Αναζήτηση…</span>
+    <button type="submit" title="Αναζήτηση"><i class="fa-solid fa-magnifying-glass"></i></button>
   </form>
 
+  <div id="results-area">
   <?php if ($q === ''): ?>
     <div class="empty">Πληκτρολογήστε ένα όνομα για αναζήτηση.</div>
   <?php elseif (!$results): ?>
@@ -139,7 +149,107 @@ h1{font-size:1.8rem;margin-bottom:.5rem}
       </div>
     <?php endforeach; ?>
   <?php endif; ?>
+  </div>
 </div>
+
+<script>
+(function(){
+  var form   = document.getElementById('ath-form');
+  var input  = document.getElementById('ath-q');
+  var area   = document.getElementById('results-area');
+  var status = document.getElementById('ath-status');
+  if (!form || !input || !area) return;
+
+  var timer = null;
+  var currentReq = 0;
+  var lastQ = input.value.trim();
+
+  function highlight(root, q){
+    if (!q || q.length < 2) return;
+    var qLower = q.toLowerCase();
+    var walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null);
+    var nodes = [];
+    while (walker.nextNode()) nodes.push(walker.currentNode);
+    nodes.forEach(function(n){
+      var t = n.nodeValue;
+      var idx = t.toLowerCase().indexOf(qLower);
+      if (idx < 0) return;
+      if (n.parentNode && (n.parentNode.tagName === 'MARK' || n.parentNode.tagName === 'SCRIPT' || n.parentNode.tagName === 'STYLE')) return;
+      var before = document.createTextNode(t.slice(0, idx));
+      var mark = document.createElement('mark');
+      mark.textContent = t.slice(idx, idx + q.length);
+      var after = document.createTextNode(t.slice(idx + q.length));
+      var p = n.parentNode;
+      p.replaceChild(after, n);
+      p.insertBefore(mark, after);
+      p.insertBefore(before, mark);
+    });
+  }
+
+  function updateUrl(q){
+    if (!window.history || !window.history.replaceState) return;
+    var url = new URL(window.location.href);
+    if (q) url.searchParams.set('q', q); else url.searchParams.delete('q');
+    window.history.replaceState({}, '', url.toString());
+  }
+
+  function fetchResults(q){
+    var reqId = ++currentReq;
+    status.classList.add('on');
+    area.classList.add('loading');
+    var url = form.action || window.location.pathname;
+    fetch(url + '?q=' + encodeURIComponent(q), { headers: { 'X-Requested-With': 'fetch' }, credentials: 'same-origin' })
+      .then(function(r){ return r.text(); })
+      .then(function(html){
+        if (reqId !== currentReq) return;
+        var doc = new DOMParser().parseFromString(html, 'text/html');
+        var fresh = doc.getElementById('results-area');
+        if (fresh) {
+          area.innerHTML = fresh.innerHTML;
+          highlight(area, q);
+        }
+      })
+      .catch(function(){})
+      .finally(function(){
+        if (reqId === currentReq) {
+          status.classList.remove('on');
+          area.classList.remove('loading');
+        }
+      });
+  }
+
+  function schedule(){
+    var q = input.value.trim();
+    if (q === lastQ) return;
+    lastQ = q;
+    if (timer) clearTimeout(timer);
+    if (q === '') {
+      area.innerHTML = '<div class="empty">Πληκτρολογήστε ένα όνομα για αναζήτηση.</div>';
+      updateUrl('');
+      return;
+    }
+    if (q.length < 2) return;
+    timer = setTimeout(function(){
+      updateUrl(q);
+      fetchResults(q);
+    }, 280);
+  }
+
+  input.addEventListener('input', schedule);
+  form.addEventListener('submit', function(ev){
+    ev.preventDefault();
+    var q = input.value.trim();
+    if (q.length < 2) return;
+    lastQ = q;
+    if (timer) clearTimeout(timer);
+    updateUrl(q);
+    fetchResults(q);
+  });
+
+  // Initial highlight for server-rendered results
+  if (lastQ.length >= 2) highlight(area, lastQ);
+})();
+</script>
 
 </body>
 </html>

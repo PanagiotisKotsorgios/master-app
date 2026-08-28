@@ -91,13 +91,15 @@ body::after{content:'';position:fixed;inset:0;background-image:url("data:image/s
   font-size:clamp(.72rem,.9vw,.85rem);
   font-weight:700;
   background:linear-gradient(135deg,var(--red),var(--red2));
-  color:#fff;
+  color:#ffffff !important;
   padding:clamp(.35rem,.5vw,.5rem) clamp(.6rem,.9vw,1.25rem);
   border-radius:8px;transition:all .2s;
   box-shadow:0 0 18px rgba(230,57,70,.4);
   white-space:nowrap;
 }
-.btn-nav-cta:hover{box-shadow:0 0 28px rgba(230,57,70,.6);transform:translateY(-1px)}
+.btn-nav-cta i{color:#ffffff !important}
+.btn-nav-cta:hover{box-shadow:0 0 28px rgba(230,57,70,.6);transform:translateY(-1px);color:#ffffff !important}
+.btn-nav-cta:hover i{color:#ffffff !important}
 
 /* Extra-small screens — shrink logo further, text stays visible */
 @media(max-width:360px){

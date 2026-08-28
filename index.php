@@ -110,8 +110,10 @@ body::after{content:'';position:fixed;inset:0;background-image:url("data:image/s
 
 .btn-nav-login{font-size:.9rem;font-weight:600;color:#ffffff !important;padding:.45rem .875rem;border-radius:8px;transition:all .2s}
 .btn-nav-login:hover{color:#ffffff !important;background:rgba(255,255,255,.08)}
-.btn-nav-cta{font-size:.9rem;font-weight:700;background:linear-gradient(135deg,var(--red),var(--red2));color:#fff;padding:.5rem 1.25rem;border-radius:8px;transition:all .2s;box-shadow:0 0 18px rgba(230,57,70,.4);letter-spacing:.01em}
-.btn-nav-cta:hover{background:linear-gradient(135deg,var(--red2),#b32430);box-shadow:0 0 28px rgba(230,57,70,.6);transform:translateY(-1px)}
+.btn-nav-cta{font-size:.9rem;font-weight:700;background:linear-gradient(135deg,var(--red),var(--red2));color:#ffffff !important;padding:.5rem 1.25rem;border-radius:8px;transition:all .2s;box-shadow:0 0 18px rgba(230,57,70,.4);letter-spacing:.01em}
+.btn-nav-cta i{color:#ffffff !important}
+.btn-nav-cta:hover{background:linear-gradient(135deg,var(--red2),#b32430);box-shadow:0 0 28px rgba(230,57,70,.6);transform:translateY(-1px);color:#ffffff !important}
+.btn-nav-cta:hover i{color:#ffffff !important}
 
 .hamburger{display:none;flex-direction:column;gap:5px;cursor:pointer;padding:.5rem;background:none;border:none;z-index:10002;border-radius:8px;transition:background 0.2s}
 .hamburger span{display:block;width:24px;height:2px;background:var(--white);border-radius:2px;transition:all .3s}

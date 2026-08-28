@@ -194,10 +194,12 @@ body::after{
 .btn-nav-login:hover{color:#ffffff !important;background:rgba(255,255,255,.08)}
 .btn-nav-cta{
   font-size:.9rem;font-weight:700;background:linear-gradient(135deg,var(--red),var(--red2));
-  color:#fff;padding:.5rem 1.25rem;border-radius:8px;transition:all .2s;
+  color:#ffffff !important;padding:.5rem 1.25rem;border-radius:8px;transition:all .2s;
   box-shadow:0 0 18px rgba(230,57,70,.4);letter-spacing:.01em
 }
-.btn-nav-cta:hover{background:linear-gradient(135deg,var(--red2),#b32430);box-shadow:0 0 28px rgba(230,57,70,.6);transform:translateY(-1px)}
+.btn-nav-cta i{color:#ffffff !important}
+.btn-nav-cta:hover{background:linear-gradient(135deg,var(--red2),#b32430);box-shadow:0 0 28px rgba(230,57,70,.6);transform:translateY(-1px);color:#ffffff !important}
+.btn-nav-cta:hover i{color:#ffffff !important}
 
 .hamburger{
   display:none;flex-direction:column;gap:5px;cursor:pointer;padding:.5rem;background:none;border:none;
