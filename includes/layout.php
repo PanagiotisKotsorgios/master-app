@@ -738,6 +738,7 @@ if ($schoolStatus && ($schoolStatus['status'] ?? '') === 'trial' && (int)($schoo
     </div>
   </div>
 </div>
+<div class="user-dropdown-backdrop" id="userDropdownBackdrop" onclick="document.querySelector('.user-dropdown')?.classList.remove('open')"></div>
 
 <style>
 .user-dropdown{position:relative;cursor:pointer}
@@ -777,29 +778,69 @@ if ($schoolStatus && ($schoolStatus['status'] ?? '') === 'trial' && (int)($schoo
   border-radius:30px;
 }
 @media (max-width:700px){
+  /* Full-width bottom sheet that slides up above every other content
+     when the user taps their avatar. Toggled by .user-dropdown.open */
   .user-dropdown .dropdown-menu{
-    position:fixed;
-    top:auto;
-    bottom:0;
-    left:0;
-    right:0;
-    width:100%;
-    border-radius:18px 18px 0 0;
-    max-height:50vh;
+    display:block !important;              /* keep in DOM for transition */
+    position:fixed !important;
+    top:auto !important;
+    bottom:0 !important;
+    left:0 !important;
+    right:0 !important;
+    width:100% !important;
+    border-radius:18px 18px 0 0 !important;
+    max-height:70vh;
     overflow-y:auto;
-    box-shadow:0 -5px 20px rgba(0,0,0,.5);
-    padding:.35rem 0 .5rem;
-    border-top:1px solid rgba(255,255,255,.14);
+    box-shadow:0 -12px 40px rgba(0,0,0,.65) !important;
+    padding:.35rem 0 calc(.75rem + env(safe-area-inset-bottom, 0px)) !important;
+    border:1px solid rgba(255,255,255,.14) !important;
+    border-bottom:none !important;
+    background:#0a0e16 !important;
+    z-index:100000 !important;             /* above sidebar (9999) & modals */
+    transform:translateY(105%);            /* hidden below the fold */
+    transition:transform .28s cubic-bezier(.2,.8,.2,1);
+    pointer-events:none;
+    visibility:visible;
+  }
+  .user-dropdown.open .dropdown-menu{
+    transform:translateY(0);
+    pointer-events:auto;
+  }
+  /* Little grabber pill at the top so it reads as a bottom-sheet */
+  .user-dropdown .dropdown-menu::before{
+    content:'';
+    display:block;
+    width:40px;height:4px;
+    margin:.35rem auto .5rem;
+    border-radius:99px;
+    background:rgba(255,255,255,.22);
   }
 
   .user-dropdown .dropdown-menu .dropdown-item{
-    padding:.95rem 1rem;
+    padding:1.05rem 1.15rem;
     font-size:1rem;
   }
 
   .user-dropdown .dropdown-menu .dropdown-item + .dropdown-item{
     border-top:1.5px solid rgba(255,255,255,.22);
     box-shadow:inset 0 1px 0 rgba(255,255,255,.05);
+  }
+
+  /* Backdrop that appears behind the bottom sheet, click to close */
+  .user-dropdown-backdrop{
+    position:fixed;inset:0;
+    background:rgba(4,8,16,.55);
+    backdrop-filter:blur(3px);
+    -webkit-backdrop-filter:blur(3px);
+    z-index:99999;
+    opacity:0;
+    pointer-events:none;
+    transition:opacity .22s;
+  }
+  .user-dropdown.open ~ .user-dropdown-backdrop,
+  body.user-dropdown-open .user-dropdown-backdrop{
+    opacity:1;
+    pointer-events:auto;
   }
 }
 </style>
@@ -850,14 +891,34 @@ document.addEventListener('DOMContentLoaded', function() {
   const container = document.querySelector('.user-dropdown');
   if (!container) return;
 
-  const toggle = container.querySelector('.user-chip');
+  const toggle  = container.querySelector('.user-chip');
+  const backdrop = document.getElementById('userDropdownBackdrop');
+  function sync() {
+    document.body.classList.toggle('user-dropdown-open', container.classList.contains('open'));
+  }
   toggle.addEventListener('click', function(e) {
     e.stopPropagation();
     container.classList.toggle('open');
+    sync();
   });
-
+  if (backdrop) {
+    backdrop.addEventListener('click', function() {
+      container.classList.remove('open');
+      sync();
+    });
+  }
   document.addEventListener('click', function(e) {
-    if (!container.contains(e.target)) container.classList.remove('open');
+    if (!container.contains(e.target) && (!backdrop || !backdrop.contains(e.target))) {
+      container.classList.remove('open');
+      sync();
+    }
+  });
+  // ESC closes the sheet
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape' && container.classList.contains('open')) {
+      container.classList.remove('open');
+      sync();
+    }
   });
 });
 </script>
