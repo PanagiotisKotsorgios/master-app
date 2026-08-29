@@ -955,37 +955,59 @@ function animateCounter(el, target, suffix) {
   requestAnimationFrame(update);
 }
 
+function paintStatic(d) {
+  // Always paint numbers directly, no animation dependency. Works
+  // even if animateCounter/rAF/observer misbehave on some mobile browsers.
+  var m = { 'stat-athletes': d.athletes, 'stat-schools': d.schools, 'stat-reminders': (d.reminders != null ? d.reminders + '+' : '—') };
+  Object.keys(m).forEach(function(id){
+    var el = document.getElementById(id);
+    if (!el) return;
+    el.classList.remove('loading');
+    el.textContent = (m[id] == null || m[id] === '') ? '—' : m[id];
+  });
+}
+
 function renderStats(d) {
+  if (!d) return;
   var elA = document.getElementById('stat-athletes');
   var elS = document.getElementById('stat-schools');
   var elR = document.getElementById('stat-reminders');
-  if (elA && !elA.dataset.done) { elA.dataset.done = '1'; animateCounter(elA, d.athletes); }
-  if (elS && !elS.dataset.done) { elS.dataset.done = '1'; animateCounter(elS, d.schools); }
-  if (elR && !elR.dataset.done) { elR.dataset.done = '1'; animateCounter(elR, d.reminders, '+'); }
+  // Paint numbers immediately as a floor
+  paintStatic(d);
+  // Then upgrade to animated counter if elements exist
+  if (elA && !elA.dataset.done) { elA.dataset.done = '1'; animateCounter(elA, d.athletes|0); }
+  if (elS && !elS.dataset.done) { elS.dataset.done = '1'; animateCounter(elS, d.schools|0); }
+  if (elR && !elR.dataset.done) { elR.dataset.done = '1'; animateCounter(elR, d.reminders|0, '+'); }
 }
 
 window._statsVisible = false;
 window._statsData    = null;
 
-// Start fetching immediately in background
-fetch('<?= APP_URL ?>/api/public_stats.php')
-  .then(function(r) { return r.json(); })
-  .then(function(json) {
-    if (!json.success) return;
-    window._statsData = json.data;
-    // Render immediately — even on tall mobile layouts where the
-    // IntersectionObserver threshold may never fire. The observer
-    // below still upgrades to the animated version if we get in view
-    // first, but we no longer depend on it to show real numbers.
-    renderStats(json.data);
-  })
-  .catch(function() {
-    var els = ['stat-athletes','stat-schools','stat-reminders'];
-    els.forEach(function(id) {
-      var el = document.getElementById(id);
-      if (el) { el.classList.remove('loading'); el.textContent = '—'; }
+function loadStats() {
+  // Cache-bust so mobile browsers can't serve a broken cached response.
+  fetch('/api/public_stats.php?t=' + Date.now(), { credentials: 'same-origin' })
+    .then(function(r) { return r.json(); })
+    .then(function(json) {
+      var d = (json && json.data) ? json.data : null;
+      if (!d) return;
+      window._statsData = d;
+      renderStats(d);           // paint immediately
+    })
+    .catch(function() {
+      // Last-resort placeholder so the pulsing '—' doesn't stay forever
+      var els = ['stat-athletes','stat-schools','stat-reminders'];
+      els.forEach(function(id) {
+        var el = document.getElementById(id);
+        if (el) { el.classList.remove('loading'); }
+      });
     });
-  });
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', loadStats);
+} else {
+  loadStats();
+}
 
 // Optional: still observe for the animated counter effect when the
 // user actually scrolls to the bar. Threshold 0 = fire as soon as any
