@@ -973,11 +973,13 @@ fetch('<?= APP_URL ?>/api/public_stats.php')
   .then(function(json) {
     if (!json.success) return;
     window._statsData = json.data;
-    // If stats bar already scrolled into view, animate now
-    if (window._statsVisible) renderStats(json.data);
+    // Render immediately — even on tall mobile layouts where the
+    // IntersectionObserver threshold may never fire. The observer
+    // below still upgrades to the animated version if we get in view
+    // first, but we no longer depend on it to show real numbers.
+    renderStats(json.data);
   })
   .catch(function() {
-    // Silent fail — leave "—" in place
     var els = ['stat-athletes','stat-schools','stat-reminders'];
     els.forEach(function(id) {
       var el = document.getElementById(id);
@@ -985,19 +987,22 @@ fetch('<?= APP_URL ?>/api/public_stats.php')
     });
   });
 
-// Trigger animation when stats bar enters viewport
+// Optional: still observe for the animated counter effect when the
+// user actually scrolls to the bar. Threshold 0 = fire as soon as any
+// pixel is visible (was .25 which never fired on tall mobile layouts).
 var statsBar = document.querySelector('.stats-bar');
-var statsObserver = new IntersectionObserver(function(entries) {
-  entries.forEach(function(entry) {
-    if (entry.isIntersecting) {
-      window._statsVisible = true;
-      if (window._statsData) renderStats(window._statsData);
-      statsObserver.unobserve(entry.target);
-    }
-  });
-}, { threshold: .25 });
-
-if (statsBar) statsObserver.observe(statsBar);
+if (statsBar && 'IntersectionObserver' in window) {
+  var statsObserver = new IntersectionObserver(function(entries) {
+    entries.forEach(function(entry) {
+      if (entry.isIntersecting) {
+        window._statsVisible = true;
+        if (window._statsData) renderStats(window._statsData);
+        statsObserver.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0, rootMargin: '0px 0px -10% 0px' });
+  statsObserver.observe(statsBar);
+}
 
 // ── Pricing toggle ──
 function toggleP() {
