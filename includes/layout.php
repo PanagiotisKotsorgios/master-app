@@ -512,7 +512,7 @@ function renderSidebar(string $active = ''): void {
       </div>
     <?php endif; ?>
 
-    <a href="<?= APP_URL ?>/logout.php" class="nav-item" style="color:var(--red)">
+    <a href="<?= APP_URL ?>/logout.php" class="nav-item nav-logout">
       <span class="icon"><i class="fa-solid fa-right-from-bracket"></i></span>
       <span>Αποσύνδεση</span>
     </a>
@@ -520,6 +520,35 @@ function renderSidebar(string $active = ''): void {
 </div>
 
 <style>
+/* ── Logout button (red bg + white fg, no divider line) ── */
+.sidebar .nav-logout,
+.sidebar a.nav-logout,
+.nav-logout{
+  background: linear-gradient(135deg,#e63946,#c72832) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255,255,255,.14) !important;
+  border-radius: 10px !important;
+  margin: .5rem 1rem 0 !important;
+  padding: .75rem 1rem !important;
+  box-shadow: 0 4px 14px -4px rgba(230,57,70,.5) !important;
+  font-weight: 800 !important;
+  transition: transform .15s, box-shadow .15s;
+}
+.sidebar .nav-logout:hover,
+.nav-logout:hover{
+  background: linear-gradient(135deg,#c72832,#a51e28) !important;
+  color: #ffffff !important;
+  box-shadow: 0 6px 20px -4px rgba(230,57,70,.7) !important;
+  transform: translateY(-1px);
+}
+.sidebar .nav-logout *,
+.nav-logout *{ color: #ffffff !important; }
+.sidebar .nav-logout i,
+.nav-logout i{ color: #ffffff !important; }
+/* Kill the shared divider line other .nav-item children get */
+.sidebar .nav-logout{ border-bottom: 1px solid rgba(255,255,255,.14) !important; }
+.sidebar .nav-logout::after{ content: none !important; display: none !important; }
+
 /* Collapsible sidebar categories (admin) */
 .sidebar .nav-label-toggle{
   width:100%;background:none;border:none;cursor:pointer;
