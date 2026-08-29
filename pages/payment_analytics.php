@@ -24,7 +24,7 @@ if (!$isSA && ($plan['slug'] ?? 'basic') !== 'pro') {
     ?>
     <body>
     <div class="app-layout">
-    <?php renderSidebar('payment_analytics'); ?>
+    <?php renderSidebar('economics'); ?>
     <div class="main-content">
     <?php renderTopbar('Αναλυτικά Πληρωμών'); ?>
     <div class="page-body" style="display:flex;align-items:center;justify-content:center;min-height:60vh">
@@ -356,11 +356,32 @@ renderHead('Αναλυτικά Πληρωμών' . ($isPrint ? ' — Εκτύπ�
 
 <body <?= $isPrint ? 'class="print-preview"' : '' ?>>
 <div class="app-layout">
-<?php renderSidebar('payment_analytics'); ?>
+<?php renderSidebar('economics'); ?>
 <div id="dm-overlay" onclick="document.getElementById('sidebar').classList.remove('open');this.classList.remove('on')"></div>
 <div class="main-content">
 <?php renderTopbar('Αναλυτικά Πληρωμών'); ?>
 <div class="page-body">
+
+<?php if (!$isPrint): ?>
+<!-- ── Οικονομικά / Αναλυτικά tab toggle ── -->
+<div class="econ-tabs" role="tablist" aria-label="Οικονομικά">
+  <a href="<?= APP_URL ?>/pages/economics_reports.php" class="econ-tab" role="tab" aria-selected="false">
+    <i class="fa-solid fa-wallet"></i><span>Ταμείο</span>
+  </a>
+  <a href="<?= APP_URL ?>/pages/payment_analytics.php" class="econ-tab active" role="tab" aria-selected="true">
+    <i class="fa-solid fa-chart-line"></i><span>Αναλυτικά</span>
+  </a>
+</div>
+<style>
+.econ-tabs{display:flex;gap:.4rem;background:#111520;border:1px solid #1e2536;border-radius:12px;padding:.35rem;margin-bottom:1rem;overflow-x:auto;-webkit-overflow-scrolling:touch}
+.econ-tab{flex:1;min-width:150px;display:inline-flex;align-items:center;justify-content:center;gap:.5rem;padding:.7rem .95rem;border-radius:9px;color:#c9cee1 !important;text-decoration:none;font-weight:700;font-size:.92rem;transition:all .18s;white-space:nowrap;border:1px solid transparent}
+.econ-tab i{color:#8892b0}
+.econ-tab:hover{background:rgba(255,255,255,.04);color:#ffffff !important;border-color:rgba(230,57,70,.35)}
+.econ-tab:hover i{color:#e63946}
+.econ-tab.active{background:linear-gradient(135deg,#e63946,#c72832);color:#ffffff !important;box-shadow:0 4px 14px -4px rgba(230,57,70,.5);border-color:transparent}
+.econ-tab.active i{color:#ffffff !important}
+</style>
+<?php endif; ?>
 
   <!-- Print-only clean header (screen version is below, styled) -->
   <div class="print-header print-only">

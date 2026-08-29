@@ -405,18 +405,13 @@ function renderSidebar(string $active = ''): void {
         ];
 
         if (!$privacyMode && $planSlug === 'pro') {
+            // Single 'Οικονομικά' entry — the page has an internal
+            // toggle between Ταμείο and Αναλυτικά (payment_analytics).
             $mainItems[] = [
-                'href'  => APP_URL.'/pages/economics_reports.php?tab=economics',
+                'href'  => APP_URL.'/pages/economics_reports.php',
                 'icon'  => 'fa-solid fa-chart-bar',
                 'label' => 'Οικονομικά',
                 'key'   => 'economics',
-                'pro'   => true,
-            ];
-            $mainItems[] = [
-                'href'  => APP_URL.'/pages/payment_analytics.php',
-                'icon'  => 'fa-solid fa-chart-line',
-                'label' => 'Αναλυτικά',
-                'key'   => 'payment_analytics',
                 'pro'   => true,
             ];
         }
