@@ -425,7 +425,7 @@ function renderSidebar(string $active = ''): void {
             'main'     => $mainItems,
             'settings' => [
                 ['href' => APP_URL.'/pages/settings.php',         'icon' => 'fa-solid fa-gear',       'label' => 'Ρυθμίσεις',    'key' => 'settings'],
-                ['href' => APP_URL.'/assets/pdf/master_help.pdf', 'icon' => 'fa-solid fa-book',        'label' => 'Οδηγός Χρήσης','key' => 'help'],
+                ['href' => APP_URL.'/docs/user-guide.html', 'target' => '_blank', 'icon' => 'fa-solid fa-book', 'label' => 'Οδηγός Χρήσης', 'key' => 'help'],
                 ...($planSlug !== 'pro' ? [['href' => APP_URL.'/pages/upgrade.php', 'icon' => 'fa-solid fa-star', 'label' => 'Αναβάθμιση', 'key' => 'upgrade']] : []),
             ],
         ];
@@ -484,7 +484,7 @@ function renderSidebar(string $active = ''): void {
         <a href="<?= $locked ? '#' : $item['href'] ?>"
            class="nav-item <?= $cls ?>"
            <?= $locked ? 'onclick="showUpgrade();return false"' : '' ?>
-           <?= (!$locked && ($item['key'] ?? '') === 'help') ? 'download' : '' ?>
+           <?= (!$locked && !empty($item['target'])) ? 'target="'.htmlspecialchars($item['target'], ENT_QUOTES).'" rel="noopener"' : '' ?>
            style="<?= $locked ? 'opacity:.5;cursor:not-allowed' : '' ?>">
           <span class="icon"><i class="<?= $item['icon'] ?>"></i></span>
           <span><?= $item['label'] ?></span>

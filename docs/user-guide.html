@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MAster · Οδηγός Χρήσης</title>
+<style>
+  :root{
+    --ink:#1a1a2e; --brand:#4f46e5; --brand2:#7c3aed; --line:#e0e7ff;
+    --soft:#f8faff; --tip:#eff6ff; --warn:#fef3c7; --ok:#ecfdf5;
+    --pro:#7c3aed; --muted:#64748b;
+  }
+  *{box-sizing:border-box}
+  body{
+    font-family:'Calibri','Segoe UI',Arial,sans-serif;
+    font-size:11pt; line-height:1.55; color:var(--ink);
+    max-width:820px; margin:0 auto; padding:36px 56px;
+    background:#fff;
+  }
+  h1{
+    font-size:22pt; color:var(--ink); border-bottom:3px solid var(--brand);
+    padding-bottom:8px; margin:0 0 10px 0; page-break-before:always;
+  }
+  h1:first-of-type{page-break-before:avoid}
+  h2{
+    font-size:15pt; color:var(--brand); border-left:5px solid var(--brand);
+    padding-left:10px; margin:26px 0 8px 0;
+  }
+  h3{
+    font-size:12.5pt; color:var(--ink); border-bottom:1px solid var(--line);
+    padding-bottom:3px; margin:18px 0 6px 0;
+  }
+  h4{font-size:11pt; color:#4338ca; margin:12px 0 4px 0}
+  p{margin:5px 0 8px 0}
+  ul,ol{margin:5px 0 8px 22px}
+  li{margin-bottom:3px}
+  code{background:#f0f2ff;padding:1px 5px;border-radius:3px;font-family:'Consolas',monospace;font-size:9.5pt}
+  table{width:100%;border-collapse:collapse;margin:10px 0 14px 0;font-size:10pt}
+  th{background:var(--brand);color:#fff;padding:6px 9px;text-align:left;border:1px solid var(--brand)}
+  td{padding:5px 9px;border:1px solid var(--line);vertical-align:top}
+  tr:nth-child(even) td{background:var(--soft)}
+  .tip,.warn,.ok{padding:8px 12px;margin:8px 0;border-radius:0 6px 6px 0;font-size:10.5pt}
+  .tip{background:var(--tip);border-left:4px solid #3b82f6}
+  .warn{background:var(--warn);border-left:4px solid #f59e0b}
+  .ok{background:var(--ok);border-left:4px solid #10b981}
+  .pro{
+    display:inline-block;background:var(--pro);color:#fff;font-size:8pt;font-weight:800;
+    padding:1px 7px;border-radius:10px;margin-left:6px;vertical-align:middle;letter-spacing:.03em
+  }
+  .step{background:var(--soft);border:1px solid var(--line);padding:8px 12px;margin:6px 0;border-radius:6px}
+  .step strong{color:var(--brand)}
+  .cover{text-align:center;padding:80px 0 40px}
+  .cover .logo{font-size:44pt;font-weight:900;color:var(--brand);letter-spacing:3px;display:block}
+  .cover .logo em{color:#e63946;font-style:normal}
+  .cover .sub{font-size:14pt;color:#6366f1;margin-top:4px}
+  .cover .meta{font-size:10pt;color:var(--muted);margin-top:36px}
+  .toc{background:var(--soft);border:1px solid var(--line);padding:16px 24px;margin:20px 0;border-radius:8px}
+  .toc h2{border:none;padding:0;margin-top:0;font-size:13pt;color:var(--ink)}
+  .toc ol{margin:10px 0 0 20px;columns:2;column-gap:30px}
+  .toc a{color:var(--brand);text-decoration:none;font-size:10.5pt}
+  hr{border:none;border-top:2px solid var(--line);margin:26px 0}
+  .kv{display:grid;grid-template-columns:180px 1fr;gap:6px 14px;margin:6px 0}
+  .kv b{color:var(--brand)}
+  .print-note{font-size:9pt;color:var(--muted);text-align:center;margin-top:12px}
+  @media print{
+    body{padding:22mm 18mm}
+    .print-note{display:none}
+    a{color:var(--ink);text-decoration:none}
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══════════ ΕΞΩΦΥΛΛΟ ═══════════ -->
+<div class="cover">
+  <span class="logo">MA<em>ster</em></span>
+  <div class="sub">Εφαρμογή Διαχείρισης Αθλητικών Σωματείων</div>
+  <hr style="width:180px;margin:26px auto;border-top:2px solid var(--brand)">
+  <div style="font-size:18pt;font-weight:800">Οδηγός Χρήσης</div>
+  <div style="font-size:12pt;color:#6366f1;margin-top:6px">Πλήρες εγχειρίδιο για διαχειριστές σωματείων</div>
+  <div class="meta">Έκδοση 2.0 · Αύγουστος 2026<br>master-app.gr</div>
+</div>
+<p class="print-note">Για εκτύπωση / αποθήκευση ως PDF: <strong>Ctrl+P</strong> → «Αποθήκευση ως PDF».</p>
+
+<hr>
+
+<!-- ═══════════ ΠΕΡΙΕΧΟΜΕΝΑ ═══════════ -->
+<div class="toc">
+  <h2>Περιεχόμενα</h2>
+  <ol>
+    <li><a href="#intro">Εισαγωγή</a></li>
+    <li><a href="#login">Σύνδεση</a></li>
+    <li><a href="#nav">Πλοήγηση &amp; μενού</a></li>
+    <li><a href="#dashboard">Κεντρική (Dashboard)</a></li>
+    <li><a href="#athletes">Αθλητές</a></li>
+    <li><a href="#payments">Πληρωμές / Συνδρομές</a></li>
+    <li><a href="#departments">Τμήματα</a></li>
+    <li><a href="#notifications">Ειδοποιήσεις</a></li>
+    <li><a href="#events">Διοργανώσεις</a></li>
+    <li><a href="#economics">Οικονομικά <span class="pro">PRO</span></a></li>
+    <li><a href="#analytics">Στατιστικά / Αναλυτικά <span class="pro">PRO</span></a></li>
+    <li><a href="#settings">Ρυθμίσεις σχολής</a></li>
+    <li><a href="#parent">Portal Γονέα / Αθλητή</a></li>
+    <li><a href="#plans">Πλάνα Basic &amp; Pro</a></li>
+    <li><a href="#faq">Συχνές ερωτήσεις</a></li>
+  </ol>
+</div>
+
+<!-- ═══════════ 1. ΕΙΣΑΓΩΓΗ ═══════════ -->
+<h1 id="intro">1. Εισαγωγή</h1>
+<p>Το <strong>MAster</strong> είναι μια web εφαρμογή για τη διαχείριση αθλητικού σωματείου (πολεμικές τέχνες, αθλητικοί σύλλογοι γενικά). Λειτουργεί σε υπολογιστή, tablet και κινητό, χωρίς εγκατάσταση.</p>
+
+<p>Καλύπτει με έναν λογαριασμό τα εξής:</p>
+<ul>
+  <li>Μητρώο αθλητών με φωτογραφίες, ζώνες, στοιχεία επικοινωνίας</li>
+  <li>Πληρωμές &amp; συνδρομές (μηνιαία, ενιαία, custom περίοδοι)</li>
+  <li>Αυτόματες υπενθυμίσεις μέσω SMS / Email</li>
+  <li>Οργάνωση σε τμήματα (παιδικό, ενήλικες, πρωταθλητισμός…)</li>
+  <li>Διοργανώσεις (πρωταθλήματα, φιλικά, camps, σεμινάρια) με online εγγραφές</li>
+  <li>Οικονομικά (έσοδα / έξοδα) &amp; στατιστικές αναφορές <span class="pro">PRO</span></li>
+  <li>Portal για γονείς / αθλητές που βλέπουν πληρωμές και ανακοινώσεις</li>
+</ul>
+<div class="tip"><strong>Χωρίς τεχνικές γνώσεις.</strong> Αρκεί περιηγητής (Chrome, Firefox, Safari, Edge) και σύνδεση internet.</div>
+
+<!-- ═══════════ 2. ΣΥΝΔΕΣΗ ═══════════ -->
+<h1 id="login">2. Σύνδεση</h1>
+
+<h3>Δύο τύποι λογαριασμού</h3>
+<table>
+  <tr><th style="width:38%">Τύπος</th><th>Σύνδεση από</th></tr>
+  <tr><td><strong>Σωματείο</strong> (owner ή προπονητής)</td><td><code>master-app.gr/login.php</code></td></tr>
+  <tr><td><strong>Γονέας / Ενήλικας αθλητής</strong></td><td><code>master-app.gr/parent/login.php</code></td></tr>
+</table>
+
+<div class="step"><strong>Βήμα 1.</strong> Ανοίξτε τη σελίδα σύνδεσης.</div>
+<div class="step"><strong>Βήμα 2.</strong> Πληκτρολογήστε <strong>email</strong> και <strong>κωδικό</strong>.</div>
+<div class="step"><strong>Βήμα 3.</strong> Πατήστε <strong>Σύνδεση</strong>. Μεταφέρεστε στην Κεντρική.</div>
+
+<div class="tip"><strong>Ξεχάσατε τον κωδικό;</strong> Πατήστε «Ξέχασα τον κωδικό μου» στη σελίδα σύνδεσης και ακολουθήστε τις οδηγίες που θα λάβετε με email.</div>
+
+<h3>Δοκιμαστικός λογαριασμός</h3>
+<p>Για να δείτε την εφαρμογή πριν αγοράσετε πλάνο, πατήστε «Δοκιμαστική Σύνδεση» στη σελίδα εισόδου — μπαίνετε σε demo σωματείο με έτοιμα δεδομένα (αθλητές, πληρωμές, διοργανώσεις).</p>
+
+<!-- ═══════════ 3. ΠΛΟΗΓΗΣΗ ═══════════ -->
+<h1 id="nav">3. Πλοήγηση &amp; μενού</h1>
+<p>Το αριστερό πλαϊνό μενού (sidebar) έχει τις εξής κατηγορίες:</p>
+<table>
+  <tr><th style="width:35%">Ενότητα</th><th>Τι κάνει</th></tr>
+  <tr><td>Κεντρική</td><td>Επισκόπηση: αθλητές, ενημερότητα, ταμείο</td></tr>
+  <tr><td>Αθλητές</td><td>Προσθήκη, επεξεργασία, φίλτρα, εξαγωγή</td></tr>
+  <tr><td>Πληρωμές</td><td>Συνδρομές αθλητών, μαρκάρισμα ως πληρωμένες</td></tr>
+  <tr><td>Τμήματα</td><td>Οργάνωση αθλητών σε ομάδες</td></tr>
+  <tr><td>Ειδοποιήσεις</td><td>Κανόνες αυτόματων SMS/Email + μαζικές ανακοινώσεις</td></tr>
+  <tr><td>Διοργανώσεις</td><td>Πρωταθλήματα, φιλικά, camps, εγγραφές, brackets</td></tr>
+  <tr><td>Οικονομικά <span class="pro">PRO</span></td><td>Έσοδα / έξοδα, ταμείο, ισολογισμός</td></tr>
+  <tr><td>Αναλυτικά <span class="pro">PRO</span></td><td>Γραφήματα εσόδων, ενημερότητας, τμημάτων</td></tr>
+  <tr><td>Ρυθμίσεις</td><td>Στοιχεία σχολής, λογότυπο, χρήστες, κωδικός</td></tr>
+  <tr><td>Οδηγός Χρήσης</td><td>Αυτό το εγχειρίδιο</td></tr>
+</table>
+<div class="tip">Στο κινητό, το μενού ανοίγει με το εικονίδιο <strong>☰</strong> επάνω αριστερά.</div>
+
+<!-- ═══════════ 4. DASHBOARD ═══════════ -->
+<h1 id="dashboard">4. Κεντρική (Dashboard)</h1>
+<p>Στην αρχική οθόνη βλέπετε με μια ματιά:</p>
+<ul>
+  <li><strong>Ενεργοί αθλητές</strong> — σύνολο μη-αρχειοθετημένων</li>
+  <li><strong>Πληρωμές μήνα</strong> — τι εισπράχθηκε, τι εκκρεμεί</li>
+  <li><strong>Ληξιπρόθεσμες οφειλές</strong> — αθλητές με χρωστούμενα</li>
+  <li><strong>Τμήματα</strong> — πλήθος και κατάσταση κάθε τμήματος</li>
+  <li><strong>Πρόσφατοι αθλητές</strong> — οι τελευταίες εγγραφές</li>
+</ul>
+<div class="tip">Κάθε κάρτα είναι <em>clickable</em> και σας πηγαίνει στην αντίστοιχη σελίδα με προεπιλεγμένο φίλτρο.</div>
+
+<!-- ═══════════ 5. ΑΘΛΗΤΕΣ ═══════════ -->
+<h1 id="athletes">5. Αθλητές</h1>
+
+<h3>Λίστα αθλητών</h3>
+<p>Εμφανίζει όλους τους αθλητές του σωματείου σε πίνακα με τα βασικά στοιχεία: όνομα, ηλικία, τμήμα, τηλέφωνο, κατάσταση πληρωμών, ζώνη.</p>
+<ul>
+  <li><strong>Αναζήτηση</strong>: πληκτρολογήστε όνομα, τηλέφωνο ή email — φιλτράρει live (fuzzy).</li>
+  <li><strong>Φίλτρα</strong>: κατάσταση (ενεργός/ανενεργός), τμήμα, ζώνη.</li>
+  <li><strong>Ταξινόμηση</strong>: κλικ στην κεφαλίδα κάθε στήλης.</li>
+</ul>
+
+<h3>Προσθήκη νέου αθλητή</h3>
+<div class="step"><strong>1.</strong> Πατήστε <strong>+ Νέος Αθλητής</strong>.</div>
+<div class="step"><strong>2.</strong> Συμπληρώστε ονοματεπώνυμο, ημερομηνία γέννησης, τηλέφωνο κηδεμόνα ή αθλητή, τμήμα, ζώνη (αν εφαρμόζεται).</div>
+<div class="step"><strong>3.</strong> Ανεβάστε φωτογραφία (προαιρετικά) και επιλέξτε πλάνο συνδρομής.</div>
+<div class="step"><strong>4.</strong> Πατήστε <strong>Αποθήκευση</strong>. Ο αθλητής μπαίνει άμεσα στη λίστα.</div>
+
+<h3>Καρτέλα αθλητή</h3>
+<p>Κάνοντας κλικ στο όνομα, ανοίγει η πλήρης καρτέλα με:</p>
+<ul>
+  <li>Στοιχεία επικοινωνίας &amp; φωτογραφία</li>
+  <li>Ιστορικό συνδρομών / πληρωμών (με ένα κλικ για λεπτομέρειες)</li>
+  <li>Παρουσίες σε εξετάσεις ζώνης</li>
+  <li>Συμμετοχές σε διοργανώσεις</li>
+  <li>Κουμπιά: επεξεργασία, αρχειοθέτηση, αποστολή υπενθύμισης</li>
+</ul>
+
+<h3>Εξαγωγή</h3>
+<p>Στη λίστα αθλητών, το κουμπί <strong>Εξαγωγή</strong> κατεβάζει CSV / XLSX με όλα τα στοιχεία (χρήσιμο για λογιστή / φοροεισοδήματα).</p>
+
+<!-- ═══════════ 6. ΠΛΗΡΩΜΕΣ ═══════════ -->
+<h1 id="payments">6. Πληρωμές / Συνδρομές</h1>
+
+<h3>Πώς λειτουργούν οι συνδρομές</h3>
+<p>Κάθε αθλητής έχει ένα <strong>πλάνο συνδρομής</strong> (π.χ. «Μηνιαίο 40€», «Ετήσιο 400€»). Το σύστημα δημιουργεί αυτόματα εγγραφές πληρωμής για κάθε περίοδο και τις μαρκάρει ως <strong>Εκκρεμούν</strong> μέχρι να επιβεβαιωθούν.</p>
+
+<h3>Κατάσταση πληρωμής</h3>
+<table>
+  <tr><th>Ένδειξη</th><th>Σημασία</th></tr>
+  <tr><td>🟢 Ενήμερος</td><td>Έχει πληρώσει την τρέχουσα περίοδο</td></tr>
+  <tr><td>🟡 Εκκρεμεί</td><td>Πλησιάζει η λήξη ή μόλις ξεκίνησε η νέα περίοδος</td></tr>
+  <tr><td>🔴 Ληξιπρόθεσμος</td><td>Έχει περάσει η ημερομηνία λήξης</td></tr>
+</table>
+
+<h3>Μαρκάρισμα πληρωμής</h3>
+<div class="step"><strong>1.</strong> Ανοίξτε την καρτέλα του αθλητή ή τη σελίδα Πληρωμές.</div>
+<div class="step"><strong>2.</strong> Βρείτε την περίοδο και πατήστε <strong>Μαρκάρισμα ως Πληρωμένο</strong>.</div>
+<div class="step"><strong>3.</strong> Επιλέξτε τρόπο (μετρητά, IRIS, κατάθεση, POS), ημερομηνία και προαιρετική σημείωση.</div>
+<div class="step"><strong>4.</strong> Πατήστε <strong>Αποθήκευση</strong>. Ο αθλητής γίνεται άμεσα «Ενήμερος».</div>
+
+<div class="ok"><strong>Αυτόματη ενημέρωση γονέα:</strong> αν είναι ενεργή η αντίστοιχη ειδοποίηση, ο γονέας λαμβάνει email/SMS απόδειξης.</div>
+
+<!-- ═══════════ 7. ΤΜΗΜΑΤΑ ═══════════ -->
+<h1 id="departments">7. Τμήματα</h1>
+<p>Τα τμήματα ομαδοποιούν αθλητές (π.χ. «Παιδικό 6-12», «Ενήλικες», «Πρωταθλητισμός»). Χρησιμοποιούνται για φίλτρα, πληρωμές ανά τμήμα και μαζικές ανακοινώσεις.</p>
+
+<h3>Δημιουργία τμήματος</h3>
+<div class="step"><strong>1.</strong> Πηγαίνετε στα <strong>Τμήματα</strong> και πατήστε <strong>+ Νέο Τμήμα</strong>.</div>
+<div class="step"><strong>2.</strong> Ονομασία (π.χ. «Έφηβοι 13-17»), άθλημα, ημέρες/ώρες, χωρητικότητα, χρώμα.</div>
+<div class="step"><strong>3.</strong> Αποθήκευση. Μετά μπορείτε να εντάξετε αθλητές (drag &amp; drop ή από την καρτέλα τους).</div>
+
+<h3>Επισκόπηση</h3>
+<p>Κάθε τμήμα δείχνει: πλήθος ενεργών αθλητών, χωρητικότητα (X/Y) με progress bar, υπεύθυνο προπονητή, στατιστικά πληρωμών.</p>
+
+<!-- ═══════════ 8. ΕΙΔΟΠΟΙΗΣΕΙΣ ═══════════ -->
+<h1 id="notifications">8. Ειδοποιήσεις</h1>
+<p>Δύο εργαλεία μαζί: <strong>αυτόματοι κανόνες</strong> και <strong>μαζικές ανακοινώσεις</strong>.</p>
+
+<h3>Αυτόματοι κανόνες</h3>
+<p>Προδιαμορφωμένα trigger που στέλνουν email/SMS όταν συμβεί κάτι:</p>
+<ul>
+  <li>Νέα εγγραφή αθλητή → welcome email</li>
+  <li>Λήξη συνδρομής σε 7 ημέρες → υπενθύμιση</li>
+  <li>Ληξιπρόθεσμη οφειλή → οχλήσεις</li>
+  <li>Απόδειξη πληρωμής → επιβεβαίωση</li>
+</ul>
+<div class="tip">Κάντε κλικ σε κάθε κανόνα στον πίνακα για να δείτε πότε έχει τρέξει, σε ποιους και το ακριβές μήνυμα.</div>
+
+<h3>Μαζικές ανακοινώσεις (broadcasts)</h3>
+<p>Στείλτε ένα μήνυμα σε όλους ή σε συγκεκριμένη ομάδα:</p>
+<div class="step"><strong>1.</strong> Πατήστε <strong>+ Νέα Ανακοίνωση</strong>.</div>
+<div class="step"><strong>2.</strong> Γράψτε θέμα και κείμενο. Επιλέξτε κανάλι: <strong>Email</strong>, <strong>SMS</strong>, ή και τα δύο.</div>
+<div class="step"><strong>3.</strong> Επιλέξτε παραλήπτες: όλοι, ανά τμήμα, ανά κατάσταση πληρωμής.</div>
+<div class="step"><strong>4.</strong> <strong>Αποστολή</strong>. Το ιστορικό διατηρείται με λεπτομέρειες παράδοσης.</div>
+
+<div class="warn"><strong>Προσοχή:</strong> τα SMS χρεώνονται. Δείτε πάντα το εκτιμώμενο κόστος πριν την αποστολή.</div>
+
+<!-- ═══════════ 9. ΔΙΟΡΓΑΝΩΣΕΙΣ ═══════════ -->
+<h1 id="events">9. Διοργανώσεις</h1>
+<p>Ολοκληρωμένο σύστημα για πρωταθλήματα, φιλικά, camps και σεμινάρια. Το σωματείο σας μπορεί να είναι <strong>διοργανωτής</strong> (φιλοξενεί event) και <strong>συμμετέχων</strong> (εγγράφει αθλητές σε event άλλου συλλόγου).</p>
+
+<h3>Τρεις καρτέλες</h3>
+<table>
+  <tr><th>Καρτέλα</th><th>Περιεχόμενο</th></tr>
+  <tr><td>Οι Διοργανώσεις μου</td><td>Events που έχετε δημιουργήσει εσείς</td></tr>
+  <tr><td>Συμμετέχω</td><td>Events άλλων που έχουν αθλητές σας εγγεγραμμένους</td></tr>
+  <tr><td>Πληρωμές Συμμετεχόντων</td><td>Ταμείο ανά σύλλογο που έχει εγγραφεί στα δικά σας events</td></tr>
+</table>
+
+<h3>Δημιουργία διοργάνωσης</h3>
+<div class="step"><strong>1.</strong> <strong>+ Νέα Διοργάνωση</strong>. Επιλέξτε τύπο (πρωτάθλημα, φιλικό, camp, σεμινάριο).</div>
+<div class="step"><strong>2.</strong> Τίτλος, ημερομηνία, τοποθεσία, όρια εγγραφών, κόστος συμμετοχής.</div>
+<div class="step"><strong>3.</strong> Δημιουργήστε <strong>κατηγορίες</strong> (π.χ. Kumite -55kg U18, Kata Individual Γυναίκες) με φύλο, ηλικιακό εύρος, βάρη, format (pool + KO, single-elimination…).</div>
+<div class="step"><strong>4.</strong> Ρυθμίστε <strong>ειδικά πεδία</strong> που θα ζητούνται στην εγγραφή (π.χ. αριθμός δελτίου, ζώνη, εμπειρία).</div>
+<div class="step"><strong>5.</strong> Δημοσιεύστε. Άλλοι σύλλογοι θα το βρουν στην αναζήτηση διοργανώσεων.</div>
+
+<h3>Συμμετοχή σε διοργάνωση άλλου συλλόγου</h3>
+<div class="step"><strong>1.</strong> <strong>Αναζήτηση Διοργανώσεων</strong> → βρίσκετε το event → <strong>Διαχείριση Συμμετοχής</strong>.</div>
+<div class="step"><strong>2.</strong> Επιλέγετε αθλητές, κατηγορία για τον καθένα, δηλώνετε προπονητή που θα τους συνοδεύσει (όνομα + τηλέφωνο).</div>
+<div class="step"><strong>3.</strong> Ολοκληρώνετε την εγγραφή. Ενημερώνετε τον διοργανωτή για τον τρόπο πληρωμής (μετρητά, κατάθεση, on-site).</div>
+<div class="step"><strong>4.</strong> Ανεβάζετε <strong>απόδειξη πληρωμής</strong> (φωτογραφία / PDF) — ο διοργανωτής επιβεβαιώνει.</div>
+
+<h3>Διαχείριση κατά τη διάρκεια</h3>
+<ul>
+  <li><strong>Εγγραφές</strong>: πίνακας με όλους τους συμμετέχοντες, ζωντανή αναζήτηση, φίλτρα ανά κατηγορία / σύλλογο / πληρωμή.</li>
+  <li><strong>Χρονοπρογραμματισμός</strong>: αυτόματος υπολογισμός συνολικού χρόνου και αγώνων ανά tatami.</li>
+  <li><strong>Brackets / Pools</strong>: αυτόματη δημιουργία με ένα κλικ (single-elim, pool + KO, round-robin).</li>
+  <li><strong>Εκτύπωση κληρώσεων</strong>: ELOT-style φύλλα Α4, ένα ανά κατηγορία.</li>
+  <li><strong>Εξαγωγή XLSX</strong>: workbook με αθλητές, κατηγορίες και αγωνιστικά ζευγάρια.</li>
+</ul>
+
+<h3>Πληρωμές συμμετεχόντων</h3>
+<p>Στην καρτέλα <strong>Πληρωμές Συμμετεχόντων</strong> βλέπετε συγκεντρωτικά:</p>
+<ul>
+  <li><strong>Σύνολα ανά σύλλογο</strong>: πόσα οφείλει και πόσα έχει πληρώσει κάθε συμμετέχον σωματείο</li>
+  <li><strong>Λεπτομέρειες ανά αθλητή</strong> για drill-down</li>
+  <li><strong>Ενέργειες</strong>: μαρκάρισμα ολικής/μερικής πληρωμής, εγγραφή on-site, επιστροφή</li>
+</ul>
+
+<div class="tip"><strong>Δημόσια σελίδα</strong>: κάθε event έχει και δημόσιο URL (<code>/events/view.php?slug=...</code>) όπου γονείς μπορούν να δουν σε ποιες κατηγορίες συμμετέχουν οι αθλητές. Η αναζήτηση αθλητή λειτουργεί δημόσια και στη σελίδα <code>/events/athletes.php</code>.</div>
+
+<!-- ═══════════ 10. ΟΙΚΟΝΟΜΙΚΑ ═══════════ -->
+<h1 id="economics">10. Οικονομικά <span class="pro">PRO</span></h1>
+<p>Πλήρες ταμείο σωματείου με διπλογραφικό τρόπο σκέψης (έσοδα / έξοδα), χωρίς να χρειάζεστε λογιστικό πρόγραμμα.</p>
+
+<h3>Έσοδα</h3>
+<ul>
+  <li>Αυτόματη καταγραφή κάθε συνδρομής που μαρκάρετε ως πληρωμένη</li>
+  <li>Έσοδα από διοργανώσεις (συμμετοχές άλλων συλλόγων)</li>
+  <li>Άλλα έσοδα (χορηγίες, δωρεές, εμπόρευμα) καταχωρούνται χειροκίνητα με ένα κλικ</li>
+</ul>
+
+<h3>Έξοδα</h3>
+<ul>
+  <li>Ενοίκιο, ΔΕΚΟ, μισθοδοσία προπονητών</li>
+  <li>Εξοπλισμός (γάντια, στρώματα, φόρμες)</li>
+  <li>Οργανωτικά έξοδα διοργανώσεων (μετάλλια, γεύματα, τατάμι)</li>
+</ul>
+
+<h3>Πώς καταχωρείτε κίνηση</h3>
+<div class="step"><strong>1.</strong> Οικονομικά → <strong>+ Νέα Κίνηση</strong>.</div>
+<div class="step"><strong>2.</strong> Επιλέγετε <strong>Έσοδο</strong> ή <strong>Έξοδο</strong>, κατηγορία, ποσό, ημερομηνία, τρόπο (μετρητά, κατάθεση…), προαιρετική σημείωση/απόδειξη.</div>
+<div class="step"><strong>3.</strong> Αποθήκευση. Ενημερώνεται άμεσα το ταμείο.</div>
+
+<h3>Ταμείο &amp; ισολογισμός</h3>
+<ul>
+  <li><strong>Υπόλοιπο ταμείου</strong>: τρέχον σύνολο</li>
+  <li><strong>Μηνιαίο P&amp;L</strong>: έσοδα - έξοδα ανά μήνα</li>
+  <li><strong>Κατανομή εξόδων</strong>: pie chart ανά κατηγορία</li>
+  <li><strong>Εξαγωγή</strong>: PDF ή XLSX για τον λογιστή</li>
+</ul>
+<div class="ok">Όλες οι κινήσεις είναι σε chronological ledger με αναζήτηση, φίλτρα και έμφαση στις μη-αντιστοιχισμένες.</div>
+
+<!-- ═══════════ 11. ΑΝΑΛΥΤΙΚΑ ═══════════ -->
+<h1 id="analytics">11. Στατιστικά / Αναλυτικά <span class="pro">PRO</span></h1>
+<p>Οπτικοποίηση της δραστηριότητας του σωματείου. Χρήσιμο για ετήσιο απολογισμό, αποφάσεις τιμολόγησης και εντοπισμό προβλημάτων.</p>
+
+<h3>Ενότητες</h3>
+<table>
+  <tr><th>Γράφημα</th><th>Απαντά στο ερώτημα…</th></tr>
+  <tr><td>Έσοδα ανά μήνα</td><td>Πώς κινείται το ταμείο σε βάθος έτους;</td></tr>
+  <tr><td>Ενημερότητα αθλητών</td><td>Ποιο ποσοστό είναι ενήμερο, εκκρεμεί, ληξιπρόθεσμο;</td></tr>
+  <tr><td>Επίπτωση τμήματος</td><td>Ποιο τμήμα φέρνει τα περισσότερα έσοδα;</td></tr>
+  <tr><td>Trend εγγραφών</td><td>Πόσοι νέοι αθλητές μπήκαν κάθε μήνα;</td></tr>
+  <tr><td>Απώλεια (churn)</td><td>Πόσοι αρχειοθετήθηκαν; Ποιοι μήνες είναι πιο επικίνδυνοι;</td></tr>
+  <tr><td>Μέση διάρκεια συνδρομής</td><td>Πόσους μήνες μένει κατά μέσο όρο ένας αθλητής;</td></tr>
+  <tr><td>Διοργανώσεις — συμμετοχές</td><td>Πόσοι αθλητές σας έχουν αγωνιστεί; Πόσα έσοδα;</td></tr>
+</table>
+
+<h3>Φίλτρα</h3>
+<p>Όλα τα γραφήματα ανανεώνονται live με φίλτρα: χρονικό εύρος (τελευταίοι 30 ημέρες / 3μηνο / έτος / custom), τμήμα, ζώνη. Δεν χρειάζεται υποβολή — αλλάζετε το φίλτρο και ενημερώνονται αμέσως.</p>
+
+<h3>Εξαγωγή</h3>
+<p>Κάθε γράφημα εξάγεται ως εικόνα (PNG) ή τα δεδομένα του σε CSV για περαιτέρω ανάλυση.</p>
+
+<!-- ═══════════ 12. ΡΥΘΜΙΣΕΙΣ ═══════════ -->
+<h1 id="settings">12. Ρυθμίσεις σχολής</h1>
+<ul>
+  <li><strong>Στοιχεία σωματείου</strong>: επωνυμία, ΑΦΜ, διεύθυνση, τηλέφωνο, email, IBAN για online πληρωμές</li>
+  <li><strong>Λογότυπο</strong>: εμφανίζεται σε αποδείξεις, sidebar, δημόσιες σελίδες διοργανώσεων</li>
+  <li><strong>Χρήστες σωματείου</strong>: προσθήκη προπονητών/γραμματείας με ρόλους</li>
+  <li><strong>Αλλαγή κωδικού πρόσβασης</strong></li>
+  <li><strong>Πλάνο συνδρομής</strong>: αναβάθμιση Basic → Pro / διαχείριση πληρωμών</li>
+  <li><strong>Διαγραφή σωματείου</strong>: μόνιμη διαγραφή δεδομένων (μη αναστρέψιμο, GDPR)</li>
+</ul>
+
+<!-- ═══════════ 13. PARENT PORTAL ═══════════ -->
+<h1 id="parent">13. Portal Γονέα / Αθλητή</h1>
+<p>Ξεχωριστό portal για γονείς και ενήλικες αθλητές — δεν βλέπουν διαχειριστικά, μόνο τα δικά τους.</p>
+
+<h3>Δημιουργία λογαριασμού</h3>
+<p>Ο διαχειριστής του σωματείου μπορεί:</p>
+<ul>
+  <li>Να στείλει πρόσκληση σε γονέα (email με link ενεργοποίησης) από την καρτέλα του αθλητή</li>
+  <li>Ή ο γονέας εγγράφεται μόνος του στο <code>master-app.gr/parent/register.php</code> με τον κωδικό συλλόγου</li>
+</ul>
+
+<h3>Τι βλέπει ο γονέας</h3>
+<ul>
+  <li>Καρτέλα του παιδιού / των παιδιών</li>
+  <li>Ιστορικό πληρωμών + πληρωμένη περίοδο</li>
+  <li>Ανακοινώσεις σωματείου</li>
+  <li>Συμμετοχές σε διοργανώσεις</li>
+  <li>ICS ημερολόγιο προπονήσεων &amp; εκδηλώσεων</li>
+</ul>
+
+<!-- ═══════════ 14. ΠΛΑΝΑ ═══════════ -->
+<h1 id="plans">14. Πλάνα Basic &amp; Pro</h1>
+<table>
+  <tr><th style="width:44%"></th><th>Basic</th><th>Pro</th></tr>
+  <tr><td>Αθλητές</td><td>Απεριόριστοι</td><td>Απεριόριστοι</td></tr>
+  <tr><td>Πληρωμές &amp; συνδρομές</td><td>✓</td><td>✓</td></tr>
+  <tr><td>Τμήματα &amp; ειδοποιήσεις</td><td>✓</td><td>✓</td></tr>
+  <tr><td>Διοργανώσεις</td><td>Έως 2 ανοιχτές</td><td>Απεριόριστες</td></tr>
+  <tr><td>Οικονομικά (ταμείο)</td><td>—</td><td>✓</td></tr>
+  <tr><td>Στατιστικά / Αναλυτικά</td><td>Βασικά</td><td>Πλήρη</td></tr>
+  <tr><td>SMS</td><td>Χρέωση ανά μήνυμα</td><td>Πακέτο SMS</td></tr>
+  <tr><td>Portal γονέα</td><td>✓</td><td>✓</td></tr>
+  <tr><td>Custom domain / branding</td><td>—</td><td>✓</td></tr>
+  <tr><td>Προτεραιότητα υποστήριξης</td><td>Email</td><td>Email + τηλέφωνο</td></tr>
+</table>
+<div class="tip">Δείτε αναλυτικές τιμές &amp; αγοράστε πλάνο από <code>master-app.gr</code> → «Τιμοκατάλογος».</div>
+
+<!-- ═══════════ 15. FAQ ═══════════ -->
+<h1 id="faq">15. Συχνές ερωτήσεις</h1>
+
+<h4>Χάθηκε κωδικός γονέα — τι κάνω;</h4>
+<p>Ο γονέας πηγαίνει στο <code>/parent/login.php</code> → «Ξέχασα τον κωδικό μου». Εναλλακτικά, από την καρτέλα του αθλητή στέλνετε νέο link ενεργοποίησης.</p>
+
+<h4>Μπορώ να αλλάξω αθλητή σε άλλο τμήμα;</h4>
+<p>Ναι — από την καρτέλα του, ή με drag &amp; drop στη σελίδα Τμήματα. Το ιστορικό πληρωμών παραμένει.</p>
+
+<h4>Πώς επιστρέφω μία λάθος πληρωμή;</h4>
+<p>Στην καρτέλα του αθλητή, βρείτε τη γραμμή της πληρωμής → «Επιστροφή». Καταχωρείται αρνητικά στα Οικονομικά.</p>
+
+<h4>Στα SMS εμφανίζεται λάθος όνομα σχολής — γιατί;</h4>
+<p>Το SMS πάει με το πεδίο «Επωνυμία εμφάνισης» των Ρυθμίσεων. Ελέγξτε το εκεί και αποθηκεύστε ξανά.</p>
+
+<h4>Έκλεισε ημερομηνία εγγραφής σε διοργάνωση — μπορώ να προσθέσω αθλητή;</h4>
+<p>Μόνο ο διοργανωτής μπορεί να επιτρέψει καθυστερημένη εγγραφή. Επικοινωνήστε μαζί του — αν το επιτρέψει, θα σας ενημερώσει.</p>
+
+<h4>Μπορώ να διορθώσω δήλωση αθλητή πριν κλείσουν οι εγγραφές;</h4>
+<p>Ναι. Πηγαίνετε στο event → «Ακύρωση συμμετοχής» και ξαναδηλώστε τον με τα σωστά στοιχεία (κατηγορία, βάρος κ.λπ.).</p>
+
+<h4>Πού βλέπω πόσο έχει βγάλει τζίρο η σχολή τον προηγούμενο μήνα;</h4>
+<p>Στο <strong>Οικονομικά</strong> → φίλτρο ημερομηνίας «Προηγούμενος μήνας», ή στα <strong>Αναλυτικά</strong> → γράφημα «Έσοδα ανά μήνα».</p>
+
+<h4>Πώς εξάγω δεδομένα για τον λογιστή;</h4>
+<p>Οικονομικά → κουμπί <strong>Εξαγωγή</strong> (XLSX ή PDF). Επίσης οι πληρωμές συνδρομών εξάγονται από τη σελίδα Πληρωμές.</p>
+
+<hr>
+<p class="print-note">MAster · master-app.gr · Έκδοση 2.0 (Αύγουστος 2026)</p>
+
+</body>
+</html>
