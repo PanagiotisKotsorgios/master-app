@@ -1,0 +1,6 @@
+# Old PDF guide URL → live HTML guide (updated Aug 2026)
+# The HTML source is always fresh; users can Ctrl+P → Save as PDF.
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteRule ^master_help\.pdf$ /docs/user-guide.html [R=302,L]
+</IfModule>
