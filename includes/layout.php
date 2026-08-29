@@ -346,7 +346,6 @@ function renderSidebar(string $active = ''): void {
                 '_icon'  => 'fa-solid fa-people-group',
                 'items'  => [
                     ['href' => APP_URL.'/admin/schools.php',         'icon' => 'fa-solid fa-school',         'label' => 'Σχολές',            'key' => 'admin_schools'],
-                    ['href' => APP_URL.'/admin/school_approvals.php','icon' => 'fa-solid fa-user-check',     'label' => 'Έγκριση Σχολών',    'key' => 'admin_school_approvals'],
                     ['href' => APP_URL.'/admin/users.php',           'icon' => 'fa-solid fa-users',          'label' => 'Χρήστες',           'key' => 'admin_users'],
                     ['href' => APP_URL.'/admin/parent-accounts.php', 'icon' => 'fa-solid fa-people-roof',    'label' => 'Portal Γονέων',     'key' => 'admin_parent_accounts'],
                     ['href' => APP_URL.'/admin/privileges.php',      'icon' => 'fa-solid fa-shield-halved',  'label' => 'Privileges',        'key' => 'admin_privileges'],

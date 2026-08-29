@@ -527,8 +527,8 @@ function isPlanActive(): bool {
 // ══════════════════════════════════════════════════════════════
 // 10b. SCHOOL APPROVAL WORKFLOW
 //     Layered on top of plan_status. Grandfathered to 'approved'
-//     for every existing school by migration 006. Admins can flip
-//     it to 'pending' via /admin/school_approvals.php.
+//     for every existing school by migration 006. Self-registration
+//     via /register.php is now unconditional — no admin gate.
 //
 //     Gate any page that should require approved status with:
 //         requireApprovedSchool();
