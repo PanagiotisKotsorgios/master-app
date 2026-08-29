@@ -35,7 +35,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($act === 'update_reg_payment' || $
         if (!$chk->fetchColumn()) {
             $flashMsg = 'Δεν βρέθηκε η συμμετοχή.';
         } elseif ($act === 'delete_reg') {
-            // Hard delete: also drops the payment_registrations link if any
             $db2 = getDB();
             $db2->prepare("DELETE FROM event_payment_registrations WHERE registration_id = ?")->execute([$regId]);
             $db2->prepare("DELETE FROM event_registrations WHERE id = ?")->execute([$regId]);
@@ -48,6 +47,60 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($act === 'update_reg_payment' || $
         }
     } catch (\Throwable $e) {
         error_log('[events.php reg action] ' . $e->getMessage());
+        $flashMsg = 'Σφάλμα ενημέρωσης.';
+    }
+    redirect(APP_URL . '/pages/events.php?tab=payments&ok=1');
+}
+
+// ── Bulk per-club actions on the aggregated Πληρωμές panel ───────
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($act, ['mark_school_paid', 'mark_school_unpaid'], true)) {
+    try {
+        verifyCsrf();
+        $eventId  = (int)($_POST['event_id']  ?? 0);
+        $schoolId = (int)($_POST['school_id'] ?? 0);
+        if ($eventId > 0 && $schoolId >= 0) {
+            $db = getDB();
+            // Guard: event must be one I organise
+            $chk = $db->prepare("SELECT 1 FROM events WHERE id = ? AND organiser_school_id = ?");
+            $chk->execute([$eventId, $sid]);
+            if ($chk->fetchColumn()) {
+                if ($act === 'mark_school_paid') {
+                    // All pending regs of this (event × school) → verified
+                    $st = $db->prepare("SELECT id FROM event_registrations
+                                        WHERE event_id = ?
+                                          AND (registering_school_id = ? OR (? = 0 AND registering_school_id IS NULL))
+                                          AND status NOT IN ('rejected','withdrawn')
+                                          AND payment_status IN ('unpaid','proof_uploaded')");
+                    $st->execute([$eventId, $schoolId, $schoolId]);
+                    $ids = $st->fetchAll(PDO::FETCH_COLUMN);
+                    $n = 0;
+                    foreach ($ids as $rid) {
+                        eventRegistrationUpdatePayment((int)$rid, $eventId, 'verified', userId() ?: null);
+                        $n++;
+                    }
+                    $flashMsg = "Μαρκαρίστηκαν $n συμμετοχές ως πληρωμένες.";
+                } else {
+                    // All non-unpaid regs of this (event × school) → unpaid
+                    $st = $db->prepare("SELECT id FROM event_registrations
+                                        WHERE event_id = ?
+                                          AND (registering_school_id = ? OR (? = 0 AND registering_school_id IS NULL))
+                                          AND status NOT IN ('rejected','withdrawn')
+                                          AND payment_status IN ('verified','waived','refunded','proof_uploaded')");
+                    $st->execute([$eventId, $schoolId, $schoolId]);
+                    $ids = $st->fetchAll(PDO::FETCH_COLUMN);
+                    $n = 0;
+                    foreach ($ids as $rid) {
+                        eventRegistrationUpdatePayment((int)$rid, $eventId, 'unpaid', userId() ?: null);
+                        $n++;
+                    }
+                    $flashMsg = "Επαναφέρθηκαν $n συμμετοχές σε εκκρεμότητα.";
+                }
+            } else {
+                $flashMsg = 'Δεν βρέθηκε η διοργάνωση.';
+            }
+        }
+    } catch (\Throwable $e) {
+        error_log('[events.php bulk school action] ' . $e->getMessage());
         $flashMsg = 'Σφάλμα ενημέρωσης.';
     }
     redirect(APP_URL . '/pages/events.php?tab=payments&ok=1');
@@ -550,12 +603,12 @@ renderHead('Διοργανώσεις');
     <div style="padding:.9rem 1.15rem;border-bottom:1px solid #1e2536;display:flex;align-items:center;gap:.6rem;flex-wrap:wrap">
       <div style="width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,#3b82f6,#2563eb);display:flex;align-items:center;justify-content:center;color:#fff"><i class="fa-solid fa-building-columns"></i></div>
       <div style="flex:1;min-width:180px">
-        <div style="font-weight:800;color:#fff;font-size:1rem">Σύνολα ανά σύλλογο</div>
+        <div style="font-weight:800;color:#fff;font-size:1rem">Πληρωμές ανά σύλλογο</div>
         <div style="color:#8892b0;font-size:.78rem;margin-top:.1rem"><?= count($agg) ?> σύλλογοι · <?= array_sum(array_column($agg,'athletes')) ?> αθλητές συνολικά</div>
       </div>
     </div>
     <div class="table-wrap" style="overflow-x:auto">
-      <table style="width:100%;border-collapse:collapse;font-size:.94rem;min-width:640px">
+      <table style="width:100%;border-collapse:collapse;font-size:.94rem;min-width:900px">
         <thead>
           <tr style="background:rgba(255,255,255,.03)">
             <th style="padding:.7rem 1rem;text-align:left;font-size:.72rem;font-weight:700;color:#a9b3c9;text-transform:uppercase;letter-spacing:.08em">Σύλλογος / Διοργάνωση</th>
@@ -563,6 +616,7 @@ renderHead('Διοργανώσεις');
             <th style="padding:.7rem .75rem;text-align:right;font-size:.72rem;font-weight:700;color:#a9b3c9;text-transform:uppercase;letter-spacing:.08em">Σύνολο</th>
             <th style="padding:.7rem .75rem;text-align:right;font-size:.72rem;font-weight:700;color:#a9b3c9;text-transform:uppercase;letter-spacing:.08em">Πληρωμένο</th>
             <th style="padding:.7rem .75rem;text-align:right;font-size:.72rem;font-weight:700;color:#a9b3c9;text-transform:uppercase;letter-spacing:.08em">Εκκρεμεί</th>
+            <th style="padding:.7rem 1rem;text-align:right;font-size:.72rem;font-weight:700;color:#a9b3c9;text-transform:uppercase;letter-spacing:.08em;min-width:260px">Ενέργειες</th>
           </tr>
         </thead>
         <tbody>
@@ -585,6 +639,36 @@ renderHead('Διοργανώσεις');
                   <div style="font-size:.7rem;font-weight:700;color:#ff8891;opacity:.85;margin-top:.1rem"><?= (int)$a['unpaid_count'] ?> αθλητ<?= $a['unpaid_count']===1?'ής':'ές' ?></div>
                 <?php else: ?>—<?php endif; ?>
               </td>
+              <td style="padding:.75rem 1rem;text-align:right">
+                <div style="display:inline-flex;gap:.4rem;flex-wrap:wrap;justify-content:flex-end">
+                  <?php if ($a['unpaid_count'] > 0 || $a['proof_count'] > 0): ?>
+                    <form method="POST" style="display:inline"
+                          onsubmit="return confirm('Μαρκάρισμα ως πληρωμένοι <?= (int)($a['unpaid_count'] + $a['proof_count']) ?> αθλητές από <?= h(addslashes($a['school_name'])) ?>;');">
+                      <input type="hidden" name="csrf_token" value="<?= csrf() ?>">
+                      <input type="hidden" name="_action" value="mark_school_paid">
+                      <input type="hidden" name="event_id" value="<?= (int)$a['event_id'] ?>">
+                      <input type="hidden" name="school_id" value="<?= (int)$a['school_id'] ?>">
+                      <button type="submit"
+                              style="background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;border:none;padding:.5rem .85rem;border-radius:8px;font-weight:800;font-size:.8rem;cursor:pointer;min-height:36px;display:inline-flex;align-items:center;gap:.35rem">
+                        <i class="fa-solid fa-check-double"></i> Πληρώθηκαν όλοι
+                      </button>
+                    </form>
+                  <?php endif; ?>
+                  <?php if ($a['paid'] > 0): ?>
+                    <form method="POST" style="display:inline"
+                          onsubmit="return confirm('Επαναφορά σε εκκρεμότητα για όλους τους αθλητές από <?= h(addslashes($a['school_name'])) ?>;');">
+                      <input type="hidden" name="csrf_token" value="<?= csrf() ?>">
+                      <input type="hidden" name="_action" value="mark_school_unpaid">
+                      <input type="hidden" name="event_id" value="<?= (int)$a['event_id'] ?>">
+                      <input type="hidden" name="school_id" value="<?= (int)$a['school_id'] ?>">
+                      <button type="submit" title="Επαναφορά όλων σε εκκρεμότητα"
+                              style="background:rgba(255,255,255,.06);color:#c9cee1;border:1px solid #2a3248;padding:.5rem .75rem;border-radius:8px;font-weight:700;font-size:.8rem;cursor:pointer;min-height:36px">
+                        <i class="fa-solid fa-rotate-left"></i>
+                      </button>
+                    </form>
+                  <?php endif; ?>
+                </div>
+              </td>
             </tr>
           <?php endforeach; ?>
         </tbody>
@@ -593,7 +677,7 @@ renderHead('Διοργανώσεις');
   </div>
   <?php endif; ?>
 
-  <!-- Detail table (per registration) -->
+  <?php if (false): // Detail per-athlete table hidden — actions live on the aggregate above ?>
   <div style="background:#111520;border:1px solid #1e2536;border-radius:14px;overflow:hidden">
     <?php if (!$regsAll): ?>
       <div style="padding:3rem 1.5rem;text-align:center;color:#a9b3c9">
@@ -746,6 +830,7 @@ renderHead('Διοργανώσεις');
       </div>
     <?php endif; ?>
   </div>
+  <?php endif; // /hidden detail table ?>
 <?php endif; ?>
 
 </div><!-- /page-body -->
