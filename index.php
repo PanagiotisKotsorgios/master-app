@@ -520,7 +520,14 @@ body::after{content:'';position:fixed;inset:0;background-image:url("data:image/s
     line-height: .88 !important; letter-spacing: .01em !important;
     margin-bottom: 1rem; white-space: nowrap !important; overflow: visible;
   }
-  .hero-h1 .outline { -webkit-text-stroke-width: 1.5px !important; }
+  /* Mobile: text-stroke outlines render as thin broken/double lines
+     on Android/iOS. Fill the word solidly instead to match the design
+     the user actually sees (like the third line). */
+  .hero-h1 .outline{
+    -webkit-text-stroke:0 !important;
+    color:var(--red) !important;
+    text-shadow:0 2px 15px rgba(230,57,70,0.35) !important;
+  }
 }
 @media(max-width:400px){
   .hero-h1 {

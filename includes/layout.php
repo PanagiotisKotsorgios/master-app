@@ -777,71 +777,67 @@ if ($schoolStatus && ($schoolStatus['status'] ?? '') === 'trial' && (int)($schoo
   transition:background .2s, box-shadow .2s;
   border-radius:30px;
 }
-@media (max-width:700px){
-  /* Full-width bottom sheet that slides up above every other content
-     when the user taps their avatar. Toggled by .user-dropdown.open */
+/* Bottom-sheet backdrop lives outside the topbar. Hidden by default,
+   shown only while body.user-dropdown-open on mobile. */
+.user-dropdown-backdrop{
+  display:none;
+  position:fixed; inset:0;
+  background:rgba(4,8,16,.55);
+  backdrop-filter:blur(3px);
+  -webkit-backdrop-filter:blur(3px);
+  z-index:99999;
+}
+
+@media (max-width:900px){
+  /* Position rules only — display toggle stays on the base
+     '.user-dropdown.open .dropdown-menu { display:block }'. */
   .user-dropdown .dropdown-menu{
-    display:block !important;              /* keep in DOM for transition */
     position:fixed !important;
     top:auto !important;
     bottom:0 !important;
     left:0 !important;
     right:0 !important;
     width:100% !important;
-    border-radius:18px 18px 0 0 !important;
     max-height:70vh;
     overflow-y:auto;
-    box-shadow:0 -12px 40px rgba(0,0,0,.65) !important;
-    padding:.35rem 0 calc(.75rem + env(safe-area-inset-bottom, 0px)) !important;
+    background:#0a0e16 !important;
     border:1px solid rgba(255,255,255,.14) !important;
     border-bottom:none !important;
-    background:#0a0e16 !important;
-    z-index:100000 !important;             /* above sidebar (9999) & modals */
-    transform:translateY(105%);            /* hidden below the fold */
-    transition:transform .28s cubic-bezier(.2,.8,.2,1);
-    pointer-events:none;
-    visibility:visible;
+    border-radius:18px 18px 0 0 !important;
+    box-shadow:0 -12px 40px rgba(0,0,0,.65) !important;
+    padding:.5rem 0 calc(.85rem + env(safe-area-inset-bottom, 0px)) !important;
+    z-index:100000 !important;                 /* above sidebar 9999, modals 10500 */
+    animation:userSheetUp .26s cubic-bezier(.2,.8,.2,1);
   }
-  .user-dropdown.open .dropdown-menu{
-    transform:translateY(0);
-    pointer-events:auto;
+  @keyframes userSheetUp{
+    from{transform:translateY(100%)}
+    to{transform:translateY(0)}
   }
-  /* Little grabber pill at the top so it reads as a bottom-sheet */
+  /* Grabber pill so it reads as a bottom sheet */
   .user-dropdown .dropdown-menu::before{
     content:'';
     display:block;
-    width:40px;height:4px;
-    margin:.35rem auto .5rem;
+    width:40px; height:4px;
+    margin:.35rem auto .55rem;
     border-radius:99px;
     background:rgba(255,255,255,.22);
   }
-
   .user-dropdown .dropdown-menu .dropdown-item{
     padding:1.05rem 1.15rem;
     font-size:1rem;
   }
-
   .user-dropdown .dropdown-menu .dropdown-item + .dropdown-item{
     border-top:1.5px solid rgba(255,255,255,.22);
     box-shadow:inset 0 1px 0 rgba(255,255,255,.05);
   }
-
-  /* Backdrop that appears behind the bottom sheet, click to close */
-  .user-dropdown-backdrop{
-    position:fixed;inset:0;
-    background:rgba(4,8,16,.55);
-    backdrop-filter:blur(3px);
-    -webkit-backdrop-filter:blur(3px);
-    z-index:99999;
-    opacity:0;
-    pointer-events:none;
-    transition:opacity .22s;
-  }
-  .user-dropdown.open ~ .user-dropdown-backdrop,
+  /* Show the backdrop only when the dropdown is actually open */
   body.user-dropdown-open .user-dropdown-backdrop{
-    opacity:1;
-    pointer-events:auto;
+    display:block;
   }
+}
+/* Desktop / tablet ≥901px: no backdrop, ever */
+@media (min-width:901px){
+  .user-dropdown-backdrop{ display:none !important; }
 }
 </style>
 
