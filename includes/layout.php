@@ -727,35 +727,30 @@ if ($schoolStatus && ($schoolStatus['status'] ?? '') === 'trial' && (int)($schoo
           <div class="urole"><?= h($user['role'] ?? '') ?></div>
         </div>
       </div>
-      <div class="dropdown-menu" id="userDropdownMenu">
-        <a class="dropdown-item" href="<?= APP_URL ?>/pages/settings.php">
-          <i class="fa-solid fa-gear"></i>Ρυθμίσεις
-        </a>
-        <a class="dropdown-item" href="<?= APP_URL ?>/logout.php">
-          <i class="fa-solid fa-right-from-bracket"></i> Αποσύνδεση
-        </a>
-      </div>
     </div>
   </div>
 </div>
-<div class="user-dropdown-backdrop" id="userDropdownBackdrop" onclick="document.querySelector('.user-dropdown')?.classList.remove('open')"></div>
+<!-- Rendered outside .topbar so its position:fixed is viewport-relative.
+     The .topbar has backdrop-filter which would otherwise trap it and
+     leave the sheet clipped/off-screen on mobile. -->
+<div class="dropdown-menu" id="userDropdownMenu">
+  <a class="dropdown-item" href="<?= APP_URL ?>/pages/settings.php">
+    <i class="fa-solid fa-gear"></i>Ρυθμίσεις
+  </a>
+  <a class="dropdown-item" href="<?= APP_URL ?>/logout.php">
+    <i class="fa-solid fa-right-from-bracket"></i> Αποσύνδεση
+  </a>
+</div>
+<div class="user-dropdown-backdrop" id="userDropdownBackdrop"></div>
 
 <style>
 .user-dropdown{position:relative;cursor:pointer}
-.user-dropdown .dropdown-menu{
-  display:none;
-  position:absolute;
-  top:100%;
-  right:0;
-  background:#0a0e16;
-  border:1px solid #1e2536;
-  border-radius:12px;
-  padding:.5rem 0;
-  min-width:180px;
-  box-shadow:0 10px 25px rgba(0,0,0,.5);
-  z-index:1000;
+.user-chip:hover{
+  background:rgba(230,57,70,.15);
+  box-shadow:0 0 0 2px rgba(230,57,70,.3);
+  transition:background .2s, box-shadow .2s;
+  border-radius:30px;
 }
-.user-dropdown.open .dropdown-menu{display:block}
 .dropdown-item{
   display:flex;
   align-items:center;
@@ -771,14 +766,25 @@ if ($schoolStatus && ($schoolStatus['status'] ?? '') === 'trial' && (int)($schoo
   color:#e63946;
 }
 .dropdown-item i{width:20px;text-align:center}
-.user-chip:hover{
-  background:rgba(230,57,70,.15);
-  box-shadow:0 0 0 2px rgba(230,57,70,.3);
-  transition:background .2s, box-shadow .2s;
-  border-radius:30px;
+
+/* ── Free-floating profile dropdown ──
+   Rendered at body root (outside .topbar) so its position:fixed is
+   viewport-relative, not trapped by the topbar's backdrop-filter. */
+#userDropdownMenu{
+  display:none;
+  position:fixed;
+  top:60px;
+  right:12px;
+  background:#0a0e16;
+  border:1px solid #1e2536;
+  border-radius:12px;
+  padding:.5rem 0;
+  min-width:200px;
+  box-shadow:0 10px 25px rgba(0,0,0,.5);
+  z-index:100000;
 }
-/* Bottom-sheet backdrop lives outside the topbar. Hidden by default,
-   shown only while body.user-dropdown-open on mobile. */
+body.user-dropdown-open #userDropdownMenu{ display:block }
+
 .user-dropdown-backdrop{
   display:none;
   position:fixed; inset:0;
@@ -789,32 +795,32 @@ if ($schoolStatus && ($schoolStatus['status'] ?? '') === 'trial' && (int)($schoo
 }
 
 @media (max-width:900px){
-  /* Position rules only — display toggle stays on the base
-     '.user-dropdown.open .dropdown-menu { display:block }'. */
-  .user-dropdown .dropdown-menu{
-    position:fixed !important;
+  /* Bottom-sheet on phones */
+  #userDropdownMenu{
     top:auto !important;
     bottom:0 !important;
     left:0 !important;
     right:0 !important;
     width:100% !important;
+    max-width:100% !important;
+    min-width:0 !important;
     max-height:70vh;
     overflow-y:auto;
-    background:#0a0e16 !important;
     border:1px solid rgba(255,255,255,.14) !important;
     border-bottom:none !important;
     border-radius:18px 18px 0 0 !important;
     box-shadow:0 -12px 40px rgba(0,0,0,.65) !important;
     padding:.5rem 0 calc(.85rem + env(safe-area-inset-bottom, 0px)) !important;
-    z-index:100000 !important;                 /* above sidebar 9999, modals 10500 */
+  }
+  body.user-dropdown-open #userDropdownMenu{
+    display:block;
     animation:userSheetUp .26s cubic-bezier(.2,.8,.2,1);
   }
   @keyframes userSheetUp{
     from{transform:translateY(100%)}
     to{transform:translateY(0)}
   }
-  /* Grabber pill so it reads as a bottom sheet */
-  .user-dropdown .dropdown-menu::before{
+  #userDropdownMenu::before{
     content:'';
     display:block;
     width:40px; height:4px;
@@ -822,20 +828,16 @@ if ($schoolStatus && ($schoolStatus['status'] ?? '') === 'trial' && (int)($schoo
     border-radius:99px;
     background:rgba(255,255,255,.22);
   }
-  .user-dropdown .dropdown-menu .dropdown-item{
+  #userDropdownMenu .dropdown-item{
     padding:1.05rem 1.15rem;
     font-size:1rem;
   }
-  .user-dropdown .dropdown-menu .dropdown-item + .dropdown-item{
+  #userDropdownMenu .dropdown-item + .dropdown-item{
     border-top:1.5px solid rgba(255,255,255,.22);
     box-shadow:inset 0 1px 0 rgba(255,255,255,.05);
   }
-  /* Show the backdrop only when the dropdown is actually open */
-  body.user-dropdown-open .user-dropdown-backdrop{
-    display:block;
-  }
+  body.user-dropdown-open .user-dropdown-backdrop{ display:block }
 }
-/* Desktop / tablet ≥901px: no backdrop, ever */
 @media (min-width:901px){
   .user-dropdown-backdrop{ display:none !important; }
 }
