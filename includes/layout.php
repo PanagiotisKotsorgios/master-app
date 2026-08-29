@@ -520,18 +520,22 @@ function renderSidebar(string $active = ''): void {
 </div>
 
 <style>
-/* ── Logout button (red bg + white fg, no divider line) ── */
+/* ── Logout button (red bg + white fg, NO divider line at all) ── */
 .sidebar .nav-logout,
 .sidebar a.nav-logout,
 .nav-logout{
   background: linear-gradient(135deg,#e63946,#c72832) !important;
   color: #ffffff !important;
   border: 1px solid rgba(255,255,255,.14) !important;
+  border-top: 1px solid rgba(255,255,255,.14) !important;
+  border-bottom: 1px solid rgba(255,255,255,.14) !important;
   border-radius: 10px !important;
   margin: .5rem 1rem 0 !important;
   padding: .75rem 1rem !important;
   box-shadow: 0 4px 14px -4px rgba(230,57,70,.5) !important;
   font-weight: 800 !important;
+  position: relative;
+  overflow: hidden;
   transition: transform .15s, box-shadow .15s;
 }
 .sidebar .nav-logout:hover,
@@ -545,9 +549,14 @@ function renderSidebar(string $active = ''): void {
 .nav-logout *{ color: #ffffff !important; }
 .sidebar .nav-logout i,
 .nav-logout i{ color: #ffffff !important; }
-/* Kill the shared divider line other .nav-item children get */
-.sidebar .nav-logout{ border-bottom: 1px solid rgba(255,255,255,.14) !important; }
-.sidebar .nav-logout::after{ content: none !important; display: none !important; }
+/* Kill EVERY pseudo/decoration that could paint a line across it */
+.sidebar .nav-logout::before,
+.sidebar .nav-logout::after,
+.nav-logout::before,
+.nav-logout::after{ content: none !important; display: none !important; background: none !important; }
+.sidebar .nav-logout span::before,
+.sidebar .nav-logout span::after{ content: none !important; display: none !important; background: none !important; }
+.sidebar .nav-logout{ text-decoration: none !important; }
 
 /* Collapsible sidebar categories (admin) */
 .sidebar .nav-label-toggle{
