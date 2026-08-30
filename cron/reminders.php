@@ -23,6 +23,19 @@ define('RUNNING_AS_CRON', true);
 require_once __DIR__ . '/../includes/config.php';
 require_once __DIR__ . '/../includes/usage_tracker.php';
 
+$cronLockPath = __DIR__ . '/../logs/reminders.lock';
+$cronLockHandle = @fopen($cronLockPath, 'c');
+if ($cronLockHandle && !flock($cronLockHandle, LOCK_EX | LOCK_NB)) {
+    echo '[' . date('Y-m-d H:i:s') . '] Another reminders cron is already running; exiting.' . PHP_EOL;
+    return;
+}
+if ($cronLockHandle) {
+    register_shutdown_function(static function () use ($cronLockHandle): void {
+        @flock($cronLockHandle, LOCK_UN);
+        @fclose($cronLockHandle);
+    });
+}
+
 $db = getDB();
 
 // ── Ensure consent_log table exists ──

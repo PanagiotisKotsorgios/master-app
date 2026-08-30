@@ -35,12 +35,16 @@ if (!function_exists('greekMonthName')) {
 // Track this run so admins see it
 $db->exec("CREATE TABLE IF NOT EXISTS cron_runs (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    job VARCHAR(60) NOT NULL,
+    job_name VARCHAR(100) NOT NULL,
+    school_id INT NULL DEFAULT NULL,
     started_at DATETIME NOT NULL,
     finished_at DATETIME NULL,
-    stats JSON NULL,
-    INDEX idx_job (job),
-    INDEX idx_started (started_at)
+    status VARCHAR(20) NOT NULL DEFAULT 'running',
+    message TEXT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_job_name (job_name),
+    INDEX idx_started_at (started_at),
+    INDEX idx_school (school_id)
 )");
 
 $runStart = date('Y-m-d H:i:s');
@@ -107,7 +111,8 @@ $stats = [
     'total_failed'  => $totalFail,
 ];
 
-$db->prepare("INSERT INTO cron_runs (job, started_at, finished_at, stats) VALUES (?, ?, NOW(), ?)")
+$db->prepare("INSERT INTO cron_runs (job_name, school_id, started_at, finished_at, status, message)
+              VALUES (?, NULL, ?, NOW(), 'success', ?)")
    ->execute(['monthly_digest', $runStart, json_encode($stats, JSON_UNESCAPED_UNICODE)]);
 
 echo "[monthly_digest] " . json_encode($stats, JSON_UNESCAPED_UNICODE) . "\n";
