@@ -9,6 +9,7 @@
 require_once __DIR__ . '/../includes/config.php';
 require_once __DIR__ . '/../includes/layout.php';
 require_once __DIR__ . '/../includes/two_factor.php';
+require_once __DIR__ . '/../includes/billing_pauses.php';
 requireLogin();
 renderPaymentWall();
 
@@ -333,6 +334,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         redirect(APP_URL.'/pages/settings.php?tab=school');
     }
 
+    if (($a['_action'] ?? '') === 'save_school_billing_pauses') {
+        $pauseMonths = normaliseBillingPauseMonths((array)($a['school_billing_pause_months'] ?? []));
+        try {
+            ensureBillingPauseSchema($db);
+            $db->beginTransaction();
+            replaceSchoolBillingPauseMonths($db, $sid, $pauseMonths);
+            auditLog('school_billing_pause_updated', 'school', $sid, json_encode(['months' => $pauseMonths], JSON_UNESCAPED_UNICODE));
+            $db->commit();
+            flash($pauseMonths
+                ? 'Οι μήνες χωρίς χρέωση αποθηκεύτηκαν. Ο κανόνας θα εφαρμόζεται κάθε χρόνο.'
+                : 'Ο γενικός κανόνας μηνών χωρίς χρέωση απενεργοποιήθηκε.');
+        } catch (Throwable $e) {
+            if ($db->inTransaction()) $db->rollBack();
+            error_log('[MAster settings] billing pause save failed: ' . $e->getMessage());
+            flash('Δεν ήταν δυνατή η αποθήκευση των μηνών διακοπής. Δοκιμάστε ξανά μετά την ανανέωση της εφαρμογής.', 'danger');
+        }
+        redirect(APP_URL.'/pages/settings.php?tab=school');
+    }
+
     if (($a['_action'] ?? '') === 'toggle_summer_pause') {
         $val = (($a['summer_pause_opted_in'] ?? '0') === '1') ? '1' : '0';
         $db->prepare("INSERT INTO school_meta (school_id,meta_key,meta_val) VALUES (?,?,?) ON DUPLICATE KEY UPDATE meta_val=VALUES(meta_val)")
@@ -400,6 +420,10 @@ try {
     $smStmt->execute([$sid]);
     $schoolSummerOptIn = ($smStmt->fetchColumn() === '1');
 } catch (Exception $e) {}
+
+$billingPauseContext = loadBillingPauseContext($db, $sid);
+$billingMonthLabels = billingMonthLabels();
+$schoolBillingPauseMonths = array_map('intval', array_keys($billingPauseContext['school'] ?? []));
 
 $planLabel  = $planSlug === 'pro' ? 'Pro' : 'Basic';
 $cycleLabel = $billingCycle === 'annual' ? 'Ετήσια' : 'Μηνιαία';
@@ -617,6 +641,13 @@ renderHead('Ρυθμίσεις');
 .form-help strong { color: #dbeafe; }
 .form-control { font-size: clamp(.95rem,3.5vw,1.05rem) !important; min-height: 50px; padding: .7rem 1rem; border-radius: 12px !important; transition: border-color .2s, box-shadow .2s; width: 100%; }
 .form-control:focus { outline: none; border-color: var(--red,#e63946) !important; box-shadow: 0 0 0 3px rgba(230,57,70,.15) !important; }
+.settings-month-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:.55rem; margin:1rem 0; }
+.settings-month-option { position:relative; }
+.settings-month-option input { position:absolute; opacity:0; pointer-events:none; }
+.settings-month-option span { display:flex; align-items:center; justify-content:center; min-height:44px; padding:.55rem .4rem; border:1px solid var(--border,#1e2536); border-radius:11px; background:rgba(255,255,255,.025); color:var(--muted,#8892b0); font-size:.85rem; font-weight:800; cursor:pointer; transition:.18s; }
+.settings-month-option input:checked + span { border-color:#f0a500; background:rgba(240,165,0,.16); color:#ffe099; box-shadow:0 0 0 1px rgba(240,165,0,.08); }
+@media(max-width:700px){.settings-month-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:430px){.settings-month-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 
 .btn { min-height: 50px; font-size: clamp(.95rem,3.5vw,1.05rem) !important; font-weight: 800 !important; display: inline-flex; align-items: center; justify-content: center; gap: .5rem; border-radius: 12px; transition: all .18s; text-decoration: none; padding: .65rem 1.3rem; cursor: pointer; border: none; white-space: nowrap; }
 .btn:active { transform: scale(.97); }
@@ -956,6 +987,44 @@ renderHead('Ρυθμίσεις');
             </div>
             <div class="mt-3">
                 <button type="submit" class="btn btn-primary"><i class="fa-solid fa-floppy-disk"></i> Αποθήκευση Αλλαγών</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ── SCHOOL-WIDE NO-CHARGE MONTHS ── -->
+<div class="card" style="margin-bottom:1.1rem;border:1px solid rgba(240,165,0,.28)">
+    <div class="card-header" style="background:rgba(240,165,0,.06)">
+        <div>
+            <div class="card-title"><i class="fa-solid fa-umbrella-beach" style="color:#f0a500"></i> Μήνες Διακοπής / Χωρίς Χρέωση</div>
+            <div style="font-size:.82rem;color:#aeb8d0;margin-top:.3rem">Γενικός κανόνας για όλη τη σχολή</div>
+        </div>
+    </div>
+    <div class="card-body">
+        <p style="color:#c0c9dc;font-size:.9rem;line-height:1.65;margin:0">
+            Επιλέξτε τους μήνες που η σχολή παραμένει κλειστή. Ο κανόνας επαναλαμβάνεται κάθε χρόνο,
+            εφαρμόζεται σε όλους τους αθλητές και <strong style="color:#ffe099">υπερισχύει από τους κανόνες των τμημάτων</strong>.
+            Οι μήνες αυτοί δεν υπολογίζονται ως οφειλή και δεν αποστέλλονται αυτόματα email ή SMS υπενθύμισης.
+        </p>
+        <form method="POST">
+            <input type="hidden" name="_action" value="save_school_billing_pauses">
+            <input type="hidden" name="csrf_token" value="<?= csrf() ?>">
+            <div class="settings-month-grid">
+                <?php foreach ($billingMonthLabels as $monthNumber => $monthLabel): ?>
+                <label class="settings-month-option">
+                    <input type="checkbox" name="school_billing_pause_months[]" value="<?= (int)$monthNumber ?>"
+                        <?= in_array((int)$monthNumber, $schoolBillingPauseMonths, true) ? 'checked' : '' ?>>
+                    <span><?= h($monthLabel) ?></span>
+                </label>
+                <?php endforeach; ?>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:.75rem;flex-wrap:wrap">
+                <div style="font-size:.8rem;color:var(--muted,#8892b0)">
+                    Αποθήκευση χωρίς επιλεγμένο μήνα = απενεργοποίηση του γενικού κανόνα.
+                </div>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fa-solid fa-floppy-disk"></i> Αποθήκευση Μηνών
+                </button>
             </div>
         </form>
     </div>

@@ -266,6 +266,7 @@ $firstName   = ucfirst(explode('@', $parentEmail)[0]);
     .pp-month-mini.paid    { background: rgba(45,198,83,.1);  color: var(--green); border: 1px solid rgba(45,198,83,.3); }
     .pp-month-mini.unpaid  { background: rgba(230,57,70,.1);  color: var(--red);   border: 1px solid rgba(230,57,70,.3); }
     .pp-month-mini.partial { background: rgba(240,165,0,.1);  color: var(--gold);  border: 1px solid rgba(240,165,0,.3); }
+    .pp-month-mini.paused  { background: rgba(59,130,246,.1); color: #93c5fd; border: 1px solid rgba(59,130,246,.3); }
 
     /* ── Empty state ── */
     .pp-empty {
@@ -622,7 +623,7 @@ $firstName   = ucfirst(explode('@', $parentEmail)[0]);
             <div class="pp-months-mini">
               <?php foreach (array_reverse($recentMonths) as $m): ?>
               <span class="pp-month-mini <?= $m['payment_status'] ?? ($m['paid'] ? 'paid' : 'unpaid') ?>">
-                <i class="fas <?= $m['paid'] ? 'fa-circle-check' : (!empty($m['partial']) ? 'fa-circle-half-stroke' : 'fa-circle-xmark') ?>"></i>
+                <i class="fas <?= !empty($m['paused']) ? 'fa-pause' : ($m['paid'] ? 'fa-circle-check' : (!empty($m['partial']) ? 'fa-circle-half-stroke' : 'fa-circle-xmark')) ?>"></i>
                 <?= h($m['label']) ?>
               </span>
               <?php endforeach; ?>

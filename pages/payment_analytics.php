@@ -11,6 +11,7 @@
 
 require_once __DIR__ . '/../includes/config.php';
 require_once __DIR__ . '/../includes/layout.php';
+require_once __DIR__ . '/../includes/billing_pauses.php';
 
 requireLogin();
 
@@ -52,7 +53,7 @@ if (!preg_match('/^\d{4}-\d{2}$/', $to))   $to   = date('Y-m');
 if ($from > $to) { [$from, $to] = [$to, $from]; }
 
 $deptFilter = (int)($_GET['dept'] ?? 0);
-$statusFilter = in_array($_GET['status'] ?? 'all', ['all','paid','pending','overdue','partial'], true)
+$statusFilter = in_array($_GET['status'] ?? 'all', ['all','paid','pending','overdue','partial','paused'], true)
               ? ($_GET['status'] ?? 'all') : 'all';
 $q  = trim((string)($_GET['q'] ?? ''));
 
@@ -80,6 +81,16 @@ $sql .= " ORDER BY d.name IS NULL, d.name, a.full_name";
 $athStmt = $db->prepare($sql);
 $athStmt->execute($params);
 $athletes = $athStmt->fetchAll(PDO::FETCH_ASSOC);
+$billingPauseContext = loadBillingPauseContext($db, $sid);
+$athletePauseMap = [];
+try {
+    $pauseStmt = $db->prepare('SELECT athlete_id, pause_from, pause_until FROM athlete_pause_periods WHERE school_id=? ORDER BY pause_from');
+    $pauseStmt->execute([$sid]);
+    foreach ($pauseStmt->fetchAll(PDO::FETCH_ASSOC) as $pauseRow) {
+        $athletePauseMap[(int)$pauseRow['athlete_id']][] = $pauseRow;
+    }
+} catch (Throwable $e) {
+}
 
 // ── Fetch payments in range for these athletes ──────────────────
 $paymentMap = [];   // [athlete_id][YYYY-MM] = amount
@@ -121,15 +132,25 @@ foreach ($athletes as $a) {
         $paid = (float)($paymentMap[$aid][$m] ?? 0);
         $isPast = ($m < $curMonth);
         $isCur  = ($m === $curMonth);
-        $exp    = $fee;  // future/current expected also = fee (no gating on future for expected)
+        $monthDate = new DateTimeImmutable($m . '-01');
+        $pauseReason = billingPauseReason(
+            $billingPauseContext,
+            !empty($a['department_id']) ? (int)$a['department_id'] : null,
+            $monthDate
+        );
+        if ($pauseReason === null && isAthleteIndividuallyPaused($monthDate, $athletePauseMap[$aid] ?? [])) {
+            $pauseReason = 'Ατομική παύση αθλητή';
+        }
+        $exp = $pauseReason !== null ? 0.0 : $fee;
 
-        if ($paid >= $exp && $exp > 0)          $status = 'paid';
+        if ($pauseReason !== null)                   $status = 'paused';
+        elseif ($paid >= $exp && $exp > 0)           $status = 'paid';
         elseif ($paid > 0 && $paid < $exp)      $status = 'partial';
         elseif ($isPast && $exp > 0)            $status = 'overdue';
         elseif ($isCur && $exp > 0)             $status = 'pending';
         else                                    $status = ($exp == 0 ? 'noop' : 'future');
 
-        $matrix[$aid][$m] = ['paid' => $paid, 'expected' => $exp, 'status' => $status];
+        $matrix[$aid][$m] = ['paid' => $paid, 'expected' => $exp, 'status' => $status, 'pause_reason' => $pauseReason];
         $rowCollected += $paid;
         // Only count as expected for periods up to & including current month
         if ($m <= $curMonth) {
@@ -177,7 +198,7 @@ if ($statusFilter !== 'all') {
     });
 }
 
-$grandDebt = max(0.0, $grandExpected - $grandCollected);
+$grandDebt = (float)array_sum(array_column($deptTotals, 'debt'));
 $debtorCount = count($debtors);
 usort($debtors, fn($a, $b) => $b['debt'] <=> $a['debt']);
 
@@ -328,6 +349,7 @@ renderHead('Αναλυτικά Πληρωμών' . ($isPrint ? ' — Εκτύπ�
 .pa-cell.pending { color:#93c5fd }
 .pa-cell.future  { color:#4a5270 }
 .pa-cell.noop    { color:#4a5270 }
+.pa-cell.paused  { color:#60a5fa }
 .pa-cell .dot { width:6px;height:6px;border-radius:50%;background:currentColor;flex-shrink:0 }
 
 .pa-simple { width:100%;border-collapse:collapse;font-size:.9rem }
@@ -437,7 +459,7 @@ renderHead('Αναλυτικά Πληρωμών' . ($isPrint ? ' — Εκτύπ�
       <label>Κατάσταση κελιού</label>
       <select name="status" data-live>
         <?php
-          $sOpts = ['all'=>'Όλα','paid'=>'Πληρωμένα','partial'=>'Μερικώς','pending'=>'Τρέχων μήνας','overdue'=>'Ληξιπρόθεσμα'];
+          $sOpts = ['all'=>'Όλα','paid'=>'Πληρωμένα','partial'=>'Μερικώς','pending'=>'Τρέχων μήνας','overdue'=>'Ληξιπρόθεσμα','paused'=>'Χωρίς χρέωση'];
           foreach ($sOpts as $k=>$lbl):
         ?>
           <option value="<?= h($k) ?>" <?= $statusFilter===$k?'selected':'' ?>><?= h($lbl) ?></option>
@@ -535,10 +557,10 @@ renderHead('Αναλυτικά Πληρωμών' . ($isPrint ? ' — Εκτύπ�
             <?php foreach ($months as $m):
               $c = $row[$m] ?? ['paid'=>0,'expected'=>0,'status'=>'noop'];
               $paid = (float)$c['paid'];
-              $disp = $paid > 0 ? number_format($paid, 2, ',', '.') : ($c['status']==='future' ? '—' : '0');
+              $disp = $paid > 0 ? number_format($paid, 2, ',', '.') : (in_array($c['status'], ['future','paused'], true) ? '—' : '0');
             ?>
               <td>
-                <span class="pa-cell <?= h($c['status']) ?>" title="<?= h($m) ?> — <?= h($c['status']) ?>">
+                <span class="pa-cell <?= h($c['status']) ?>" title="<?= h($m) ?> — <?= h($c['pause_reason'] ?? $c['status']) ?>">
                   <span class="dot"></span>
                   <?= $disp ?>
                 </span>

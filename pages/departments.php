@@ -8,6 +8,7 @@
 
 require_once __DIR__ . '/../includes/config.php';
 require_once __DIR__ . '/../includes/layout.php';
+require_once __DIR__ . '/../includes/billing_pauses.php';
 requireLogin();
 renderPaymentWall();
 
@@ -100,6 +101,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (($a['_action'] ?? '') === 'save_dept') {
         $id    = (int)($a['id'] ?? 0);
         $sport = normalizeSport($a['sport'] ?? null) ?? 'other';
+        $pauseEnabled = !empty($a['billing_pause_enabled']);
+        $pauseMonths  = $pauseEnabled ? normaliseBillingPauseMonths((array)($a['billing_pause_months'] ?? [])) : [];
+
+        if ($pauseEnabled && !$pauseMonths) {
+            flash('Επιλέξτε τουλάχιστον έναν μήνα διακοπής για το τμήμα.', 'danger');
+            redirect(APP_URL . '/pages/departments.php');
+        }
 
         $name        = trim((string)($a['name'] ?? ''));
         $schedule    = trim((string)($a['schedule'] ?? ''));
@@ -107,21 +115,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $monthlyFee  = trim((string)($a['monthly_fee'] ?? '0'));
         $active      = isset($a['active']) ? (int)$a['active'] : 1;
 
-        if ($id > 0) {
-            $db->prepare("
-                UPDATE departments
-                SET name=?, schedule=?, max_athletes=?, monthly_fee=?, sport=?, active=?
-                WHERE id=? AND school_id=?
-            ")->execute([$name, $schedule, $maxAthletes, $monthlyFee, $sport, $active, $id, $sid]);
+        try {
+            ensureBillingPauseSchema($db);
+            $db->beginTransaction();
 
-            flash('Τμήμα ενημερώθηκε!');
-        } else {
-            $db->prepare("
-                INSERT INTO departments (school_id, name, schedule, max_athletes, monthly_fee, sport, active)
-                VALUES (?, ?, ?, ?, ?, ?, 1)
-            ")->execute([$sid, $name, $schedule, $maxAthletes, $monthlyFee, $sport]);
+            if ($id > 0) {
+                $db->prepare("
+                    UPDATE departments
+                    SET name=?, schedule=?, max_athletes=?, monthly_fee=?, sport=?, active=?
+                    WHERE id=? AND school_id=?
+                ")->execute([$name, $schedule, $maxAthletes, $monthlyFee, $sport, $active, $id, $sid]);
 
-            flash('Τμήμα δημιουργήθηκε!');
+                replaceDepartmentBillingPauseMonths($db, $sid, $id, $pauseMonths);
+                $successMessage = 'Τμήμα ενημερώθηκε!';
+            } else {
+                $db->prepare("
+                    INSERT INTO departments (school_id, name, schedule, max_athletes, monthly_fee, sport, active)
+                    VALUES (?, ?, ?, ?, ?, ?, 1)
+                ")->execute([$sid, $name, $schedule, $maxAthletes, $monthlyFee, $sport]);
+
+                $id = (int)$db->lastInsertId();
+                replaceDepartmentBillingPauseMonths($db, $sid, $id, $pauseMonths);
+                $successMessage = 'Τμήμα δημιουργήθηκε!';
+            }
+
+            $db->commit();
+            flash($successMessage);
+        } catch (Throwable $e) {
+            if ($db->inTransaction()) $db->rollBack();
+            error_log('[MAster departments] save failed: ' . $e->getMessage());
+            flash('Δεν ήταν δυνατή η αποθήκευση του τμήματος. Δοκιμάστε ξανά.', 'danger');
         }
     }
 
@@ -129,6 +152,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $db->prepare("UPDATE departments SET active=0 WHERE id=? AND school_id=?")
            ->execute([(int)$a['id'], $sid]);
         flash('Τμήμα απενεργοποιήθηκε.', 'danger');
+    }
+
+    if (($a['_action'] ?? '') === 'activate_dept') {
+        $db->prepare("UPDATE departments SET active=1 WHERE id=? AND school_id=?")
+           ->execute([(int)$a['id'], $sid]);
+        flash('Τμήμα ενεργοποιήθηκε!');
     }
 
     if (($a['_action'] ?? '') === 'hard_delete_dept') {
@@ -154,6 +183,20 @@ $depts = $db->prepare("
 ");
 $depts->execute([$sid]);
 $deptList = $depts->fetchAll(PDO::FETCH_ASSOC);
+$billingPauseContext = loadBillingPauseContext($db, $sid);
+$billingMonthLabels = billingMonthLabels();
+foreach ($deptList as &$departmentRow) {
+    $departmentId = (int)$departmentRow['id'];
+    $pauseMonths = array_map('intval', array_keys($billingPauseContext['departments'][$departmentId] ?? []));
+    sort($pauseMonths);
+    $departmentRow['billing_pause_months'] = $pauseMonths;
+    $departmentRow['billing_pause_enabled'] = $pauseMonths ? 1 : 0;
+    $departmentRow['billing_pause_labels'] = array_values(array_map(
+        static fn(int $month): string => $billingMonthLabels[$month] ?? (string)$month,
+        $pauseMonths
+    ));
+}
+unset($departmentRow);
 
 // Load athletes per department
 $athletesByDept = [];
@@ -291,6 +334,17 @@ select.form-control{cursor:pointer}
 .form-row{display:grid;gap:.85rem}
 .form-row.col-2{grid-template-columns:1fr 1fr}
 @media(max-width:700px){.form-row.col-2{grid-template-columns:1fr!important}}
+.billing-pause-box{margin-top:1rem;padding:1rem;border:1px solid rgba(240,165,0,.28);border-radius:14px;background:rgba(240,165,0,.06)}
+.billing-pause-toggle{display:flex;align-items:flex-start;gap:.7rem;cursor:pointer;color:var(--text,#e2e8f0);font-weight:800}
+.billing-pause-toggle input{width:19px;height:19px;margin-top:.08rem;accent-color:#f0a500;flex-shrink:0}
+.billing-pause-help{margin:.45rem 0 0 1.7rem;color:var(--muted,#8892b0);font-size:.82rem;line-height:1.5}
+.billing-month-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.45rem;margin-top:.8rem}
+.billing-month-option{position:relative}
+.billing-month-option input{position:absolute;opacity:0;pointer-events:none}
+.billing-month-option span{display:flex;align-items:center;justify-content:center;min-height:38px;padding:.45rem .35rem;border:1px solid var(--border,#1e2536);border-radius:9px;background:rgba(255,255,255,.025);color:var(--muted,#8892b0);font-size:.8rem;font-weight:750;cursor:pointer;transition:.16s}
+.billing-month-option input:checked+span{border-color:#f0a500;background:rgba(240,165,0,.16);color:#ffd46b;box-shadow:0 0 0 1px rgba(240,165,0,.08)}
+.dept-pause-note{display:block;margin-top:.35rem;color:#ffd46b;font-size:.73rem;font-weight:700;line-height:1.35}
+@media(max-width:430px){.billing-month-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 
 .nav-item{min-height:46px!important;font-size:clamp(.92rem,3vw,1rem)!important;font-weight:600!important;padding:.65rem .9rem!important;border-radius:10px!important;display:flex!important;align-items:center!important;gap:.7rem!important;transition:background .15s,color .15s!important;text-decoration:none}
 .nav-item .icon{width:22px;text-align:center;font-size:1rem;flex-shrink:0}
@@ -514,6 +568,12 @@ select.form-control{cursor:pointer}
                         <?php if (!empty($d['schedule'])): ?>
                         <span class="dept-sub d-mobile-show" style="display:none">
                             <i class="fa-regular fa-calendar" style="opacity:.6"></i> <?= htmlspecialchars($d['schedule'], ENT_QUOTES, 'UTF-8') ?>
+                        </span>
+                        <?php endif; ?>
+                        <?php if (!empty($d['billing_pause_labels'])): ?>
+                        <span class="dept-pause-note">
+                            <i class="fa-solid fa-pause"></i>
+                            Χωρίς χρέωση: <?= h(implode(', ', $d['billing_pause_labels'])) ?>
                         </span>
                         <?php endif; ?>
                     </td>
@@ -764,6 +824,32 @@ select.form-control{cursor:pointer}
                             </select>
                         </div>
                     </div>
+
+                    <div class="billing-pause-box">
+                        <label class="billing-pause-toggle" for="m_billing_pause_enabled">
+                            <input type="checkbox" id="m_billing_pause_enabled" name="billing_pause_enabled" value="1">
+                            <span>
+                                <i class="fa-solid fa-umbrella-beach" style="color:#f0a500;margin-right:.35rem"></i>
+                                Οι αθλητές αυτού του τμήματος σταματούν κάποιους μήνες
+                            </span>
+                        </label>
+                        <p class="billing-pause-help">
+                            Οι επιλεγμένοι μήνες επαναλαμβάνονται κάθε χρόνο, δεν υπολογίζονται ως οφειλή και δεν αποστέλλονται αυτόματες ειδοποιήσεις. Ο γενικός κανόνας της σχολής υπερισχύει.
+                        </p>
+                        <div id="m_billing_pause_months_wrap" style="display:none">
+                            <div class="billing-month-grid">
+                                <?php foreach ($billingMonthLabels as $monthNumber => $monthLabel): ?>
+                                <label class="billing-month-option">
+                                    <input type="checkbox" name="billing_pause_months[]" value="<?= (int)$monthNumber ?>">
+                                    <span><?= h($monthLabel) ?></span>
+                                </label>
+                                <?php endforeach; ?>
+                            </div>
+                            <div id="m_billing_pause_error" style="display:none;color:#ff7b86;font-size:.8rem;font-weight:700;margin-top:.55rem">
+                                Επιλέξτε τουλάχιστον έναν μήνα διακοπής.
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="modal-footer">
@@ -834,7 +920,7 @@ select.form-control{cursor:pointer}
         <div class="modal-footer">
             <button type="button" class="btn btn-ghost" onclick="closeActivateDeptModal()"><i class="fa-solid fa-xmark"></i> Ακύρωση</button>
             <form method="POST" id="activateDeptForm" style="display:inline">
-                <input type="hidden" name="_action" value="save_dept">
+                <input type="hidden" name="_action" value="activate_dept">
                 <input type="hidden" name="csrf_token" value="<?= csrf() ?>">
                 <input type="hidden" name="id" id="activateDeptId" value="">
                 <input type="hidden" name="name" id="activateDeptNameInput" value="">
@@ -1047,6 +1133,7 @@ function openDetailModal(dept, athletes){
         {lbl:'Μέγ. Αθλητές', val:max > 0 ? max : 'Απεριόριστο'},
         {lbl:'Ενεργοί Αθλητές', val:cnt},
         {lbl:'Πρόγραμμα', val:dept.schedule || '—'},
+        {lbl:'Μήνες χωρίς χρέωση', val:(dept.billing_pause_labels || []).join(', ') || 'Κανένας'},
         {lbl:'Κατάσταση', val:isActive ? '✓ Ενεργό' : '✗ Ανενεργό'}
     ];
 
@@ -1205,6 +1292,14 @@ document.getElementById('activateDeptModal').addEventListener('click', function(
     var submitLbl  = document.getElementById('modalSubmitLabel');
     var successMsg = document.getElementById('successMsg');
     var activeWrap = document.getElementById('m_active_wrap');
+    var pauseEnabled = document.getElementById('m_billing_pause_enabled');
+    var pauseMonthsWrap = document.getElementById('m_billing_pause_months_wrap');
+    var pauseError = document.getElementById('m_billing_pause_error');
+
+    function togglePauseMonths(){
+        if(pauseMonthsWrap) pauseMonthsWrap.style.display = pauseEnabled && pauseEnabled.checked ? '' : 'none';
+        if(pauseError) pauseError.style.display = 'none';
+    }
 
     function resetForm(){
         if(!form) return;
@@ -1216,6 +1311,9 @@ document.getElementById('activateDeptModal').addEventListener('click', function(
         document.getElementById('m_monthly_fee').value = '0';
         document.getElementById('m_sport').value = 'taekwondo_wtf';
         document.getElementById('m_active').value = '1';
+        if(pauseEnabled) pauseEnabled.checked = false;
+        form.querySelectorAll('input[name="billing_pause_months[]"]').forEach(function(input){ input.checked = false; });
+        togglePauseMonths();
 
         activeWrap.style.display = 'none';
         titleIcon.style.color = 'var(--green,#2dc653)';
@@ -1253,6 +1351,7 @@ document.getElementById('activateDeptModal').addEventListener('click', function(
 
     if(closeBtn) closeBtn.addEventListener('click', closeModal);
     if(cancelBtn) cancelBtn.addEventListener('click', closeModal);
+    if(pauseEnabled) pauseEnabled.addEventListener('change', togglePauseMonths);
 
     if(modal){
         modal.addEventListener('click', function(e){
@@ -1263,6 +1362,12 @@ document.getElementById('activateDeptModal').addEventListener('click', function(
     if(form){
         form.addEventListener('submit', function(e){
             e.preventDefault();
+            var selectedPauseMonths = form.querySelectorAll('input[name="billing_pause_months[]"]:checked').length;
+            if(pauseEnabled && pauseEnabled.checked && selectedPauseMonths === 0){
+                if(pauseError) pauseError.style.display = 'block';
+                if(pauseMonthsWrap) pauseMonthsWrap.scrollIntoView({behavior:'smooth', block:'center'});
+                return;
+            }
             formWrap.style.display = 'none';
             success.classList.add('show');
             setTimeout(function(){ form.submit(); }, 700);
@@ -1280,6 +1385,12 @@ document.getElementById('activateDeptModal').addEventListener('click', function(
         document.getElementById('m_monthly_fee').value = d.monthly_fee || 0;
         document.getElementById('m_sport').value = d.sport || 'taekwondo_wtf';
         document.getElementById('m_active').value = d.active != null ? d.active : 1;
+        if(pauseEnabled) pauseEnabled.checked = Boolean(parseInt(d.billing_pause_enabled || 0));
+        var selectedMonths = (d.billing_pause_months || []).map(function(month){ return String(month); });
+        form.querySelectorAll('input[name="billing_pause_months[]"]').forEach(function(input){
+            input.checked = selectedMonths.indexOf(input.value) !== -1;
+        });
+        togglePauseMonths();
 
         activeWrap.style.display = '';
         titleIcon.style.color = 'var(--gold,#f0a500)';

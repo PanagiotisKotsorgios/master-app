@@ -18,6 +18,7 @@ error_reporting(E_ALL);
 require_once __DIR__ . '/../includes/config.php';
 require_once __DIR__ . '/../includes/layout.php';
 require_once __DIR__ . '/../includes/athlete_documents.php';
+require_once __DIR__ . '/../includes/billing_pauses.php';
 requireLogin();
 renderPaymentWall();
 
@@ -107,59 +108,27 @@ function getDebtStartDate(array $athlete): ?string {
     $reg = $athlete['registration_date'] ?? null;
     return ($reg && $reg !== '0000-00-00') ? $reg : null;
 }
-function getAthleteDebtSummary($db, int $athleteId, ?string $startDate, float $monthlyFee, array $exemptMonths, array $pausePeriods): array {
-    if (!$startDate || $startDate === '0000-00-00' || $monthlyFee <= 0) {
-        return ['months' => 0, 'balance' => 0.0, 'unpaid' => []];
-    }
-
-    $stmt = $db->prepare("SELECT valid_from, valid_until, amount FROM subscriptions WHERE athlete_id=? AND status='paid'");
-    $stmt->execute([$athleteId]);
-    $subs = $stmt->fetchAll();
-
-    $start = (new DateTime($startDate))->modify('first day of this month');
-    $now   = (new DateTime())->modify('first day of this month');
-    $gm    = ['','Ιαν','Φεβ','Μαρ','Απρ','Μαι','Ιουν','Ιουλ','Αυγ','Σεπ','Οκτ','Νοε','Δεκ'];
-
-    $debtMonths   = 0;
-    $debtBalance  = 0.0;
-    $unpaidMonths = [];
-
-    $cur = clone $start;
-    while ($cur <= $now) {
-        $mKey = $cur->format('Y-m');
-
-        if (!isset($exemptMonths[$mKey]) && !isMonthPaused($cur, $pausePeriods)) {
-            $mEnd = (clone $cur)->modify('last day of this month');
-            $paidForMonth = 0.0;
-
-            foreach ($subs as $s) {
-                if (new DateTime($s['valid_from']) <= $mEnd && new DateTime($s['valid_until']) >= $cur) {
-                    $paidForMonth += floatval($s['amount'] ?? 0);
-                }
-            }
-
-            $remaining = max(0, $monthlyFee - $paidForMonth);
-
-            if ($remaining > 0.009) {
-                $debtMonths++;
-                $debtBalance += $remaining;
-                $unpaidMonths[] = [
-                    'month'     => $mKey,
-                    'label'     => $gm[(int)$cur->format('m')] . ' ' . $cur->format('Y'),
-                    'paid'      => $paidForMonth,
-                    'remaining' => $remaining,
-                ];
-            }
-        }
-
-        $cur->modify('+1 month');
-    }
-
-    return [
-        'months'  => $debtMonths,
-        'balance' => $debtBalance,
-        'unpaid'  => $unpaidMonths,
-    ];
+function getAthleteDebtSummary(
+    PDO $db,
+    int $schoolId,
+    int $athleteId,
+    ?int $departmentId,
+    ?string $startDate,
+    float $monthlyFee,
+    array $billingPauseContext,
+    array $pausePeriods
+): array {
+    return calculateAthleteDebtSummary(
+        $db,
+        $schoolId,
+        $athleteId,
+        $departmentId,
+        $startDate,
+        $monthlyFee,
+        $billingPauseContext,
+        null,
+        $pausePeriods
+    );
 }
 
 // UPDATED: get all exam transactions (not just pending) for full history
@@ -792,6 +761,12 @@ if (($a['_action'] ?? '') === 'edit_exam_payment') {
 }
 
 $exemptMonths = getSchoolExemptMonths($db, $sid);
+$billingPauseContext = loadBillingPauseContext($db, $sid);
+$billingMonthLabels = billingMonthLabels();
+$schoolRecurringPauseLabels = array_values(array_map(
+    static fn(int $month): string => $billingMonthLabels[$month] ?? (string)$month,
+    array_map('intval', array_keys($billingPauseContext['school'] ?? []))
+));
 $greekMonths  = ['','Ιαν','Φεβ','Μαρ','Απρ','Μαι','Ιουν','Ιουλ','Αυγ','Σεπ','Οκτ','Νοε','Δεκ'];
 
 $depts = $db->prepare("SELECT id, name, monthly_fee FROM departments WHERE school_id=? AND active=1");
@@ -828,15 +803,22 @@ foreach ($athletes as &$ath) {
     $ath['_debt_start']   = getDebtStartDate($ath);
     $ath['_debt_summary'] = getAthleteDebtSummary(
         $db,
+        $sid,
         $ath['id'],
+        !empty($ath['department_id']) ? (int)$ath['department_id'] : null,
         $ath['_debt_start'],
         floatval($ath['monthly_fee'] ?? 0),
-        $exemptMonths,
+        $billingPauseContext,
         $pausePeriods
     );
     $ath['_debt']         = $ath['_debt_summary']['months'];
     $ath['_debt_balance'] = $ath['_debt_summary']['balance'];
-    $ath['_is_paused']    = count($pausePeriods) > 0 && isMonthPaused((new DateTime())->modify('first day of this month'), $pausePeriods);
+    $currentBillingMonth = (new DateTime())->modify('first day of this month');
+    $ath['_is_paused'] = isBillingMonthPaused(
+        $billingPauseContext,
+        !empty($ath['department_id']) ? (int)$ath['department_id'] : null,
+        $currentBillingMonth
+    ) || (count($pausePeriods) > 0 && isMonthPaused($currentBillingMonth, $pausePeriods));
     $examDebts4List       = getAthleteExamFeeDebts($db, (int)$ath['id'], (int)$sid);
     $ath['_exam_fee_debt'] = (float)array_sum(array_column($examDebts4List, 'amount'));
 }
@@ -863,10 +845,12 @@ foreach ($allActive as $a2) {
     $ds = getDebtStartDate($a2);
     $summary = getAthleteDebtSummary(
         $db,
+        $sid,
         $a2['id'],
+        !empty($a2['department_id']) ? (int)$a2['department_id'] : null,
         $ds,
         floatval($a2['monthly_fee'] ?? 0),
-        $exemptMonths,
+        $billingPauseContext,
         $pp
     );
 
@@ -917,14 +901,21 @@ if ($viewId) {
         $pausePeriods      = getAthletePausePeriods($db, $viewId);
         $nowMonth          = (new DateTime())->modify('first day of this month');
         $isCurrentlyPaused = isMonthPaused($nowMonth, $pausePeriods);
+        $isCurrentlyPaused = $isCurrentlyPaused || isBillingMonthPaused(
+            $billingPauseContext,
+            !empty($athlete['department_id']) ? (int)$athlete['department_id'] : null,
+            $nowMonth
+        );
         $debtStart         = getDebtStartDate($athlete);
 
         $debtSummary = getAthleteDebtSummary(
             $db,
+            $sid,
             $viewId,
+            !empty($athlete['department_id']) ? (int)$athlete['department_id'] : null,
             $debtStart,
             floatval($athlete['monthly_fee'] ?? 0),
-            $exemptMonths,
+            $billingPauseContext,
             $pausePeriods
         );
 
@@ -1966,6 +1957,17 @@ if (!empty($initialDebtDate)) {
   </div>
   <?php endif; ?>
 
+  <?php if($schoolRecurringPauseLabels): ?>
+  <div class="exempt-info-box" style="margin-bottom:1.25rem;background:rgba(59,130,246,.07);border-color:rgba(59,130,246,.25)">
+    <span class="ei" style="color:#60a5fa"><i class="fa-solid fa-umbrella-beach"></i></span>
+    <div style="flex:1">
+      <div style="font-size:.88rem;font-weight:800;color:#93c5fd;margin-bottom:.3rem">Ετήσιοι μήνες χωρίς χρέωση για όλη τη σχολή</div>
+      <div style="font-size:.83rem;color:#c2cee4"><?=h(implode(', ', $schoolRecurringPauseLabels))?></div>
+      <div style="font-size:.78rem;color:var(--muted,#8892b0);margin-top:.35rem">Δεν υπολογίζονται στην οφειλή και υπερισχύουν από τους κανόνες των τμημάτων.</div>
+    </div>
+  </div>
+  <?php endif; ?>
+
   <div class="form-section-title"><i class="fa-solid fa-medal"></i> Αθλητικά Στοιχεία</div>
 
   <div class="form-row col-2" style="margin-bottom:.6rem">
@@ -1977,6 +1979,7 @@ if (!empty($initialDebtDate)) {
         <?php foreach($departments as $d): ?>
         <option value="<?=$d['id']?>"
                 data-fee="<?= floatval($d['monthly_fee'] ?? 0) ?>"
+                data-pause-months="<?= h(implode(',', array_map('intval', array_keys($billingPauseContext['departments'][(int)$d['id']] ?? [])))) ?>"
                 <?=$preselDept==(int)$d['id']?'selected':''?>>
           <?=h($d['name']??'')?>
         </option>
@@ -2053,6 +2056,14 @@ if (!empty($initialDebtDate)) {
   <?php foreach($exemptMonths as $em=>$el): $ep=explode('-',$em); ?>
   <span class="exempt-chip"><?=$greekMonths[(int)$ep[1]]?> <?=$ep[0]?><?=$el?" · $el":''?></span>
   <?php endforeach; ?>
+</div>
+<?php endif; ?>
+
+<?php if($schoolRecurringPauseLabels): ?>
+<div style="display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;margin-bottom:.85rem;padding:.6rem 1rem;background:rgba(59,130,246,.07);border:1px solid rgba(59,130,246,.22);border-radius:12px">
+  <i class="fa-solid fa-umbrella-beach" style="color:#60a5fa;font-size:.9rem"></i>
+  <span style="font-size:.83rem;color:#93c5fd;font-weight:700">Ετήσιοι μήνες χωρίς χρέωση:</span>
+  <span style="font-size:.83rem;color:#d5def0"><?=h(implode(', ', $schoolRecurringPauseLabels))?></span>
 </div>
 <?php endif; ?>
 
@@ -3270,12 +3281,29 @@ function recalcDebtPreview(){
     return;
   }
 
-  var months = (now.getFullYear()-start.getFullYear())*12 + (now.getMonth()-start.getMonth()) + 1;
+  var schoolPauseMonths = <?= json_encode(array_map('intval', array_keys($billingPauseContext['school'] ?? []))) ?>;
+  var exactPauseMonths = <?= json_encode(array_values(array_keys($billingPauseContext['exact'] ?? [])), JSON_UNESCAPED_UNICODE) ?>;
+  var deptSelect = document.getElementById('deptSelect');
+  var deptOption = deptSelect && deptSelect.options[deptSelect.selectedIndex];
+  var deptPauseMonths = deptOption && deptOption.dataset.pauseMonths
+    ? deptOption.dataset.pauseMonths.split(',').filter(Boolean).map(Number)
+    : [];
+  var months = 0;
+  var excludedMonths = 0;
+  for(var cursor = new Date(start.getFullYear(), start.getMonth(), 1); cursor <= now; cursor.setMonth(cursor.getMonth()+1)){
+    var monthNum = cursor.getMonth()+1;
+    var monthKey = cursor.getFullYear() + '-' + String(monthNum).padStart(2,'0');
+    var excluded = exactPauseMonths.indexOf(monthKey) !== -1
+      || schoolPauseMonths.indexOf(monthNum) !== -1
+      || deptPauseMonths.indexOf(monthNum) !== -1;
+    if(excluded) excludedMonths++; else months++;
+  }
   var euro = fee > 0 ? ' = <strong style="color:#e63946">' + (months*fee).toLocaleString('el-GR',{minimumFractionDigits:2,maximumFractionDigits:2}) + '€</strong>' : '';
   var mLabel = months === 1 ? '1 μήνας' : months + ' μήνες';
 
   content.innerHTML = '<span style="color:#e63946"><i class="fa-solid fa-triangle-exclamation"></i> ' + mLabel + '</span>' + euro;
-  if(sub) sub.innerHTML = 'Χρέος από <strong style="color:#e2e8f0">' + fromLabel + '</strong> (εκτίμηση χωρίς πληρωμές)';
+  if(sub) sub.innerHTML = 'Χρέος από <strong style="color:#e2e8f0">' + fromLabel + '</strong> (εκτίμηση χωρίς πληρωμές)'
+    + (excludedMonths ? ' · <strong style="color:#60a5fa">' + (excludedMonths === 1 ? '1 μήνας' : excludedMonths + ' μήνες') + ' χωρίς χρέωση</strong>' : '');
 }
 
 document.getElementById('debtStartInput') && document.getElementById('debtStartInput').addEventListener('change', function(){ syncDebtHint(); recalcDebtPreview(); });

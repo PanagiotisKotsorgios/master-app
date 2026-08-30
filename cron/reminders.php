@@ -22,6 +22,7 @@ define('RUNNING_AS_CRON', true);
 
 require_once __DIR__ . '/../includes/config.php';
 require_once __DIR__ . '/../includes/usage_tracker.php';
+require_once __DIR__ . '/../includes/billing_pauses.php';
 
 $cronLockPath = __DIR__ . '/../logs/reminders.lock';
 $cronLockHandle = @fopen($cronLockPath, 'c');
@@ -37,6 +38,7 @@ if ($cronLockHandle) {
 }
 
 $db = getDB();
+ensureBillingPauseSchema($db);
 
 // ── Ensure consent_log table exists ──
 $db->exec("CREATE TABLE IF NOT EXISTS consent_log (
@@ -427,6 +429,15 @@ try {
             continue;
         }
 
+        $billingPauseContext = loadBillingPauseContext($db, $sid);
+        $currentBillingMonth = new DateTimeImmutable('first day of this month');
+        if (isSchoolBillingPaused($billingPauseContext, $currentBillingMonth)) {
+            $pauseReason = billingPauseReason($billingPauseContext, null, $currentBillingMonth) ?: 'school billing pause';
+            cronLog("  School #{$sid}: BILLING PAUSE ACTIVE ({$pauseReason}) — all automatic email/SMS suspended");
+            $totalSkipped++;
+            continue;
+        }
+
         $rulesStmt = $db->prepare("
             SELECT *
             FROM notification_rules
@@ -623,6 +634,20 @@ try {
                 $athleteId = (int)$row['athlete_id'];
                 $subId     = (int)$row['sub_id'];
                 $isAdult   = cronIsAdult($row);
+                $departmentId = !empty($row['department_id']) ? (int)$row['department_id'] : null;
+                $athletePausePeriods = loadAthletePausePeriodsForBilling($db, $sid, $athleteId);
+
+                if (isBillingMonthPaused($billingPauseContext, $departmentId, $currentBillingMonth)) {
+                    $pauseReason = billingPauseReason($billingPauseContext, $departmentId, $currentBillingMonth) ?: 'department billing pause';
+                    cronLog("    Athlete #{$athleteId} ({$row['full_name']}): BILLING PAUSE ({$pauseReason}) → skip all automatic channels");
+                    $totalSkipped++;
+                    continue;
+                }
+                if (isAthleteIndividuallyPaused($currentBillingMonth, $athletePausePeriods)) {
+                    cronLog("    Athlete #{$athleteId} ({$row['full_name']}): INDIVIDUAL PAUSE ACTIVE → skip all automatic channels");
+                    $totalSkipped++;
+                    continue;
+                }
 
                 $athlete = [
                     'id'           => $athleteId,
@@ -654,20 +679,37 @@ try {
                 $debtUntil = $row['debt_until_month'] ?? null;
                 // If debt_until_month is not set, use current month as the end
                 $effectiveDebtUntil = $debtUntil ?: date('Y-m');
-                if ($debtFrom && (float)($row['monthly_fee'] ?? $sub['amount']) > 0) {
-                    try {
-                        $d1 = new DateTime($debtFrom . '-01');
-                        $d2 = new DateTime($effectiveDebtUntil . '-01');
-                        $diff = $d1->diff($d2);
-                        $debtMonths = max(1, $diff->y * 12 + $diff->m + 1);
-                        $monthlyFee = (float)($row['monthly_fee'] ?? $sub['amount']);
-                        if ($debtMonths > 0 && $monthlyFee > 0) {
-                            $sub['debt_months']    = $debtMonths;
-                            $sub['monthly_amount'] = $monthlyFee;
-                            $sub['total_debt']     = $debtMonths * $monthlyFee;
-                            $sub['amount']         = $sub['total_debt'];
-                        }
-                    } catch (Exception $e) {}
+                $monthlyFee = (float)($row['monthly_fee'] ?? $sub['amount']);
+                $isDebtDrivenRow = $triggerType === 'has_debt' || ($triggerType === 'days_after' && $subId === 0);
+                $debtStartDate = $debtFrom
+                    ? $debtFrom . '-01'
+                    : ($isDebtDrivenRow ? ($row['registration_date'] ?? null) : null);
+
+                if ($debtStartDate && $monthlyFee > 0) {
+                    $debtSummary = calculateAthleteDebtSummary(
+                        $db,
+                        $sid,
+                        $athleteId,
+                        $departmentId,
+                        $debtStartDate,
+                        $monthlyFee,
+                        $billingPauseContext,
+                        $effectiveDebtUntil,
+                        $athletePausePeriods
+                    );
+
+                    if ($isDebtDrivenRow && $debtSummary['months'] === 0) {
+                        cronLog("    Athlete #{$athleteId} ({$athlete['full_name']}): no billable debt after pause rules → skip");
+                        $totalSkipped++;
+                        continue;
+                    }
+
+                    if ($debtSummary['months'] > 0) {
+                        $sub['debt_months']    = (int)$debtSummary['months'];
+                        $sub['monthly_amount'] = $monthlyFee;
+                        $sub['total_debt']     = (float)$debtSummary['balance'];
+                        $sub['amount']         = $sub['total_debt'];
+                    }
                 } elseif ($debtFrom && $debtUntil) {
                     // Fallback: no monthly_fee but both months are set — count months without amount
                     try {

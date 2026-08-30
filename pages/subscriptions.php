@@ -22,6 +22,7 @@
 
 require_once __DIR__ . '/../includes/config.php';
 require_once __DIR__ . '/../includes/layout.php';
+require_once __DIR__ . '/../includes/billing_pauses.php';
 requireLogin();
 renderPaymentWall();
 
@@ -38,57 +39,6 @@ function subGetDebtStartDate(array $athlete): ?string {
     if ($dfm && preg_match('/^\d{4}-\d{2}$/', $dfm)) return $dfm . '-01';
     $reg = $athlete['registration_date'] ?? null;
     return ($reg && $reg !== '0000-00-00') ? $reg : null;
-}
-
-function subGetDebtSummary($db, int $athleteId, ?string $startDate, float $monthlyFee): array {
-    if (!$startDate || $startDate === '0000-00-00' || $monthlyFee <= 0) {
-        return ['months' => 0, 'balance' => 0.0, 'unpaid' => []];
-    }
-
-    $stmt = $db->prepare("SELECT valid_from, valid_until, amount FROM subscriptions WHERE athlete_id=? AND status='paid'");
-    $stmt->execute([$athleteId]);
-    $subs = $stmt->fetchAll();
-
-    $start = (new DateTime($startDate))->modify('first day of this month');
-    $now   = (new DateTime())->modify('first day of this month');
-    $gm    = ['','Ιαν','Φεβ','Μαρ','Απρ','Μαι','Ιουν','Ιουλ','Αυγ','Σεπ','Οκτ','Νοε','Δεκ'];
-
-    $debtMonths   = 0;
-    $debtBalance  = 0.0;
-    $unpaidMonths = [];
-
-    $cur = clone $start;
-    while ($cur <= $now) {
-        $mEnd = (clone $cur)->modify('last day of this month');
-        $paidForMonth = 0.0;
-
-        foreach ($subs as $s) {
-            if (new DateTime($s['valid_from']) <= $mEnd && new DateTime($s['valid_until']) >= $cur) {
-                $paidForMonth += floatval($s['amount'] ?? 0);
-            }
-        }
-
-        $remaining = max(0, $monthlyFee - $paidForMonth);
-
-        if ($remaining > 0.009) {
-            $debtMonths++;
-            $debtBalance += $remaining;
-            $unpaidMonths[] = [
-                'month'     => $cur->format('Y-m'),
-                'label'     => $gm[(int)$cur->format('m')] . ' ' . $cur->format('Y'),
-                'paid'      => $paidForMonth,
-                'remaining' => $remaining,
-            ];
-        }
-
-        $cur->modify('+1 month');
-    }
-
-    return [
-        'months'  => $debtMonths,
-        'balance' => $debtBalance,
-        'unpaid'  => $unpaidMonths,
-    ];
 }
 
 // ── Helper: get pending exam fees for an athlete ──
@@ -413,12 +363,21 @@ $stmt = $db->prepare(
 );
 $stmt->execute($params);
 $athleteRows = $stmt->fetchAll();
+$billingPauseContext = loadBillingPauseContext($db, $sid);
 
 // ── Compute debt for each listed athlete and also fetch pending exam fees ──
 $rowDebts = [];
 foreach ($athleteRows as $row) {
     $ds = subGetDebtStartDate($row);
-    $summary = subGetDebtSummary($db, $row['id'], $ds, floatval($row['monthly_fee'] ?? 0));
+    $summary = calculateAthleteDebtSummary(
+        $db,
+        $sid,
+        (int)$row['id'],
+        !empty($row['department_id']) ? (int)$row['department_id'] : null,
+        $ds,
+        floatval($row['monthly_fee'] ?? 0),
+        $billingPauseContext
+    );
     $rowDebts[$row['id']] = [
         'months'  => $summary['months'],
         'balance' => $summary['balance'],

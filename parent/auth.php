@@ -6,6 +6,7 @@
  */
 
 require_once __DIR__ . '/../includes/config.php';
+require_once __DIR__ . '/../includes/billing_pauses.php';
 
 // ── One-time schema migration for parent_users extra columns ──
 function ensureParentUsersSchema(): void {
@@ -160,10 +161,14 @@ function getAthleteMonthlyPayments(int $athleteId): array {
     $db  = getDB();
     $sid = parentSchoolId();
 
-    $athStmt = $db->prepare("SELECT registration_date, debt_from_month, monthly_fee FROM athletes WHERE id=? AND school_id=? LIMIT 1");
+    $athStmt = $db->prepare("SELECT registration_date, debt_from_month, monthly_fee, department_id FROM athletes WHERE id=? AND school_id=? LIMIT 1");
     $athStmt->execute([$athleteId, $sid]);
     $ath = $athStmt->fetch();
     if (!$ath) return [];
+
+    $billingPauseContext = loadBillingPauseContext($db, $sid);
+    $athletePausePeriods = loadAthletePausePeriodsForBilling($db, $sid, $athleteId);
+    $departmentId = !empty($ath['department_id']) ? (int)$ath['department_id'] : null;
 
     $monthlyFee = (float)($ath['monthly_fee'] ?? 0);
 
@@ -219,6 +224,31 @@ function getAthleteMonthlyPayments(int $athleteId): array {
     while ($cur <= $nowStart) {
         $mKey = $cur->format('Y-m');
         $mEnd = (clone $cur)->modify('last day of this month');
+        $pauseReason = billingPauseReason($billingPauseContext, $departmentId, $cur);
+        if ($pauseReason === null && isAthleteIndividuallyPaused($cur, $athletePausePeriods)) {
+            $pauseReason = 'Ατομική παύση αθλητή';
+        }
+
+        if ($pauseReason !== null) {
+            $months[] = [
+                'key'            => $mKey,
+                'label'          => $gm[(int)$cur->format('m')] . ' ' . $cur->format('Y'),
+                'label_full'     => $gm_full[(int)$cur->format('m')] . ' ' . $cur->format('Y'),
+                'year'           => $cur->format('Y'),
+                'month_num'      => (int)$cur->format('m'),
+                'paid'           => true,
+                'partial'        => false,
+                'paused'         => true,
+                'pause_reason'   => $pauseReason,
+                'payment_status' => 'paused',
+                'paid_amount'    => 0.0,
+                'fee'            => 0.0,
+                'remaining'      => 0.0,
+            ];
+            $cur->modify('+1 month');
+            continue;
+        }
+
         $paidForMonth = 0.0;
 
         foreach ($subs as $s) {
@@ -247,6 +277,7 @@ function getAthleteMonthlyPayments(int $athleteId): array {
             'month_num'      => (int)$cur->format('m'),
             'paid'           => $isPaid,
             'partial'        => $isPartial,
+            'paused'         => false,
             'payment_status' => $paymentStatus,
             'paid_amount'    => $paidForMonth,
             'fee'            => $monthlyFee,

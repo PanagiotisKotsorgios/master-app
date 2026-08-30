@@ -24,6 +24,7 @@ require_once __DIR__ . '/../includes/overage_popup.php';
 require_once __DIR__ . '/../includes/summer_popup.php';
 require_once __DIR__ . '/../includes/marketing_popup.php';
 require_once __DIR__ . '/../includes/pro_website_banner.php';
+require_once __DIR__ . '/../includes/billing_pauses.php';
 requireLogin();
 if (isSuperAdmin() && !isset($_GET['preview_popup'])) redirect(APP_URL.'/admin/');
 renderPaymentWall();
@@ -38,17 +39,26 @@ $stAthletes->execute([$sid]);
 $totalAthletes = (int)$stAthletes->fetchColumn();
 
 // ── Fetch all active athletes with debt_from_month, registration_date, monthly_fee ──
-$stAll = $db->prepare("SELECT id, registration_date, debt_from_month, monthly_fee FROM athletes WHERE school_id=? AND active=1");
+$stAll = $db->prepare("SELECT id, department_id, registration_date, debt_from_month, monthly_fee FROM athletes WHERE school_id=? AND active=1");
 $stAll->execute([$sid]);
 $allAthletes = $stAll->fetchAll();
 
-// ── Fetch all PAID subscriptions for this school (one query) ──
-// Uses subscriptions table with valid_from / valid_until like athletes.php does
-$stSubs = $db->prepare("SELECT athlete_id, valid_from, valid_until FROM subscriptions WHERE status='paid' AND athlete_id IN (SELECT id FROM athletes WHERE school_id=?)");
-$stSubs->execute([$sid]);
-$subsMap = []; // athlete_id => array of [valid_from, valid_until]
-foreach ($stSubs->fetchAll() as $s) {
-    $subsMap[$s['athlete_id']][] = ['from' => $s['valid_from'], 'until' => $s['valid_until']];
+$paidSubscriptionsByAthlete = [];
+$athletePausesByAthlete = [];
+try {
+    $paidStmt = $db->prepare("SELECT athlete_id, valid_from, valid_until, amount FROM subscriptions WHERE school_id=? AND status='paid'");
+    $paidStmt->execute([$sid]);
+    foreach ($paidStmt->fetchAll(PDO::FETCH_ASSOC) as $paidRow) {
+        $paidSubscriptionsByAthlete[(int)$paidRow['athlete_id']][] = $paidRow;
+    }
+
+    $pauseStmt = $db->prepare('SELECT athlete_id, pause_from, pause_until FROM athlete_pause_periods WHERE school_id=?');
+    $pauseStmt->execute([$sid]);
+    foreach ($pauseStmt->fetchAll(PDO::FETCH_ASSOC) as $pauseRow) {
+        $athletePausesByAthlete[(int)$pauseRow['athlete_id']][] = $pauseRow;
+    }
+} catch (Throwable $e) {
+    // Legacy deployments may not have athlete_pause_periods yet.
 }
 
 // ── Compute unpaid months — mirrors exactly the logic in athletes.php ──
@@ -59,36 +69,28 @@ function getDebtStartDateDash(array $athlete): ?string {
     return ($reg && $reg !== '0000-00-00') ? $reg : null;
 }
 
-function getUnpaidMonthCountDash(?string $startDate, array $subs): int {
-    if (!$startDate || $startDate === '0000-00-00') return 0;
-    $start = (new DateTime($startDate))->modify('first day of this month');
-    $now   = (new DateTime())->modify('first day of this month');
-    $count = 0;
-    $cur   = clone $start;
-    while ($cur <= $now) {
-        $mEnd    = (clone $cur)->modify('last day of this month');
-        $covered = false;
-        foreach ($subs as $s) {
-            if (new DateTime($s['from']) <= $mEnd && new DateTime($s['until']) >= $cur) {
-                $covered = true; break;
-            }
-        }
-        if (!$covered) $count++;
-        $cur->modify('+1 month');
-    }
-    return $count;
-}
-
 $athletesWithDebt  = 0;
 $totalUnpaidMonths = 0;
 $debtData          = [];
+$billingPauseContext = loadBillingPauseContext($db, $sid);
 
 foreach ($allAthletes as $a) {
-    $subs      = $subsMap[$a['id']] ?? [];
     $startDate = getDebtStartDateDash($a);
-    $unpaid    = getUnpaidMonthCountDash($startDate, $subs);
     $fee       = floatval($a['monthly_fee'] ?? 0);
-    $owed      = $unpaid * $fee;
+    $summary   = calculateAthleteDebtSummary(
+        $db,
+        $sid,
+        (int)$a['id'],
+        !empty($a['department_id']) ? (int)$a['department_id'] : null,
+        $startDate,
+        $fee,
+        $billingPauseContext,
+        null,
+        $athletePausesByAthlete[(int)$a['id']] ?? [],
+        $paidSubscriptionsByAthlete[(int)$a['id']] ?? []
+    );
+    $unpaid = (int)$summary['months'];
+    $owed   = (float)$summary['balance'];
     if ($unpaid > 0) {
         $athletesWithDebt++;
         $totalUnpaidMonths += $unpaid;

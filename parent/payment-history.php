@@ -26,9 +26,11 @@ $months = getAthleteMonthlyPayments($athleteId);
 $totalPaid    = 0;
 $totalPartial = 0;
 $totalUnpaid  = 0;
+$totalPaused  = 0;
 $totalOwed    = 0.0;
 foreach ($months as $m) {
-    if ($m['paid']) $totalPaid++;
+    if (!empty($m['paused'])) $totalPaused++;
+    elseif ($m['paid']) $totalPaid++;
     elseif (!empty($m['partial'])) { $totalPartial++; $totalOwed += $m['remaining']; }
     else { $totalUnpaid++; $totalOwed += $m['remaining']; }
 }
@@ -104,7 +106,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
 /* ── Summary stats ── */
 .pp-summary {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   gap: 0.8rem;
   margin-bottom: 2rem;
 }
@@ -147,15 +149,18 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
 .month-card.paid    { border-color: rgba(45,198,83,.3); background: rgba(45,198,83,.04); }
 .month-card.unpaid  { border-color: rgba(230,57,70,.3); background: rgba(230,57,70,.04); }
 .month-card.partial { border-color: rgba(240,165,0,.35); background: rgba(240,165,0,.04); }
+.month-card.paused  { border-color: rgba(96,165,250,.35); background: rgba(59,130,246,.06); }
 .month-card-icon { font-size: 1.3rem; margin-bottom: .5rem; }
 .month-card.paid    .month-card-icon { color: var(--green); }
 .month-card.unpaid  .month-card-icon { color: var(--red); }
 .month-card.partial .month-card-icon { color: var(--gold); }
+.month-card.paused  .month-card-icon { color: #60a5fa; }
 .month-card-name { font-size: 0.95rem; font-weight: 800; color: var(--text); margin-bottom: .3rem; }
 .month-card-amount { font-size: 0.85rem; }
 .month-card.paid    .month-card-amount { color: var(--green); font-weight: 700; }
 .month-card.unpaid  .month-card-amount { color: var(--red);   font-weight: 700; }
 .month-card.partial .month-card-amount { color: var(--gold);  font-weight: 700; }
+.month-card.paused  .month-card-amount { color: #93c5fd; font-weight: 700; }
 .month-card-status {
   margin-top: .4rem;
   font-size: .65rem; font-weight: 800; text-transform: uppercase;
@@ -165,6 +170,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
 .month-card.paid    .month-card-status { background: rgba(45,198,83,.12); color: var(--green); }
 .month-card.unpaid  .month-card-status { background: rgba(230,57,70,.12); color: var(--red); }
 .month-card.partial .month-card-status { background: rgba(240,165,0,.12);  color: var(--gold); }
+.month-card.paused  .month-card-status { background: rgba(59,130,246,.14); color: #93c5fd; }
 
 .pp-btn { display: inline-flex; align-items: center; gap: .45rem; padding: .65rem 1.25rem; border-radius: 12px; font-size: 0.9rem; font-weight: 800; text-decoration: none; transition: all .2s; min-height: 44px; }
 .pp-btn-outline { background: rgba(255,255,255,.06); border: 1px solid var(--brd); color: var(--muted); }
@@ -320,6 +326,10 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
         <div class="hstat-lbl">Εκκρεμείς</div>
       </div>
       <div class="hstat">
+        <div class="hstat-num" style="color:#60a5fa"><?= $totalPaused ?></div>
+        <div class="hstat-lbl">Χωρίς Χρέωση</div>
+      </div>
+      <div class="hstat">
         <div class="hstat-num gold">€<?= number_format($totalOwed, 2) ?></div>
         <div class="hstat-lbl">Σύνολο Οφειλής</div>
       </div>
@@ -338,10 +348,14 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
           <?php foreach ($yearMonths as $m): ?>
           <div class="month-card <?= $m['payment_status'] ?? ($m['paid'] ? 'paid' : 'unpaid') ?>">
             <div class="month-card-icon">
-              <i class="fas <?= $m['paid'] ? 'fa-circle-check' : (!empty($m['partial']) ? 'fa-circle-half-stroke' : 'fa-circle-xmark') ?>"></i>
+              <i class="fas <?= !empty($m['paused']) ? 'fa-pause' : ($m['paid'] ? 'fa-circle-check' : (!empty($m['partial']) ? 'fa-circle-half-stroke' : 'fa-circle-xmark')) ?>"></i>
             </div>
             <div class="month-card-name"><?= htmlspecialchars($m['label']) ?></div>
-            <?php if ($m['paid']): ?>
+            <?php if (!empty($m['paused'])): ?>
+              <div class="month-card-amount">Δεν χρεώνεται</div>
+              <div style="font-size:.72rem;color:#a9bde1;line-height:1.35;margin-top:.25rem"><?= h($m['pause_reason'] ?? 'Μήνας διακοπής') ?></div>
+              <span class="month-card-status">Χωρίς χρέωση</span>
+            <?php elseif ($m['paid']): ?>
               <div class="month-card-amount">€<?= number_format($m['paid_amount'], 2) ?></div>
               <span class="month-card-status">Εξοφλήθηκε</span>
             <?php elseif (!empty($m['partial'])): ?>
