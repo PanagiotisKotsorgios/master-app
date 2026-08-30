@@ -192,18 +192,14 @@ function cronRenderTextTemplate(string $tpl, array $athlete, array $sub, string 
 
 /**
  * Returns true if ANY reminder (of the given channel) was already
- * sent to this athlete this calendar month. Used as the master
- * once-a-month throttle so a debtor is never nagged more than once
- * per month, regardless of how many rules match or how often cron runs.
- * (Payment-confirmation `after_payment` sends are receipts, not nags,
- * and are excluded so a payment still triggers its thank-you note.)
+ * sent to this athlete this calendar month. Master once-a-month
+ * throttle: no exceptions — even after_payment receipts count.
  */
 function cronHasDebtAlreadySentThisMonth(PDO $db, int $athleteId, string $type): bool {
     try {
         $stmt = $db->prepare("
             SELECT COUNT(*) FROM reminder_logs
             WHERE athlete_id = ?
-              AND trigger_type <> 'after_payment'
               AND type = ?
               AND YEAR(sent_at)  = YEAR(NOW())
               AND MONTH(sent_at) = MONTH(NOW())
@@ -641,12 +637,10 @@ try {
                 // MASTER RULE: every athlete gets AT MOST ONE reminder per
                 // calendar month per channel (email + SMS), across every
                 // trigger type — has_debt, days_after, on_due, days_before,
-                // etc. If they paid → no reminder at all. If they still owe
-                // next month → one more. Even if cron runs daily, a stamp
-                // from this month means we skip. Only `after_payment` (the
-                // thank-you receipt) is excluded — it's a real one-shot event,
-                // not a nag.
-                $useMonthlyDedup = ($triggerType !== 'after_payment');
+                // after_payment, everything. If they paid → no reminder at
+                // all. If they still owe next month → one more. Even if
+                // cron runs daily, a stamp from this month means we skip.
+                $useMonthlyDedup = true;
 
                 $emailAlreadySent = $useMonthlyDedup
                     ? cronHasDebtAlreadySentThisMonth($db, $athleteId, 'email')
