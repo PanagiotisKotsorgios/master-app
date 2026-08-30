@@ -50,18 +50,43 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $flash = 'Το job εκτελείται ήδη. Περιμένετε να ολοκληρωθεί και ανανεώστε τη σελίδα.';
             $flashType = 'warning';
         } else {
-            $path   = escapeshellarg(__DIR__ . '/../cron/' . $script);
-            $php    = escapeshellarg(PHP_BINARY);
-            $log    = escapeshellarg(__DIR__ . '/../logs/cron.log');
-            // Execute the exact CLI cron used by the container scheduler.
-            // nohup keeps it alive after this HTTP request has returned.
-            $pid = trim((string)@shell_exec("nohup $php $path >> $log 2>&1 < /dev/null & echo $!"));
+            // PHP_BINARY belongs to the current Apache SAPI process and is not
+            // guaranteed to be the CLI executable. The official php:8.2-apache
+            // image used by Coolify provides the CLI at /usr/local/bin/php.
+            $phpCli = '';
+            $phpCandidates = array_unique([
+                '/usr/local/bin/php',
+                rtrim(PHP_BINDIR, '/\\') . DIRECTORY_SEPARATOR . 'php',
+                '/usr/bin/php',
+            ]);
+            foreach ($phpCandidates as $candidate) {
+                if (is_file($candidate) && is_executable($candidate)) {
+                    $phpCli = $candidate;
+                    break;
+                }
+            }
 
-            if ($pid !== '' && ctype_digit($pid)) {
-                $flash = 'Το job εκκίνησε στο background (PID ' . $pid . '). Ανανεώστε σε λίγα δευτερόλεπτα για τα αποτελέσματα.';
-            } else {
-                $flash = 'Δεν ήταν δυνατή η εκκίνηση του job. Ελέγξτε αν επιτρέπεται η shell_exec στον app container.';
+            $logFile = __DIR__ . '/../logs/cron.log';
+            if ($phpCli === '') {
+                $flash = 'Δεν βρέθηκε εκτελέσιμο PHP CLI μέσα στον app container.';
                 $flashType = 'danger';
+            } elseif (!is_dir(dirname($logFile)) || !is_writable(dirname($logFile))) {
+                $flash = 'Ο φάκελος logs του app container δεν είναι εγγράψιμος.';
+                $flashType = 'danger';
+            } else {
+                $path = escapeshellarg(__DIR__ . '/../cron/' . $script);
+                $php  = escapeshellarg($phpCli);
+                $log  = escapeshellarg($logFile);
+                // Execute the same CLI script as the container scheduler.
+                // nohup keeps it alive after this HTTP request has returned.
+                $pid = trim((string)@shell_exec("nohup $php $path >> $log 2>&1 < /dev/null & echo $!"));
+
+                if ($pid !== '' && ctype_digit($pid)) {
+                    $flash = 'Το job εκκίνησε με ' . $phpCli . ' (PID ' . $pid . '). Η σελίδα θα ανανεωθεί αυτόματα για τα αποτελέσματα.';
+                } else {
+                    $flash = 'Δεν ήταν δυνατή η εκκίνηση του PHP CLI job. Ελέγξτε το πρόσφατο output παρακάτω.';
+                    $flashType = 'danger';
+                }
             }
         }
     }
@@ -233,7 +258,7 @@ renderHead('Cron & Αυτόματες Υπενθυμίσεις');
       </button>
     </div>
     <?php if ($cronLogTail !== ''): ?>
-      <pre style="margin:0;padding:1rem 1.1rem;max-height:430px;overflow:auto;color:#b8c4da;font:12px/1.55 ui-monospace,SFMono-Regular,Consolas,monospace;white-space:pre-wrap;word-break:break-word"><?= h($cronLogTail) ?></pre>
+      <pre style="margin:0;padding:1rem 1.1rem;max-height:430px;overflow:auto;color:#b8c4da;font:12px/1.55 ui-monospace,SFMono-Regular,Consolas,monospace;white-space:pre-wrap;word-break:break-word"><?= htmlspecialchars($cronLogTail, ENT_QUOTES | ENT_HTML5 | ENT_SUBSTITUTE, 'UTF-8') ?></pre>
     <?php else: ?>
       <div style="padding:1rem 1.1rem;color:#8892b0">Δεν υπάρχει ακόμη output στο cron log.</div>
     <?php endif; ?>
