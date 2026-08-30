@@ -358,6 +358,36 @@ $totalFailed  = 0;
 $totalSkipped = 0;
 
 try {
+    // ── Auto-expire sweep BEFORE processing ──
+    // Any 'active' school whose plan_expires passed gets flipped to
+    // 'expired' now. Same for 'trial' whose trial_ends passed. This
+    // guarantees the cron does not keep sending notifications from a
+    // school that hasn't paid us, even if nobody logs in to trigger
+    // the paywall-side auto-expire path in getSchoolStatus().
+    try {
+        $exp1 = $db->exec("
+            UPDATE schools
+               SET plan_status = 'expired'
+             WHERE active = 1
+               AND plan_status = 'active'
+               AND plan_expires IS NOT NULL
+               AND plan_expires < NOW()
+        ");
+        if ($exp1 > 0) cronLog("Auto-expired {$exp1} paid schools past their plan_expires.");
+
+        $exp2 = $db->exec("
+            UPDATE schools
+               SET plan_status = 'expired'
+             WHERE active = 1
+               AND plan_status = 'trial'
+               AND trial_ends IS NOT NULL
+               AND trial_ends < NOW()
+        ");
+        if ($exp2 > 0) cronLog("Auto-expired {$exp2} trials past their trial_ends.");
+    } catch (Throwable $e) {
+        cronLog("⚠ auto-expire sweep failed: " . $e->getMessage());
+    }
+
     $schools = $db->query("
         SELECT s.id, s.name, s.email, s.plan_id, s.sms_addon, s.sms_addon_expires
         FROM schools s
