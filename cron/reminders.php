@@ -86,7 +86,11 @@ $db->exec("CREATE TABLE IF NOT EXISTS cron_runs (
 function cronLog(string $msg): void {
     $line = '[' . date('Y-m-d H:i:s') . '] ' . $msg;
     echo $line . PHP_EOL;
-    error_log('[MAster cron] ' . $msg);
+    // CLI stdout is already redirected to logs/cron.log by the scheduler and
+    // the admin runner. Writing the same line to stderr duplicated every entry.
+    if (PHP_SAPI !== 'cli') {
+        error_log('[MAster cron] ' . $msg);
+    }
 }
 
 function cronSchoolCanSendSms(PDO $db, int $schoolId): bool {

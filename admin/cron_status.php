@@ -32,10 +32,26 @@ $db->exec("CREATE TABLE IF NOT EXISTS cron_runs (
 // ── Manual triggers ──
 $flash = '';
 $flashType = 'success';
+$autoRefresh = false;
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     verifyCsrf();
+    $action = (string)($_POST['_action'] ?? '');
     $job = (string)($_POST['_job'] ?? '');
-    if ($job === 'daily' || $job === 'monthly') {
+
+    if ($action === 'clear_cron_log') {
+        $logFile = __DIR__ . '/../logs/cron.log';
+        if (!is_dir(dirname($logFile)) || !is_writable(dirname($logFile))) {
+            $flash = 'Ο φάκελος logs του app container δεν είναι εγγράψιμος.';
+            $flashType = 'danger';
+        } elseif (file_put_contents($logFile, '', LOCK_EX) === false) {
+            $flash = 'Δεν ήταν δυνατός ο καθαρισμός του cron log.';
+            $flashType = 'danger';
+        } else {
+            clearstatcache(true, $logFile);
+            auditLog('cron_log_cleared', 'system', 0, 'Detailed cron.log cleared from System Admin');
+            $flash = 'Το αναλυτικό cron log καθαρίστηκε. Το ιστορικό εκτελέσεων και αποστολών διατηρήθηκε.';
+        }
+    } elseif ($job === 'daily' || $job === 'monthly') {
         $script = $job === 'daily' ? 'reminders.php' : 'monthly_digest.php';
         $jobName = $job === 'daily' ? 'reminders' : 'monthly_digest';
 
@@ -83,6 +99,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 if ($pid !== '' && ctype_digit($pid)) {
                     $flash = 'Το job εκκίνησε με ' . $phpCli . ' (PID ' . $pid . '). Η σελίδα θα ανανεωθεί αυτόματα για τα αποτελέσματα.';
+                    $autoRefresh = true;
                 } else {
                     $flash = 'Δεν ήταν δυνατή η εκκίνηση του PHP CLI job. Ελέγξτε το πρόσφατο output παρακάτω.';
                     $flashType = 'danger';
@@ -167,7 +184,7 @@ renderHead('Cron & Αυτόματες Υπενθυμίσεις');
     <div style="background:<?= $flashBg ?>;border:1px solid <?= $flashBorder ?>;color:<?= $flashColor ?>;padding:.7rem 1rem;border-radius:10px;margin-bottom:1rem;font-weight:700">
       <i class="fa-solid <?= $flashIcon ?>"></i> <?= h($flash) ?>
     </div>
-    <?php if ($flashType === 'success'): ?>
+    <?php if ($autoRefresh): ?>
       <script>
         window.setTimeout(function () {
           window.location.href = <?= json_encode(APP_URL . '/admin/cron_status.php', JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) ?>;
@@ -253,9 +270,18 @@ renderHead('Cron & Αυτόματες Υπενθυμίσεις');
   <div style="margin-top:1rem;background:#0b0e14;border:1px solid #1e2536;border-radius:14px;overflow:hidden">
     <div style="padding:.85rem 1.1rem;border-bottom:1px solid #1e2536;display:flex;align-items:center;justify-content:space-between;gap:.75rem;flex-wrap:wrap">
       <div style="font-weight:800;color:#fff"><i class="fa-solid fa-terminal" style="color:#8fe6a1"></i> Πρόσφατο αναλυτικό output</div>
-      <button type="button" onclick="window.location.reload()" style="background:#182033;color:#c9cee1;border:1px solid #2a3653;padding:.4rem .7rem;border-radius:8px;font-weight:700;cursor:pointer">
-        <i class="fa-solid fa-rotate"></i> Ανανέωση
-      </button>
+      <div style="display:flex;align-items:center;gap:.5rem;flex-wrap:wrap">
+        <button type="button" onclick="window.location.reload()" style="background:#182033;color:#c9cee1;border:1px solid #2a3653;padding:.4rem .7rem;border-radius:8px;font-weight:700;cursor:pointer">
+          <i class="fa-solid fa-rotate"></i> Ανανέωση
+        </button>
+        <form method="POST" style="margin:0" onsubmit="return confirm('Θα καθαριστεί μόνο το αναλυτικό cron log. Το ιστορικό εκτελέσεων και αποστολών θα παραμείνει. Συνέχεια;')">
+          <input type="hidden" name="csrf_token" value="<?= csrf() ?>">
+          <input type="hidden" name="_action" value="clear_cron_log">
+          <button type="submit" style="background:rgba(230,57,70,.1);color:#ff8891;border:1px solid rgba(230,57,70,.35);padding:.4rem .7rem;border-radius:8px;font-weight:700;cursor:pointer">
+            <i class="fa-solid fa-trash-can"></i> Καθαρισμός log
+          </button>
+        </form>
+      </div>
     </div>
     <?php if ($cronLogTail !== ''): ?>
       <pre style="margin:0;padding:1rem 1.1rem;max-height:430px;overflow:auto;color:#b8c4da;font:12px/1.55 ui-monospace,SFMono-Regular,Consolas,monospace;white-space:pre-wrap;word-break:break-word"><?= htmlspecialchars($cronLogTail, ENT_QUOTES | ENT_HTML5 | ENT_SUBSTITUTE, 'UTF-8') ?></pre>
