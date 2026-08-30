@@ -191,16 +191,19 @@ function cronRenderTextTemplate(string $tpl, array $athlete, array $sub, string 
 }
 
 /**
- * Returns true if a debt-related notification (has_debt OR days_after with no sub)
- * was already successfully sent to this athlete this calendar month.
- * Covers both trigger types so a single monthly send via either rule counts for both.
+ * Returns true if ANY reminder (of the given channel) was already
+ * sent to this athlete this calendar month. Used as the master
+ * once-a-month throttle so a debtor is never nagged more than once
+ * per month, regardless of how many rules match or how often cron runs.
+ * (Payment-confirmation `after_payment` sends are receipts, not nags,
+ * and are excluded so a payment still triggers its thank-you note.)
  */
 function cronHasDebtAlreadySentThisMonth(PDO $db, int $athleteId, string $type): bool {
     try {
         $stmt = $db->prepare("
             SELECT COUNT(*) FROM reminder_logs
             WHERE athlete_id = ?
-              AND trigger_type IN ('has_debt', 'days_after')
+              AND trigger_type <> 'after_payment'
               AND type = ?
               AND YEAR(sent_at)  = YEAR(NOW())
               AND MONTH(sent_at) = MONTH(NOW())
@@ -635,18 +638,15 @@ try {
 
                 $sentTypes = [];
 
-                // Debt-based notifications: limit to ONCE PER CALENDAR MONTH per
-                // channel so athletes/parents are not flooded with the same nag daily.
-                // Applies to: has_debt (explicit debt trigger), days_after (past-due
-                // reminder — semantically a debt notification), and any rule that is
-                // not tied to a specific subscription instance ($subId === 0).
-                // Non-debt triggers (days_before, on_due, after_payment) stay on the
-                // per-day dedup because they represent a specific one-shot event.
-                $useMonthlyDedup = (
-                    $subId === 0
-                    || $triggerType === 'has_debt'
-                    || $triggerType === 'days_after'
-                );
+                // MASTER RULE: every athlete gets AT MOST ONE reminder per
+                // calendar month per channel (email + SMS), across every
+                // trigger type — has_debt, days_after, on_due, days_before,
+                // etc. If they paid → no reminder at all. If they still owe
+                // next month → one more. Even if cron runs daily, a stamp
+                // from this month means we skip. Only `after_payment` (the
+                // thank-you receipt) is excluded — it's a real one-shot event,
+                // not a nag.
+                $useMonthlyDedup = ($triggerType !== 'after_payment');
 
                 $emailAlreadySent = $useMonthlyDedup
                     ? cronHasDebtAlreadySentThisMonth($db, $athleteId, 'email')
