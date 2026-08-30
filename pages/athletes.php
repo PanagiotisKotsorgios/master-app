@@ -17,6 +17,7 @@ error_reporting(E_ALL);
 
 require_once __DIR__ . '/../includes/config.php';
 require_once __DIR__ . '/../includes/layout.php';
+require_once __DIR__ . '/../includes/athlete_documents.php';
 requireLogin();
 renderPaymentWall();
 
@@ -252,6 +253,100 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     });
     $a = $_POST;
+
+    if (($a['_action'] ?? '') === 'upload_athlete_document') {
+        verifyCsrf();
+        $athId = (int)($a['athlete_id'] ?? 0);
+        $own = $db->prepare("SELECT id FROM athletes WHERE id=? AND school_id=? LIMIT 1");
+        $own->execute([$athId, $sid]);
+        if (!$own->fetchColumn()) {
+            flash('Ο αθλητής δεν βρέθηκε.', 'danger');
+            redirect(APP_URL . '/pages/athletes.php');
+        }
+
+        $storedFile = null;
+        try {
+            $types = athleteDocumentTypes();
+            $type  = (string)($a['document_type'] ?? 'other');
+            if (!isset($types[$type])) $type = 'other';
+
+            $title      = mb_substr(trim((string)($a['document_title'] ?? '')), 0, 200, 'UTF-8');
+            $issuedDate = normaliseAthleteDocumentDate($a['document_issued_date'] ?? null);
+            $expiresAt  = normaliseAthleteDocumentDate($a['document_expires_at'] ?? null);
+            if ($issuedDate && $expiresAt && $expiresAt < $issuedDate) {
+                throw new InvalidArgumentException('Η ημερομηνία λήξης δεν μπορεί να είναι πριν από την ημερομηνία έκδοσης.');
+            }
+
+            $storedFile = storeAthleteDocumentUpload($_FILES['document_file'] ?? [], $athId, $type);
+            $stmt = $db->prepare("
+                INSERT INTO athlete_documents
+                  (school_id, athlete_id, type, title, file_path, file_size, mime_type,
+                   issued_date, expires_at, uploaded_by, verified_by_school, verified_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'school', 1, NOW())
+            ");
+            $stmt->execute([
+                $sid,
+                $athId,
+                $type,
+                $title !== '' ? $title : null,
+                $storedFile['file_path'],
+                $storedFile['file_size'],
+                $storedFile['mime_type'],
+                $issuedDate,
+                $expiresAt,
+            ]);
+            auditLog('upload_athlete_document', 'athlete', $athId, json_encode(['document_id' => (int)$db->lastInsertId(), 'type' => $type], JSON_UNESCAPED_UNICODE));
+            flash('Το έγγραφο ανέβηκε και είναι πλέον ορατό στο Portal Αθλητή.');
+        } catch (Throwable $e) {
+            if ($storedFile && !empty($storedFile['file_path'])) {
+                deleteAthleteDocumentFile($storedFile['file_path'], $athId);
+            }
+            error_log('[athletes.php document upload] ' . $e->getMessage());
+            $uploadError = $e instanceof PDOException
+                ? 'Το έγγραφο δεν αποθηκεύτηκε. Δοκιμάστε ξανά.'
+                : $e->getMessage();
+            flash($uploadError, 'danger');
+        }
+        redirect(APP_URL . '/pages/athletes.php?view=' . $athId);
+    }
+
+    if (($a['_action'] ?? '') === 'verify_athlete_document') {
+        verifyCsrf();
+        $athId = (int)($a['athlete_id'] ?? 0);
+        $docId = (int)($a['document_id'] ?? 0);
+        $stmt = $db->prepare("
+            UPDATE athlete_documents
+               SET verified_by_school=1, verified_at=NOW()
+             WHERE id=? AND athlete_id=? AND school_id=?
+        ");
+        $stmt->execute([$docId, $athId, $sid]);
+        if ($stmt->rowCount()) {
+            auditLog('verify_athlete_document', 'athlete', $athId, json_encode(['document_id' => $docId]));
+            flash('Το έγγραφο επιβεβαιώθηκε και είναι ορατό στον αθλητή.');
+        } else {
+            flash('Το έγγραφο δεν βρέθηκε ή ήταν ήδη επιβεβαιωμένο.', 'warning');
+        }
+        redirect(APP_URL . '/pages/athletes.php?view=' . $athId);
+    }
+
+    if (($a['_action'] ?? '') === 'delete_athlete_document') {
+        verifyCsrf();
+        $athId = (int)($a['athlete_id'] ?? 0);
+        $docId = (int)($a['document_id'] ?? 0);
+        $stmt = $db->prepare("SELECT id, file_path FROM athlete_documents WHERE id=? AND athlete_id=? AND school_id=? LIMIT 1");
+        $stmt->execute([$docId, $athId, $sid]);
+        $document = $stmt->fetch(PDO::FETCH_ASSOC);
+        if ($document) {
+            $db->prepare("DELETE FROM athlete_documents WHERE id=? AND athlete_id=? AND school_id=?")
+               ->execute([$docId, $athId, $sid]);
+            deleteAthleteDocumentFile((string)$document['file_path'], $athId);
+            auditLog('delete_athlete_document', 'athlete', $athId, json_encode(['document_id' => $docId]));
+            flash('Το έγγραφο διαγράφηκε.', 'warning');
+        } else {
+            flash('Το έγγραφο δεν βρέθηκε.', 'danger');
+        }
+        redirect(APP_URL . '/pages/athletes.php?view=' . $athId);
+    }
 
     if (($a['_action'] ?? '') === 'save_exempt_months') {
         $db->prepare("DELETE FROM school_exempt_months WHERE school_id=?")->execute([$sid]);
@@ -795,6 +890,8 @@ $isCurrentlyPaused = false;
 $examFeeDebts = [];
 $examFeeDebtTotal = 0.0;
 $examTransactions = [];
+$athleteDocuments = [];
+$athleteDocumentTypes = athleteDocumentTypes();
 
 if ($viewId) {
     $s = $db->prepare("SELECT a.*,d.name as dept_name FROM athletes a LEFT JOIN departments d ON d.id=a.department_id WHERE a.id=? AND a.school_id=?");
@@ -809,6 +906,10 @@ if ($viewId) {
         $ph = $db->prepare("SELECT * FROM subscriptions WHERE athlete_id=? ORDER BY valid_from DESC");
         $ph->execute([$viewId]);
         $athleteSubscriptions = $ph->fetchAll();
+
+        $docStmt = $db->prepare("SELECT * FROM athlete_documents WHERE athlete_id=? AND school_id=? ORDER BY created_at DESC");
+        $docStmt->execute([$viewId, $sid]);
+        $athleteDocuments = $docStmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
         
         // UPDATED: fetch ALL exam transactions for history display
         $examTransactions = getAthleteExamTransactions($db, $viewId, (int)$sid);
@@ -1574,6 +1675,106 @@ if ($viewId && $athlete):
   </div>
   <?php endif; ?>
 </div>
+</div>
+
+<div class="card anim-3">
+  <div class="card-header">
+    <div class="card-title"><i class="fa-solid fa-folder-open" style="color:#8b5cf6"></i> Έγγραφα Αθλητή</div>
+    <span style="font-size:.8rem;color:var(--muted,#8892b0);font-weight:700"><?=count($athleteDocuments)?> αρχεία</span>
+  </div>
+
+  <form method="post" enctype="multipart/form-data" style="padding:1rem 1.1rem;border-bottom:1px solid var(--border,#1e2536)">
+    <?=csrfField()?>
+    <input type="hidden" name="_action" value="upload_athlete_document">
+    <input type="hidden" name="athlete_id" value="<?=$viewId?>">
+    <div style="font-size:.84rem;color:#d5dbea;line-height:1.5;margin-bottom:.85rem">
+      <i class="fa-solid fa-circle-info" style="color:#3b82f6"></i>
+      Το σωματείο ανεβάζει και διαχειρίζεται τα έγγραφα. Ο αθλητής μπορεί μόνο να τα προβάλλει από το portal του.
+    </div>
+    <div class="form-row col-2" style="margin-bottom:.8rem">
+      <div>
+        <label class="form-label" for="document_type">Τύπος εγγράφου</label>
+        <select class="form-control" name="document_type" id="document_type" required>
+          <?php foreach ($athleteDocumentTypes as $key => $documentType): ?>
+            <option value="<?=h($key)?>"><?=h($documentType['label'])?></option>
+          <?php endforeach; ?>
+        </select>
+      </div>
+      <div>
+        <label class="form-label" for="document_title">Τίτλος <span style="color:var(--muted,#8892b0);font-weight:600">(προαιρετικό)</span></label>
+        <input class="form-control" type="text" name="document_title" id="document_title" maxlength="200" placeholder="π.χ. 1st Dan Karate 2026">
+      </div>
+    </div>
+    <div class="form-row col-3" style="margin-bottom:.8rem">
+      <div>
+        <label class="form-label" for="document_issued_date">Ημ. Έκδοσης</label>
+        <input class="form-control" type="date" name="document_issued_date" id="document_issued_date">
+      </div>
+      <div>
+        <label class="form-label" for="document_expires_at">Ημ. Λήξης</label>
+        <input class="form-control" type="date" name="document_expires_at" id="document_expires_at">
+      </div>
+      <div>
+        <label class="form-label" for="document_file">Αρχείο έως 8 MB</label>
+        <input class="form-control" type="file" name="document_file" id="document_file" accept="application/pdf,image/jpeg,image/png,image/webp" required style="padding:.55rem .7rem">
+      </div>
+    </div>
+    <button type="submit" class="btn btn-primary"><i class="fa-solid fa-cloud-arrow-up"></i> Ανέβασμα εγγράφου</button>
+  </form>
+
+  <?php if (!$athleteDocuments): ?>
+    <div style="text-align:center;padding:1.5rem 1rem;color:var(--muted,#8892b0)">
+      <i class="fa-solid fa-folder-open" style="font-size:1.8rem;display:block;margin-bottom:.5rem;opacity:.4"></i>
+      Δεν έχουν ανέβει έγγραφα για αυτόν τον αθλητή.
+    </div>
+  <?php else: ?>
+    <div class="table-wrap">
+      <table class="history-table">
+        <thead>
+          <tr><th>Τύπος</th><th>Τίτλος</th><th>Έκδοση</th><th>Λήξη</th><th>Κατάσταση</th><th style="text-align:right">Ενέργειες</th></tr>
+        </thead>
+        <tbody>
+        <?php foreach ($athleteDocuments as $document):
+          $documentType = $athleteDocumentTypes[$document['type']] ?? $athleteDocumentTypes['other'];
+          $isVerified = (int)$document['verified_by_school'] === 1;
+        ?>
+          <tr>
+            <td><span style="display:inline-flex;align-items:center;gap:.4rem;font-weight:700"><i class="fa-solid <?=h($documentType['icon'])?>" style="color:<?=h($documentType['color'])?>"></i><?=h($documentType['label'])?></span></td>
+            <td><?=h($document['title'] ?: '—')?></td>
+            <td><?=fmtD($document['issued_date'] ?? null)?></td>
+            <td><?=fmtD($document['expires_at'] ?? null)?></td>
+            <td>
+              <?php if ($isVerified): ?>
+                <span style="color:#2dc653;font-size:.8rem;font-weight:800"><i class="fa-solid fa-circle-check"></i> Ορατό στον αθλητή</span>
+              <?php else: ?>
+                <span style="color:#f0a500;font-size:.8rem;font-weight:800"><i class="fa-solid fa-clock"></i> Αναμονή επιβεβαίωσης</span>
+              <?php endif; ?>
+            </td>
+            <td style="text-align:right;white-space:nowrap">
+              <a href="<?=APP_URL . '/' . h($document['file_path'])?>" target="_blank" rel="noopener" class="btn btn-ghost btn-sm" title="Άνοιγμα"><i class="fa-solid fa-eye"></i></a>
+              <?php if (!$isVerified): ?>
+                <form method="post" style="display:inline">
+                  <?=csrfField()?>
+                  <input type="hidden" name="_action" value="verify_athlete_document">
+                  <input type="hidden" name="athlete_id" value="<?=$viewId?>">
+                  <input type="hidden" name="document_id" value="<?=(int)$document['id']?>">
+                  <button type="submit" class="btn btn-sm" style="background:rgba(45,198,83,.12);color:#2dc653;border:1px solid rgba(45,198,83,.3)" title="Επιβεβαίωση"><i class="fa-solid fa-check"></i></button>
+                </form>
+              <?php endif; ?>
+              <form method="post" style="display:inline" onsubmit="return confirm('Οριστική διαγραφή αυτού του εγγράφου;')">
+                <?=csrfField()?>
+                <input type="hidden" name="_action" value="delete_athlete_document">
+                <input type="hidden" name="athlete_id" value="<?=$viewId?>">
+                <input type="hidden" name="document_id" value="<?=(int)$document['id']?>">
+                <button type="submit" class="btn btn-sm" style="background:rgba(230,57,70,.1);color:#ff8891;border:1px solid rgba(230,57,70,.3)" title="Διαγραφή"><i class="fa-solid fa-trash"></i></button>
+              </form>
+            </td>
+          </tr>
+        <?php endforeach; ?>
+        </tbody>
+      </table>
+    </div>
+  <?php endif; ?>
 </div>
 
 

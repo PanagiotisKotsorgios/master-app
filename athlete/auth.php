@@ -80,6 +80,7 @@ function getAthleteOwnDocuments(): array {
     $stmt = $db->prepare("
         SELECT * FROM athlete_documents
         WHERE school_id = ? AND athlete_id = ?
+          AND verified_by_school = 1
         ORDER BY created_at DESC
     ");
     $stmt->execute([$sid, $aid]);
@@ -90,11 +91,6 @@ function getAthleteOwnDocuments(): array {
  * Document type labels for the athlete portal UI.
  */
 function athleteDocTypes(): array {
-    return [
-        'delta'   => ['label' => 'Δελτίο Αθλητή',       'icon' => 'fa-id-card',       'color' => '#e63946'],
-        'dan'     => ['label' => 'Πιστοποιητικό Dan',   'icon' => 'fa-medal',         'color' => '#f0a500'],
-        'belt'    => ['label' => 'Πιστοποίηση Ζώνης',   'icon' => 'fa-award',         'color' => '#8b5cf6'],
-        'medical' => ['label' => 'Ιατρικό Πιστοποιητικό', 'icon' => 'fa-heart-pulse', 'color' => '#22c55e'],
-        'other'   => ['label' => 'Άλλο',                'icon' => 'fa-file',          'color' => '#64748b'],
-    ];
+    require_once __DIR__ . '/../includes/athlete_documents.php';
+    return athleteDocumentTypes();
 }

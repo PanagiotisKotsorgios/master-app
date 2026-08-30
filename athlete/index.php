@@ -32,7 +32,12 @@ try {
 
 $docCount = 0;
 try {
-    $stmt = $db->prepare("SELECT COUNT(*) FROM athlete_documents WHERE school_id=? AND athlete_id=?");
+    $stmt = $db->prepare("
+        SELECT COUNT(*)
+        FROM athlete_documents
+        WHERE school_id=? AND athlete_id=?
+          AND verified_by_school=1
+    ");
     $stmt->execute([$sid, $aid]);
     $docCount = (int)$stmt->fetchColumn();
 } catch (\PDOException $e) {}
