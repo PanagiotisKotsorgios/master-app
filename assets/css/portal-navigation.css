@@ -1,0 +1,247 @@
+/* Shared, high-contrast navigation and actions for parent + athlete portals. */
+
+.pp-topbar,
+.ap-topbar {
+  min-height: 72px;
+  background: rgba(12, 15, 24, .97) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, .14) !important;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, .28);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+.pp-topbar {
+  padding: .75rem clamp(1rem, 3vw, 2rem) !important;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  gap: 1rem;
+}
+
+.pp-logo {
+  display: inline-flex !important;
+  align-items: baseline !important;
+  gap: 0 !important;
+  color: #fff !important;
+  font-size: 2rem !important;
+  font-weight: 800 !important;
+  line-height: 1 !important;
+  letter-spacing: .08em !important;
+  text-decoration: none !important;
+  flex-shrink: 0;
+}
+
+.pp-logo .logo-ma { color: #fff !important; }
+.pp-logo .logo-ster { color: #e63946 !important; text-transform: lowercase; }
+
+.pp-nav {
+  display: flex;
+  align-items: center;
+  gap: .35rem !important;
+}
+
+.pp-nav a {
+  display: inline-flex;
+  align-items: center;
+  gap: .42rem;
+  min-height: 46px !important;
+  padding: .65rem .82rem !important;
+  border: 1px solid transparent;
+  border-radius: 10px !important;
+  color: #f7f9ff !important;
+  font-size: 1rem !important;
+  font-weight: 800 !important;
+  line-height: 1.15;
+  opacity: 1 !important;
+  text-decoration: none;
+}
+
+.pp-nav a i {
+  color: #ff7b85 !important;
+  font-size: 1.05rem !important;
+}
+
+.pp-nav a:hover,
+.pp-nav a:focus-visible {
+  color: #fff !important;
+  background: rgba(255, 255, 255, .09) !important;
+  border-color: rgba(255, 255, 255, .12);
+}
+
+.pp-nav a.active {
+  color: #fff !important;
+  background: rgba(230, 57, 70, .18) !important;
+  border-color: rgba(230, 57, 70, .42) !important;
+  box-shadow: inset 0 -2px 0 #e63946;
+}
+
+.pp-nav a.nav-logout {
+  color: #fff !important;
+  background: rgba(230, 57, 70, .08);
+  border-color: rgba(230, 57, 70, .2);
+}
+
+.pp-btn,
+.btn-parent-primary,
+.btn-parent-back,
+.btn-view {
+  min-height: 46px !important;
+  color: #fff !important;
+  font-size: .98rem !important;
+  font-weight: 800 !important;
+  opacity: 1 !important;
+}
+
+.pp-btn i,
+.btn-parent-primary i,
+.btn-parent-back i,
+.btn-view i {
+  color: #fff !important;
+}
+
+.pp-hero-sub,
+.page-hero-sub,
+.lead {
+  color: #d9dfef !important;
+  font-size: max(1rem, 16px) !important;
+}
+
+.pp-bottom-nav {
+  display: none;
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 60;
+  background: rgba(12, 15, 24, .98) !important;
+  border-top: 1px solid rgba(255, 255, 255, .15) !important;
+  box-shadow: 0 -8px 24px rgba(0, 0, 0, .34);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.pp-bottom-nav-inner {
+  display: flex;
+  align-items: stretch;
+  width: 100%;
+}
+
+.pp-bottom-nav a {
+  position: relative;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: .28rem;
+  min-width: 0;
+  min-height: 64px !important;
+  color: #f7f9ff !important;
+  font-size: clamp(.6rem, 2.4vw, .72rem) !important;
+  font-weight: 800 !important;
+  line-height: 1.1;
+  opacity: 1 !important;
+  text-align: center;
+  text-decoration: none;
+}
+
+.pp-bottom-nav a span {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pp-bottom-nav a i {
+  color: #ff7b85 !important;
+  font-size: 1.32rem !important;
+}
+
+.pp-bottom-nav a.active {
+  color: #fff !important;
+  background: rgba(230, 57, 70, .12);
+}
+
+.pp-bottom-nav a.active::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 20%;
+  left: 20%;
+  height: 3px;
+  border-radius: 0 0 4px 4px;
+  background: #e63946;
+  box-shadow: 0 0 10px rgba(230, 57, 70, .7);
+}
+
+/* Athlete portal uses the same contrast, sizing and active-state language. */
+.ap-topbar { padding: .75rem clamp(1rem, 3vw, 1.5rem) !important; }
+.ap-brand { color: #fff !important; font-size: 1.05rem !important; }
+.ap-brand .role { color: #fff !important; font-size: .7rem !important; }
+.ap-user { color: #fff !important; font-size: .95rem !important; }
+.ap-user .who { color: #fff !important; font-weight: 800 !important; }
+.ap-user a.logout {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  color: #fff !important;
+  font-size: .92rem !important;
+  font-weight: 800 !important;
+}
+
+.ap-side {
+  background: rgba(17, 21, 32, .98) !important;
+  border-color: rgba(255, 255, 255, .13) !important;
+}
+
+.ap-side a {
+  min-height: 48px;
+  color: #f7f9ff !important;
+  font-size: 1rem !important;
+  font-weight: 800 !important;
+  opacity: 1 !important;
+}
+
+.ap-side a i { color: #ff7b85 !important; }
+.ap-side a:hover,
+.ap-side a:focus-visible { background: rgba(255, 255, 255, .09) !important; color: #fff !important; }
+.ap-side a.active {
+  color: #fff !important;
+  background: rgba(230, 57, 70, .18) !important;
+  border-color: rgba(230, 57, 70, .45) !important;
+  box-shadow: inset 3px 0 0 #e63946;
+}
+
+.ap-head p,
+.kv .k,
+.stat .lbl,
+.ap-main th { color: #d9dfef !important; }
+
+.ap-head p { font-size: 1rem !important; }
+.ap-main .btn {
+  min-height: 46px;
+  color: #fff !important;
+  font-size: .98rem !important;
+  font-weight: 800 !important;
+}
+
+@media (max-width: 920px) {
+  .ap-side a { font-size: .92rem !important; }
+}
+
+@media (max-width: 768px) {
+  .pp-topbar { min-height: 62px; }
+  .pp-logo { font-size: 1.8rem !important; }
+  .pp-nav { display: none !important; }
+  .pp-bottom-nav { display: block !important; }
+  .wrap { padding-bottom: calc(88px + env(safe-area-inset-bottom, 0px)) !important; }
+}
+
+@media (max-width: 600px) {
+  .ap-topbar { align-items: center; }
+  .ap-brand > span:not(.role) { display: none; }
+  .ap-user .who { display: none; }
+  .ap-user a.logout { padding: .45rem .65rem !important; }
+}

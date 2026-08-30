@@ -9,6 +9,7 @@ error_reporting(E_ALL);
 
 require_once __DIR__ . "/../includes/config.php";
 require_once __DIR__ . "/auth.php";
+require_once __DIR__ . "/_navigation.php";
 require_once __DIR__ . "/../includes/marketing_popup.php";
 
 requireParentLogin();
@@ -544,6 +545,7 @@ $firstName   = ucfirst(explode('@', $parentEmail)[0]);
     }
   </style>
 <link rel="stylesheet" href="<?= APP_URL ?>/assets/css/postlogin-portal-theme.css?v=<?= @filemtime(__DIR__ . "/../assets/css/postlogin-portal-theme.css") ?: time() ?>">
+<link rel="stylesheet" href="<?= APP_URL ?>/assets/css/portal-navigation.css?v=<?= @filemtime(__DIR__ . "/../assets/css/portal-navigation.css") ?: time() ?>">
 </head>
 <body>
 
@@ -558,21 +560,7 @@ $firstName   = ucfirst(explode('@', $parentEmail)[0]);
 
 <div style="min-height:100vh;display:flex;flex-direction:column">
 
-  <header class="pp-topbar">
-    <a href="index.php" class="pp-logo"><span class="logo-ma">MA</span><span class="logo-ster">ster</span></a>
-    <nav class="pp-nav">
-      <a href="index.php" class="active"><i class="fas fa-house"></i><span class="nav-label">Αρχική</span></a>
-      <a href="children.php"><i class="fas fa-children"></i><span class="nav-label">Παιδιά</span></a>
-      <a href="events.php"><i class="fas fa-trophy"></i><span class="nav-label">Διοργανώσεις</span></a>
-      <a href="settings.php"><i class="fas fa-gear"></i><span class="nav-label">Ρυθμίσεις</span></a>
-      <a href="<?= APP_URL ?>/logout.php" class="nav-logout"><i class="fas fa-right-from-bracket"></i><span class="nav-label">Έξοδος</span></a>
-    </nav>
-    <?php if (!empty($_SESSION['parent_terms_accepted'])): ?>
-    <button class="terms-fab" id="termsFab" title="Όροι Χρήσης" aria-label="Εμφάνιση Όρων Χρήσης">
-      <i class="fas fa-file-lines"></i>
-    </button>
-    <?php endif; ?>
-  </header>
+  <?php renderParentPortalTopbar('home', !empty($_SESSION['parent_terms_accepted'])); ?>
 
   <main class="pp-body" style="flex:1">
 
@@ -801,15 +789,7 @@ function closeTermsModal() {
 </script>
 
 <!-- ── Bottom Tab Bar (mobile only) ── -->
-<nav class="pp-bottom-nav" aria-label="Κύρια πλοήγηση">
-  <div class="pp-bottom-nav-inner">
-    <a href="index.php" class="active"><i class="fas fa-house"></i>Αρχική</a>
-    <a href="children.php"><i class="fas fa-children"></i>Παιδιά</a>
-    <a href="events.php"><i class="fas fa-trophy"></i>Διοργανώσεις</a>
-    <a href="settings.php"><i class="fas fa-gear"></i>Ρυθμίσεις</a>
-    <a href="<?= APP_URL ?>/logout.php" class="nav-logout"><i class="fas fa-right-from-bracket"></i>Έξοδος</a>
-  </div>
-</nav>
+<?php renderParentPortalBottomNav('home'); ?>
 
 </body>
 </html>

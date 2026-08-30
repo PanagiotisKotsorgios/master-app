@@ -6,6 +6,7 @@
 
 require_once __DIR__ . '/../includes/config.php';
 require_once __DIR__ . '/auth.php';
+require_once __DIR__ . '/_navigation.php';
 require_once __DIR__ . '/../includes/events.php';
 
 requireParentLogin();
@@ -22,7 +23,7 @@ $events = eventsForParent($pid, $sid);
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Διοργανώσεις των παιδιών μου — MAster</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 <link rel="shortcut icon" href="<?= APP_URL ?>/assets/img/favicon.png" type="image/png">
 <style>
@@ -49,13 +50,11 @@ $events = eventsForParent($pid, $sid);
   .btn-view:hover{border-color:#e63946}
 </style>
 <link rel="stylesheet" href="<?= APP_URL ?>/assets/css/postlogin-portal-theme.css?v=<?= @filemtime(__DIR__ . "/../assets/css/postlogin-portal-theme.css") ?: time() ?>">
+<link rel="stylesheet" href="<?= APP_URL ?>/assets/css/portal-navigation.css?v=<?= @filemtime(__DIR__ . "/../assets/css/portal-navigation.css") ?: time() ?>">
 </head>
 <body>
 
-<div class="top">
-  <a href="<?= APP_URL ?>/parent/index.php" class="brand">MA<em>ster</em></a>
-  <a href="<?= APP_URL ?>/parent/index.php" class="nav-back"><i class="fa-solid fa-arrow-left"></i> Αρχική</a>
-</div>
+<?php renderParentPortalTopbar('events'); ?>
 
 <div class="wrap">
   <h1>Διοργανώσεις των παιδιών μου</h1>
@@ -103,6 +102,8 @@ $events = eventsForParent($pid, $sid);
     <?php endforeach; ?>
   <?php endif; ?>
 </div>
+
+<?php renderParentPortalBottomNav('events'); ?>
 
 </body>
 </html>

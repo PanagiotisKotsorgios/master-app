@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/../includes/config.php';
 require_once __DIR__ . '/auth.php';
+require_once __DIR__ . '/_navigation.php';
 requireParentLogin();
 
 try { $children = getParentChildren(); } catch (Throwable $e) { $children = []; }
@@ -288,19 +289,12 @@ try { $children = getParentChildren(); } catch (Throwable $e) { $children = []; 
   }
   </style>
 <link rel="stylesheet" href="<?= APP_URL ?>/assets/css/postlogin-portal-theme.css?v=<?= @filemtime(__DIR__ . "/../assets/css/postlogin-portal-theme.css") ?: time() ?>">
+<link rel="stylesheet" href="<?= APP_URL ?>/assets/css/portal-navigation.css?v=<?= @filemtime(__DIR__ . "/../assets/css/portal-navigation.css") ?: time() ?>">
 </head>
 <body>
 <div class="parent-wrap">
 
-  <header class="pp-topbar">
-    <a href="index.php" class="pp-logo">MA<span>ster</span></a>
-    <nav class="pp-nav">
-      <a href="index.php"><i class="fas fa-house"></i><span class="nav-label">Αρχική</span></a>
-      <a href="children.php" class="active"><i class="fas fa-children"></i><span class="nav-label">Παιδιά</span></a>
-      <a href="settings.php"><i class="fas fa-gear"></i><span class="nav-label">Ρυθμίσεις</span></a>
-      <a href="<?= APP_URL ?>/logout.php" class="nav-logout"><i class="fas fa-right-from-bracket"></i><span class="nav-label">Έξοδος</span></a>
-    </nav>
-  </header>
+  <?php renderParentPortalTopbar('children'); ?>
 
   <main class="parent-body">
 
@@ -381,14 +375,7 @@ try { $children = getParentChildren(); } catch (Throwable $e) { $children = []; 
 </div>
 
 <!-- Bottom Tab Bar (mobile only) -->
-<nav class="pp-bottom-nav">
-  <div class="pp-bottom-nav-inner">
-    <a href="index.php"><i class="fas fa-house"></i>Αρχική</a>
-    <a href="children.php" class="active"><i class="fas fa-children"></i>Παιδιά</a>
-    <a href="settings.php"><i class="fas fa-gear"></i>Ρυθμίσεις</a>
-    <a href="<?= APP_URL ?>/logout.php" class="nav-logout"><i class="fas fa-right-from-bracket"></i>Έξοδος</a>
-  </div>
-</nav>
+<?php renderParentPortalBottomNav('children'); ?>
 
 </body>
 </html>

@@ -111,6 +111,7 @@ $__active      = $athleteActiveNav ?? 'dashboard';
     .pill.err{background:rgba(230,57,70,.15);color:#ff8891}
     .pill.muted{background:rgba(255,255,255,.06);color:var(--muted)}
   </style>
+  <link rel="stylesheet" href="<?= APP_URL ?>/assets/css/portal-navigation.css?v=<?= @filemtime(__DIR__ . '/../assets/css/portal-navigation.css') ?: time() ?>">
 </head>
 <body>
 

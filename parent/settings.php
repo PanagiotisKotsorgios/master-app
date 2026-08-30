@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/../includes/config.php';
 require_once __DIR__ . '/auth.php';
+require_once __DIR__ . '/_navigation.php';
 requireParentLogin();
 
 $db          = getDB();
@@ -350,19 +351,12 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
 }
 </style>
 <link rel="stylesheet" href="<?= APP_URL ?>/assets/css/postlogin-portal-theme.css?v=<?= @filemtime(__DIR__ . "/../assets/css/postlogin-portal-theme.css") ?: time() ?>">
+<link rel="stylesheet" href="<?= APP_URL ?>/assets/css/portal-navigation.css?v=<?= @filemtime(__DIR__ . "/../assets/css/portal-navigation.css") ?: time() ?>">
 </head>
 <body>
 <div style="min-height:100vh;display:flex;flex-direction:column">
 
-  <header class="pp-topbar">
-    <a href="index.php" class="pp-logo"><span class="logo-ma">MA</span><span class="logo-ster">ster</span></a>
-    <nav class="pp-nav">
-      <a href="index.php"><i class="fas fa-house"></i><span class="nav-label">Αρχική</span></a>
-      <a href="children.php"><i class="fas fa-children"></i><span class="nav-label">Παιδιά</span></a>
-      <a href="settings.php" class="active"><i class="fas fa-gear"></i><span class="nav-label">Ρυθμίσεις</span></a>
-      <a href="<?= APP_URL ?>/logout.php" class="nav-logout"><i class="fas fa-right-from-bracket"></i><span class="nav-label">Έξοδος</span></a>
-    </nav>
-  </header>
+  <?php renderParentPortalTopbar('settings'); ?>
 
   <main class="pp-body" style="flex:1">
 
@@ -591,14 +585,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
 </div>
 
 <!-- Bottom Tab Bar (mobile only) -->
-<nav class="pp-bottom-nav">
-  <div class="pp-bottom-nav-inner">
-    <a href="index.php"><i class="fas fa-house"></i>Αρχική</a>
-    <a href="children.php"><i class="fas fa-children"></i>Παιδιά</a>
-    <a href="settings.php" class="active"><i class="fas fa-gear"></i>Ρυθμίσεις</a>
-    <a href="<?= APP_URL ?>/logout.php" class="nav-logout"><i class="fas fa-right-from-bracket"></i>Έξοδος</a>
-  </div>
-</nav>
+<?php renderParentPortalBottomNav('settings'); ?>
 
 <script>
 document.querySelectorAll('.pp-modal-bg').forEach(function(bg){
