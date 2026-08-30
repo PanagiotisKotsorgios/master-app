@@ -221,7 +221,39 @@ log "Apache PID: $APACHE_PID"
     log "provisioning done."
 ) &
 
-# ── 6. Wait on Apache (this is what keeps container alive) ──
+# ── 6. In-container daily cron: reminders + monthly digest ──
+#    Runs php cron/reminders.php once per calendar day. A stamp file
+#    guarantees it also fires after a restart if the day was missed.
+#    Once per month it also runs the monthly digest that emails the
+#    school owner a summary of how many messages went out.
+CRON_STAMP="$LOG_DIR/.cron_last_daily"
+CRON_M_STAMP="$LOG_DIR/.cron_last_monthly"
+export CRON_STAMP CRON_M_STAMP
+(
+    sleep 180   # let provisioning finish
+    while true; do
+        TODAY=$(date +%Y-%m-%d)
+        MONTH=$(date +%Y-%m)
+        LAST_DAY=$(cat "$CRON_STAMP" 2>/dev/null || echo "")
+        LAST_MONTH=$(cat "$CRON_M_STAMP" 2>/dev/null || echo "")
+
+        if [ "$LAST_DAY" != "$TODAY" ]; then
+            log "[cron] running daily reminders ($TODAY)"
+            php /var/www/html/cron/reminders.php >> "$LOG_DIR/cron.log" 2>&1 || true
+            echo "$TODAY" > "$CRON_STAMP"
+        fi
+
+        if [ "$LAST_MONTH" != "$MONTH" ]; then
+            log "[cron] running monthly digest ($MONTH)"
+            php /var/www/html/cron/monthly_digest.php >> "$LOG_DIR/cron.log" 2>&1 || true
+            echo "$MONTH" > "$CRON_M_STAMP"
+        fi
+
+        sleep 3600   # re-check every hour
+    done
+) &
+
+# ── 7. Wait on Apache (this is what keeps container alive) ──
 log "handing off — waiting on Apache (PID $APACHE_PID)."
 wait $APACHE_PID
 EXIT_CODE=$?

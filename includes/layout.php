@@ -387,6 +387,7 @@ function renderSidebar(string $active = ''): void {
                 'items'  => [
                     ['href' => APP_URL.'/admin/system-settings.php', 'icon' => 'fa-solid fa-gears',             'label' => 'System Settings',  'key' => 'admin_sys_settings'],
                     ['href' => APP_URL.'/admin/health.php',          'icon' => 'fa-solid fa-heart-pulse',       'label' => 'System Health',    'key' => 'admin_health'],
+                    ['href' => APP_URL.'/admin/cron_status.php',     'icon' => 'fa-solid fa-clock-rotate-left', 'label' => 'Cron & Υπενθυμίσεις','key' => 'admin_cron'],
                     ['href' => APP_URL.'/admin/backups.php',         'icon' => 'fa-solid fa-database',          'label' => 'Backups',          'key' => 'admin_backups'],
                     ['href' => APP_URL.'/admin/audit.php',           'icon' => 'fa-solid fa-clipboard-list',    'label' => 'Audit Log',        'key' => 'admin_audit'],
                     ['href' => APP_URL.'/admin/consent-logs.php',    'icon' => 'fa-solid fa-file-shield',       'label' => 'Consent Log',      'key' => 'admin_consent_logs'],

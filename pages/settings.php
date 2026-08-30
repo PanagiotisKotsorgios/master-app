@@ -1487,9 +1487,9 @@ var planSlug = '<?= addslashes($planSlug) ?>';
         <?php else: ?>
         <div style="background:rgba(230,57,70,.07);border:1px solid rgba(230,57,70,.2);border-radius:10px;padding:1rem;margin-bottom:1.25rem;display:flex;align-items:center;gap:.75rem">
             <i class="fa-solid fa-shield" style="color:#e63946;font-size:1.5rem;flex-shrink:0"></i>
-            <div><strong style="color:#e2e8f0;display:block">2FA Ανενεργό</strong><span style="font-size:.82rem;color:#6b7494">Ο λογαριασμός σας δεν προστατεύεται με 2FA. Συνιστάται ιδιαίτερα η ενεργοποίηση.</span></div>
+            <div><strong style="color:#ffffff;display:block;font-size:.98rem">2FA Ανενεργό</strong><span style="font-size:.88rem;color:#d5dcec">Ο λογαριασμός σας δεν προστατεύεται με 2FA. Συνιστάται ιδιαίτερα η ενεργοποίηση.</span></div>
         </div>
-        <p style="font-size:.875rem;color:#8892b0;line-height:1.65;margin-bottom:1rem">Το 2FA προσθέτει ένα επιπλέον επίπεδο ασφαλείας. Κατά τη σύνδεση, θα σας αποστέλλεται αυτόματα ένας μοναδικός κωδικός <strong>στο email σας</strong>.</p>
+        <p style="font-size:.92rem;color:#e2e8f0;line-height:1.65;margin-bottom:1rem">Το 2FA προσθέτει ένα επιπλέον επίπεδο ασφαλείας. Κατά τη σύνδεση, θα σας αποστέλλεται αυτόματα ένας μοναδικός κωδικός <strong style="color:#ffffff">στο email σας</strong>.</p>
         <form method="POST">
             <input type="hidden" name="_action" value="2fa_enable">
             <input type="hidden" name="csrf_token" value="<?= csrf() ?>">
