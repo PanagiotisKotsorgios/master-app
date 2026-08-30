@@ -635,9 +635,18 @@ try {
 
                 $sentTypes = [];
 
-                // Debt-based notifications (no linked subscription OR has_debt rule):
-                // limit to once per calendar month per channel so athletes are not flooded.
-                $useMonthlyDedup = ($subId === 0 || $triggerType === 'has_debt');
+                // Debt-based notifications: limit to ONCE PER CALENDAR MONTH per
+                // channel so athletes/parents are not flooded with the same nag daily.
+                // Applies to: has_debt (explicit debt trigger), days_after (past-due
+                // reminder — semantically a debt notification), and any rule that is
+                // not tied to a specific subscription instance ($subId === 0).
+                // Non-debt triggers (days_before, on_due, after_payment) stay on the
+                // per-day dedup because they represent a specific one-shot event.
+                $useMonthlyDedup = (
+                    $subId === 0
+                    || $triggerType === 'has_debt'
+                    || $triggerType === 'days_after'
+                );
 
                 $emailAlreadySent = $useMonthlyDedup
                     ? cronHasDebtAlreadySentThisMonth($db, $athleteId, 'email')
