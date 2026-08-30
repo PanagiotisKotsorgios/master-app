@@ -140,6 +140,15 @@ log "Apache PID: $APACHE_PID"
         php /var/www/html/tools/run_events_migration.php 2>&1 || log "migration warnings (non-fatal)."
     fi
 
+    # Remove only the exact legacy test tenants that existed before production.
+    # The cleanup uses a fixed name+email allow-list and hard exclusions for
+    # the superadmin and official demo. It runs after migrations because old
+    # idempotent demo migrations can recreate those historical test rows.
+    if [ -f /var/www/html/tools/cleanup_legacy_test_data.php ]; then
+        log "cleaning allow-listed legacy test data..."
+        php /var/www/html/tools/cleanup_legacy_test_data.php 2>&1 || log "WARNING: legacy test cleanup failed."
+    fi
+
     # Ensure superadmin exists AND its password is known to us.
     # Rule: if `.admin_password` is missing OR RESET_ADMIN_PASSWORD=1 is set,
     # we (re)generate a password and either create the admin or reset the
