@@ -319,40 +319,8 @@ SELECT @demo_sid, a.id, 'sms', 'on_due',
 
 
 -- ══════════════════════════════════════════════════════════════
--- 7) EVENTS (3) — championship, camp, seminar
+-- 7) EVENT — completed seminar
 -- ══════════════════════════════════════════════════════════════
-INSERT INTO events (slug, organiser_school_id, type, title, subtitle, description, visibility, status,
-                    venue_name, venue_address, starts_at, ends_at,
-                    registration_opens_at, registration_closes_at,
-                    fee_model, fee_amount, contact_email, contact_phone,
-                    created_at, updated_at)
-SELECT 'demo-kypello-tkd-2026', @demo_sid, 'championship',
-       'Κύπελλο Ελλάδος TKD 2026', 'Πανελλήνιο πρωτάθλημα ενηλίκων και εφήβων',
-       'Δοκιμαστική διοργάνωση. Ανοιχτές κατηγορίες, όλες οι ζώνες. Πλήρες σεντ διαιτητών και ηλεκτρονικών βαθμολογητών.',
-       'public', 'open',
-       'Ολυμπιακό Στάδιο Αθηνών', 'Λ. Κηφισίας 37, Μαρούσι',
-       DATE_ADD(CURDATE(), INTERVAL 30 DAY), DATE_ADD(CURDATE(), INTERVAL 32 DAY),
-       DATE_SUB(CURDATE(), INTERVAL 5 DAY), DATE_ADD(CURDATE(), INTERVAL 20 DAY),
-       'per_athlete', 25.00, 'pkotsorgios654@gmail.com', '698678178',
-       NOW(), NOW()
-WHERE @demo_sid IS NOT NULL AND NOT EXISTS (SELECT 1 FROM events WHERE slug='demo-kypello-tkd-2026');
-
-INSERT INTO events (slug, organiser_school_id, type, title, subtitle, description, visibility, status,
-                    venue_name, venue_address, starts_at, ends_at,
-                    registration_opens_at, registration_closes_at,
-                    fee_model, fee_amount, contact_email, contact_phone,
-                    created_at, updated_at)
-SELECT 'demo-summer-camp-crete-2026', @demo_sid, 'camp',
-       'Summer Camp Κρήτης 2026', '5 ημέρες προπόνησης δίπλα στη θάλασσα',
-       'Δοκιμαστικό camp. Καθημερινές διπλές προπονήσεις, seminars από ξένους coaches, ελεύθερος χρόνος για παραλία.',
-       'public', 'open',
-       'Ξενοδοχείο Elounda Beach', 'Ελούντα, Κρήτη',
-       DATE_ADD(CURDATE(), INTERVAL 60 DAY), DATE_ADD(CURDATE(), INTERVAL 65 DAY),
-       DATE_SUB(CURDATE(), INTERVAL 3 DAY), DATE_ADD(CURDATE(), INTERVAL 45 DAY),
-       'per_athlete', 350.00, 'opengplms@gmail.com', '6970223930',
-       NOW(), NOW()
-WHERE @demo_sid IS NOT NULL AND NOT EXISTS (SELECT 1 FROM events WHERE slug='demo-summer-camp-crete-2026');
-
 INSERT INTO events (slug, organiser_school_id, type, title, subtitle, description, visibility, status,
                     venue_name, venue_address, starts_at, ends_at,
                     registration_opens_at, registration_closes_at,
@@ -371,7 +339,7 @@ WHERE @demo_sid IS NOT NULL AND NOT EXISTS (SELECT 1 FROM events WHERE slug='dem
 
 
 -- ══════════════════════════════════════════════════════════════
--- 8) EVENT PAYMENTS (2) — one verified (with invoice), one pending
+-- 8) EVENT PAYMENT — verified seminar invoice
 -- ══════════════════════════════════════════════════════════════
 INSERT INTO event_payments (event_id, paying_school_id, amount, method, reference_code,
                             status, verified_at, invoice_file_path, invoice_uploaded_at,
@@ -383,15 +351,6 @@ SELECT (SELECT id FROM events WHERE slug='demo-seminario-amunas-2026' LIMIT 1),
        DATE_SUB(NOW(), INTERVAL 20 DAY), DATE_SUB(NOW(), INTERVAL 17 DAY)
 WHERE @demo_sid IS NOT NULL
   AND NOT EXISTS (SELECT 1 FROM event_payments WHERE reference_code='MASTER-DEMO-INV-001');
-
-INSERT INTO event_payments (event_id, paying_school_id, amount, method, reference_code,
-                            status, created_at, updated_at)
-SELECT (SELECT id FROM events WHERE slug='demo-kypello-tkd-2026' LIMIT 1),
-       @demo_sid, 75.00, 'iris', 'MASTER-DEMO-INV-002',
-       'pending', NOW(), NOW()
-WHERE @demo_sid IS NOT NULL
-  AND NOT EXISTS (SELECT 1 FROM event_payments WHERE reference_code='MASTER-DEMO-INV-002');
-
 
 -- ══════════════════════════════════════════════════════════════
 -- 9) PARENT PORTAL USERS (2) — links to a couple of minor athletes
