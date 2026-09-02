@@ -598,6 +598,85 @@ button.btn-clear {
   padding-right: 3.25rem !important;
 }
 
+/* ── Universal overflow guard (all widths) ────────────────────────
+   Prevents laptop / tablet screens from cropping content. The
+   pre-existing rules only fired at max-width:640px; here we make
+   sure the same safe-guards work up through desktop widths so
+   nothing is cut off inside the sidebar / main-content layout. */
+html, body { overflow-x: hidden; }
+.app-layout, .main-content, .main-wrap, main {
+  min-width: 0 !important;
+  max-width: 100%;
+}
+.main-content { overflow-x: hidden; }
+.page-body {
+  min-width: 0 !important;
+  max-width: 100%;
+  overflow-x: hidden;
+  box-sizing: border-box;
+}
+.card, .stat-card, .panel, .box:not(#ck-banner):not(#dm-cookie-bar), .info-box {
+  min-width: 0;
+  max-width: 100%;
+}
+
+/* Any table wrapper always scrolls horizontally when its contents
+   exceed the available width, at every breakpoint. */
+.table-wrap,
+[class*="tbl-wrap"], [class*="table-scroll"] {
+  overflow-x: auto !important;
+  -webkit-overflow-scrolling: touch;
+  max-width: 100%;
+  min-width: 0;
+}
+.table-wrap > table,
+[class*="tbl-wrap"] > table,
+[class*="table-scroll"] > table {
+  max-width: none;
+}
+
+/* Tablet + laptop (641px – 1399px): where the sidebar is still
+   pinned (240–220px) but viewport is narrow, tables and grids
+   often overflow their card. Add scroll fallbacks so nothing is
+   clipped visually. */
+@media (min-width: 641px) and (max-width: 1399px) {
+  .page-body { overflow-x: hidden !important; }
+
+  /* Orphan tables (no .table-wrap) — make the table itself scroll */
+  .page-body > table,
+  .card > table,
+  .panel > table,
+  main > table {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    max-width: 100%;
+  }
+
+  /* Wide filter grids collapse to fewer columns when the viewport
+     is not roomy enough to display all of them side-by-side. */
+  [style*="grid-template-columns:repeat(auto-fit,minmax"],
+  [style*="grid-template-columns: repeat(auto-fit,minmax"],
+  [style*="grid-template-columns:repeat(auto-fill,minmax"],
+  [style*="grid-template-columns: repeat(auto-fill,minmax"] {
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)) !important;
+  }
+}
+
+/* Tablet range (641px – 1024px): grids that are hard-coded to
+   4 / 5 columns collapse to 2 so nothing gets sliced. */
+@media (min-width: 641px) and (max-width: 1024px) {
+  .grid-4, .grid-5 { grid-template-columns: repeat(2, 1fr) !important; }
+  .grid-3          { grid-template-columns: repeat(2, 1fr) !important; }
+  .form-row.col-3  { grid-template-columns: repeat(2, 1fr) !important; }
+}
+
+/* Narrow laptops (1025px – 1399px): keep 3-across for 4/5 cols,
+   full width for 2-col forms if the space is tight. */
+@media (min-width: 1025px) and (max-width: 1399px) {
+  .grid-5 { grid-template-columns: repeat(3, 1fr) !important; }
+}
+
 @media print {
   body { background: #fff !important; color: #000 !important; }
   * { color: #000 !important; background: transparent !important; box-shadow: none !important; }

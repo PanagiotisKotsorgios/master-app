@@ -273,7 +273,12 @@ function getVivaAccountsUrl(): string  { return isVivaDemoMode() ? 'https://demo
 // Εμφανίζεται στο upgrade.php όταν ο χρήστης επιλέξει "Τραπεζικό Έμβασμα"
 function getBankName(): string          { return getSetting('bank_name',           ''); }
 function getBankIban(): string          { return getSetting('bank_iban',           ''); }
-function getBankBeneficiary(): string   { return getSetting('bank_beneficiary',    ''); }
+function getBankBeneficiary(): string   {
+    $v = getSetting('bank_beneficiary', '');
+    // Drop patronymic "ΔΗΜΗΤΡΙΟΥ" (any case) from the displayed name.
+    $v = preg_replace('/\s*ΔΗΜΗΤΡΙΟΥ\s*/ui', ' ', $v);
+    return trim(preg_replace('/\s+/', ' ', $v));
+}
 function getBankReference(): string     { return getSetting('bank_reference_hint', 'MASTER-{SCHOOL_NAME}'); }
 function getBankReceiptEmail(): string  { return getSetting('bank_receipt_email',  getMailFromEmail()); }
 function getBankInstructions(): string  { return getSetting('bank_instructions',   ''); }
