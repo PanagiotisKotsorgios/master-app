@@ -1052,17 +1052,15 @@ textarea.form-control{min-height:90px;resize:vertical}
 
 /* Greek-only month picker. Native mobile month pickers inherit the phone's
    language, so this control deliberately stays inside the page. */
-.greek-month-field{position:relative;cursor:pointer}
-.greek-month-value{cursor:pointer!important;color:transparent!important;caret-color:transparent!important;user-select:none}
-.greek-month-value::selection{background:transparent}
-.greek-month-display{position:absolute;top:1px;left:1px;right:1px;height:46px;z-index:2;display:flex;align-items:center;justify-content:space-between;gap:.75rem;padding:0 1rem;border-radius:9px;color:var(--text,#e2e8f0);font-size:clamp(1rem,3.8vw,1.05rem);pointer-events:none;box-sizing:border-box}
-.greek-month-display .greek-month-chevron{color:var(--muted,#8892b0);font-size:.75rem;transition:transform .18s ease}
+.greek-month-field{position:relative}
+.greek-month-trigger{display:flex!important;align-items:center;justify-content:space-between;gap:.75rem;text-align:left;font-family:inherit;cursor:pointer!important}
+.greek-month-trigger .greek-month-chevron{color:var(--muted,#8892b0);font-size:.75rem;transition:transform .18s ease;flex:0 0 auto}
 .greek-month-field.is-open .greek-month-chevron{transform:rotate(180deg)}
 .greek-month-field .field-status-icon{z-index:4}
-.greek-month-field .field-wrap.is-valid + .greek-month-display,
-.greek-month-field .field-wrap.is-invalid + .greek-month-display{padding-right:3.2rem}
-.greek-month-field .field-wrap.is-valid + .greek-month-display .greek-month-chevron,
-.greek-month-field .field-wrap.is-invalid + .greek-month-display .greek-month-chevron{opacity:0}
+.greek-month-field .field-wrap.is-valid .greek-month-trigger,
+.greek-month-field .field-wrap.is-invalid .greek-month-trigger{padding-right:3.2rem}
+.greek-month-field .field-wrap.is-valid .greek-month-chevron,
+.greek-month-field .field-wrap.is-invalid .greek-month-chevron{opacity:0}
 .greek-month-modal[hidden]{display:none!important}
 .greek-month-modal{position:fixed;inset:0;z-index:100000;display:flex;align-items:center;justify-content:center;padding:1rem}
 .greek-month-backdrop{position:absolute;inset:0;border:0;background:rgba(0,0,0,.76);backdrop-filter:blur(5px);cursor:default}
@@ -1075,7 +1073,7 @@ textarea.form-control{min-height:90px;resize:vertical}
 .greek-month-year-button:disabled{opacity:.35;cursor:not-allowed}
 .greek-month-year{color:#fff;text-align:center;font-size:1.35rem;font-weight:900;font-variant-numeric:tabular-nums}
 .greek-month-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.55rem}
-.greek-month-option{min-height:48px;padding:.55rem .3rem;border:1px solid rgba(255,255,255,.1);border-radius:11px;background:rgba(255,255,255,.035);color:#d7deec;cursor:pointer;font-size:.9rem;font-weight:700}
+.greek-month-option{min-width:0;min-height:48px;padding:.55rem .35rem;border:1px solid rgba(255,255,255,.1);border-radius:11px;background:rgba(255,255,255,.035);color:#d7deec;cursor:pointer;font-size:clamp(.78rem,2.8vw,.9rem)!important;font-weight:700;line-height:1.2;white-space:normal;overflow-wrap:anywhere}
 .greek-month-option:hover,.greek-month-option:focus-visible{border-color:rgba(240,165,0,.55);background:rgba(240,165,0,.1);outline:none}
 .greek-month-option.is-selected{border-color:#f0a500;background:rgba(240,165,0,.18);color:#ffd36c;box-shadow:0 0 0 2px rgba(240,165,0,.12)}
 .greek-month-actions{display:flex;justify-content:flex-end;gap:.55rem;flex-wrap:wrap;margin-top:1.1rem;padding-top:1rem;border-top:1px solid rgba(255,255,255,.09)}
@@ -1086,8 +1084,8 @@ body.greek-month-picker-open{overflow:hidden}
 @media(max-width:480px){
   .greek-month-modal{align-items:flex-end;padding:.6rem}
   .greek-month-dialog{width:100%;border-radius:20px 20px 14px 14px;padding:1rem}
-  .greek-month-grid{gap:.45rem}
-  .greek-month-option{font-size:.82rem;min-height:46px}
+  .greek-month-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:.45rem}
+  .greek-month-option{font-size:.88rem!important;min-height:44px}
   .greek-month-actions{display:grid;grid-template-columns:1fr 1fr}
   .greek-month-action{width:100%;padding:.55rem .45rem}
   .greek-month-action.clear{grid-column:1/-1;margin-right:0}
@@ -1975,22 +1973,20 @@ if (preg_match('/^(\d{4})-(\d{2})$/', $debtMonthValue, $debtParts)) {
 $debtMonthLabel = ($greekDebtMonths[$debtPickerMonth] ?? '') . ' ' . $debtPickerYear;
 ?>
 <div class="greek-month-field" id="greekDebtMonthField">
-  <input type="text" name="debt_from_month" class="form-control greek-month-value" id="debtStartInput"
+  <input type="hidden" name="debt_from_month" id="debtStartValue" value="<?=h($debtMonthValue)?>">
+  <button type="button"
+    class="form-control greek-month-trigger"
+    id="debtStartInput"
     value="<?=h($debtMonthValue)?>"
-    readonly
-    inputmode="none"
     lang="el"
-    autocomplete="off"
     aria-haspopup="dialog"
     aria-expanded="false"
     aria-controls="greekDebtMonthModal"
     aria-describedby="debtStartHint"
-    aria-label="Μήνας έναρξης οφειλής: <?=h($debtMonthLabel)?>"
-    onchange="recalcDebtPreview();syncDebtHint();">
-  <div class="greek-month-display" aria-hidden="true">
+    aria-label="Μήνας έναρξης οφειλής: <?=h($debtMonthLabel)?>">
     <span id="greekDebtMonthDisplay"><?=h($debtMonthLabel)?></span>
     <i class="fa-solid fa-chevron-down greek-month-chevron"></i>
-  </div>
+  </button>
 </div>
 
 <div class="greek-month-modal" id="greekDebtMonthModal" hidden aria-hidden="true">
@@ -3280,8 +3276,10 @@ var greekMonthNames = [
 ];
 function syncGreekDebtMonthDisplay(){
   var input = document.getElementById('debtStartInput');
+  var storedValue = document.getElementById('debtStartValue');
   var display = document.getElementById('greekDebtMonthDisplay');
   if(!input || !display) return;
+  if(storedValue) storedValue.value = input.value;
   var parsed = parseMonthInput(input.value);
   var label = parsed
     ? greekMonthNames[parsed.getMonth()+1] + ' ' + parsed.getFullYear()
