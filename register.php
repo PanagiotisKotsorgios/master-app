@@ -891,10 +891,7 @@ HTML;
               <div class="strength-seg" id="seg3"></div>
               <div class="strength-seg" id="seg4"></div>
             </div>
-            <div class="strength-badge empty" id="sBadge">
-              <i class="fas fa-shield" id="sBadgeIcon"></i>
-              <span id="sBadgeTxt"></span>
-            </div>
+
           </div>
         </div>
 
