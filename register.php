@@ -547,7 +547,7 @@ HTML;
     }
     .strength-seg.active { transform: scaleY(1.15); }
     .strength-badge {
-      display: flex; align-items: center; justify-content: center; gap: .5rem;
+      display: flex; align-items: center; justify-content: flex-start; gap: .5rem;
       margin-top: .65rem; padding: .65rem 1rem; border-radius: 10px;
       font-size: clamp(1rem, 4vw, 1.15rem); font-weight: 800;
       transition: all .3s ease; min-height: 2.6rem; border: 2px solid transparent;
